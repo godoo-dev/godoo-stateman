@@ -31,11 +31,11 @@ The seven-stage reconciliation pipeline: config → normalize → graph → diff
 
 The schema registry that describes Odoo model and field metadata, version-keyed, persisted to disk.
 
-- [ ] **SCHEM-01**: The schema registry stores per-model metadata — model name, archivability (`active` field presence and writability), and naming metadata — keyed by an explicit Odoo-version dimension from the first snapshot.
-- [ ] **SCHEM-02**: The schema registry stores per-field metadata — field name, field type, `store` flag, writability, compute expression presence, and relation target model — for every field of every tracked model.
-- [ ] **SCHEM-03**: The `store` flag is captured in every schema snapshot. Computed fields with `store=False` and no inverse are excluded from write plans regardless of DSL declaration. (BUG-07-B: this must be correct from day one; retrofitting is not an option.)
-- [ ] **SCHEM-04**: The schema snapshot is serialized to a versioned JSON file on disk; the file format includes an Odoo-version field and a schema-format version field so that stale snapshots from a different Odoo version are detected and rejected.
-- [ ] **SCHEM-05**: Before any Phase 1 schema code ships, the implementation verifies whether `godoo-py` `Introspector.get_schema()` populates the `store` flag from its `fields_get` call; if not, the stateman schema layer issues its own `fields_get` with the required attributes to supplement.
+- [x] **SCHEM-01**: The schema registry stores per-model metadata — model name, archivability (`active` field presence and writability), and naming metadata — keyed by an explicit Odoo-version dimension from the first snapshot.
+- [x] **SCHEM-02**: The schema registry stores per-field metadata — field name, field type, `store` flag, writability, compute expression presence, and relation target model — for every field of every tracked model.
+- [x] **SCHEM-03**: The `store` flag is captured in every schema snapshot. Computed fields with `store=False` and no inverse are excluded from write plans regardless of DSL declaration. (BUG-07-B: this must be correct from day one; retrofitting is not an option.)
+- [x] **SCHEM-04**: The schema snapshot is serialized to a versioned JSON file on disk; the file format includes an Odoo-version field and a schema-format version field so that stale snapshots from a different Odoo version are detected and rejected.
+- [x] **SCHEM-05**: Before any Phase 1 schema code ships, the implementation verifies whether `godoo-py` `Introspector.get_schema()` populates the `store` flag from its `fields_get` call; if not, the stateman schema layer issues its own `fields_get` with the required attributes to supplement.
 
 ---
 
@@ -209,11 +209,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CORE-07 | Phase 5 | Pending |
 | CORE-08 | Phase 2 | Pending |
 | CORE-09 | Phase 5 | Pending |
-| SCHEM-01 | Phase 1 | Pending |
-| SCHEM-02 | Phase 1 | Pending |
-| SCHEM-03 | Phase 1 | Pending |
-| SCHEM-04 | Phase 1 | Pending |
-| SCHEM-05 | Phase 1 | Pending |
+| SCHEM-01 | Phase 1 | Complete |
+| SCHEM-02 | Phase 1 | Complete |
+| SCHEM-03 | Phase 1 | Complete |
+| SCHEM-04 | Phase 1 | Complete |
+| SCHEM-05 | Phase 1 | Complete |
 | IDENT-01 | Phase 3 | Pending |
 | IDENT-02 | Phase 3 | Pending |
 | IDENT-03 | Phase 3 | Pending |
