@@ -45,6 +45,10 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "godoo-testcontainers>=0.2.0",
+    "pytest-cov>=6",
+    "mkdocs-material>=9",
+    "mkdocstrings[python]>=0.27",
+    "python-semantic-release>=9",
 ]
 
 [tool.ruff]
@@ -69,3 +73,15 @@ markers = [
     "integration: marks tests requiring Docker/Odoo (deselect with '-m not integration')",
 ]
 addopts = "--tb=short -q"
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+commit_message = "chore(release): v{version}"
+branch = "main"
+allow_zero_version = true
+major_on_zero = false
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["feat", "fix", "chore", "docs", "style", "refactor", "perf", "test", "build", "ci"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
