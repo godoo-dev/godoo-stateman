@@ -102,7 +102,7 @@ The command-line interface, plan output format, exit codes, and progress reporti
 - [ ] **UX-03**: `plan` output shows each resource's slug, Odoo model, pending action (`Create | Update | NoOp | Delete | Archive | Reject`), and — for `Update` — each changed field with old and new values.
 - [ ] **UX-04**: `apply` output shows a `[N/total]` progress counter and per-step status (`ok | error | skipped`) as steps execute; partial progress is reported even when apply halts on failure.
 - [ ] **UX-05**: All plan, apply, and verify output is rendered via Rich (tables, unified diffs, progress bars); plain-text fallback is available when stdout is not a TTY.
-- [ ] **UX-06**: The CLI is implemented with Typer; every async command function bridges via `asyncio.run()` (Typer 0.25.1 does not natively run async).
+- [x] **UX-06**: The CLI is implemented with Typer; every async command function bridges via `asyncio.run()` (Typer 0.25.1 does not natively run async).
 
 ---
 
@@ -144,8 +144,8 @@ PyPI publication, licensing, and public release readiness.
 - [ ] **PKG-01**: The package is published to PyPI under the name `godoo-stateman`; the `pyproject.toml` declares `requires-python = ">=3.14"`, the LGPL-3.0 license, and all runtime dependencies with pinned minimum versions.
 - [ ] **PKG-02**: Every Python source file carries an LGPL-3.0 license header comment.
 - [ ] **PKG-03**: The public `README.md` positions the tool as "Terraform for Odoo" and includes a minimal quickstart (install, write a config, run `plan`, run `apply`).
-- [ ] **PKG-04**: The `pyproject.toml` uses the hatchling build backend, matching the godoo-py packaging convention used across the godoo-dev umbrella.
-- [ ] **PKG-05**: The GitHub repository is public (`godoo-dev/godoo-stateman`), and the `CLAUDE.md` `@`-imports `../godoo-hq/UMBRELLA_CLAUDE.md` so the repo is umbrella-aware from first clone.
+- [x] **PKG-04**: The `pyproject.toml` uses the hatchling build backend, matching the godoo-py packaging convention used across the godoo-dev umbrella.
+- [x] **PKG-05**: The GitHub repository is public (`godoo-dev/godoo-stateman`), and the `CLAUDE.md` `@`-imports `../godoo-hq/UMBRELLA_CLAUDE.md` so the repo is umbrella-aware from first clone.
 
 ---
 
@@ -245,7 +245,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | UX-03 | Phase 3 | Pending |
 | UX-04 | Phase 4 | Pending |
 | UX-05 | Phase 3 | Pending |
-| UX-06 | Phase 1 | Pending |
+| UX-06 | Phase 1 | Complete (01-01) |
 | VAL-01 | Phase 4 | Pending |
 | VAL-02 | Phase 5 | Pending |
 | VAL-03 | Phase 5 | Pending |
@@ -257,8 +257,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PKG-01 | Phase 6 | Pending |
 | PKG-02 | Phase 6 | Pending |
 | PKG-03 | Phase 6 | Pending |
-| PKG-04 | Phase 1 | Pending |
-| PKG-05 | Phase 1 | Pending |
+| PKG-04 | Phase 1 | Complete (01-01) |
+| PKG-05 | Phase 1 | Complete (01-01) |
 
 **Coverage:**
 - v1 requirements: 59 total (note: original count of 57 was a miscalculation; the actual count is 59 as enumerated above)
