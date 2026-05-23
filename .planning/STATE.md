@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-23)
 Phase: 01 — COMPLETE
 Plan: 3 of 3
 Status: Phase 01 complete
-Last activity: 2026-05-23 -- Completed quick task 260523-twn: expand README into accurate Phase 1 README
+Last activity: 2026-05-23 -- Completed quick task 260523-uda: add CI/CD workflows + e2e testing in CI
 
 Progress: [██████████] 100%
 
@@ -88,6 +88,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260523-twn | Expand README into accurate Phase 1 README | 2026-05-23 | f439b15 | [260523-twn-expand-readme-md-from-stub-into-a-real-p](./quick/260523-twn-expand-readme-md-from-stub-into-a-real-p/) |
+| 260523-uda | Add CI/CD (test/release/docs) + e2e testing in CI, mirroring godoo-py | 2026-05-23 | ef0cee6 | [260523-uda-add-ci-cd-test-release-docs-workflows-an](./quick/260523-uda-add-ci-cd-test-release-docs-workflows-an/) |
 
 ## Deferred Items
 
