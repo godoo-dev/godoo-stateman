@@ -200,72 +200,72 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | — | Pending |
-| CORE-02 | — | Pending |
-| CORE-03 | — | Pending |
-| CORE-04 | — | Pending |
-| CORE-05 | — | Pending |
-| CORE-06 | — | Pending |
-| CORE-07 | — | Pending |
-| CORE-08 | — | Pending |
-| CORE-09 | — | Pending |
-| SCHEM-01 | — | Pending |
-| SCHEM-02 | — | Pending |
-| SCHEM-03 | — | Pending |
-| SCHEM-04 | — | Pending |
-| SCHEM-05 | — | Pending |
-| IDENT-01 | — | Pending |
-| IDENT-02 | — | Pending |
-| IDENT-03 | — | Pending |
-| IDENT-04 | — | Pending |
-| IDENT-05 | — | Pending |
-| RSRC-01 | — | Pending |
-| RSRC-02 | — | Pending |
-| RSRC-03 | — | Pending |
-| RSRC-04 | — | Pending |
-| RSRC-05 | — | Pending |
-| RSRC-06 | — | Pending |
-| RSRC-07 | — | Pending |
-| RSRC-08 | — | Pending |
-| REL-01 | — | Pending |
-| REL-02 | — | Pending |
-| REL-03 | — | Pending |
-| REL-04 | — | Pending |
-| REL-05 | — | Pending |
-| REL-06 | — | Pending |
-| REL-07 | — | Pending |
-| REL-08 | — | Pending |
-| SAFE-01 | — | Pending |
-| SAFE-02 | — | Pending |
-| SAFE-03 | — | Pending |
-| SAFE-04 | — | Pending |
-| SAFE-05 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| UX-04 | — | Pending |
-| UX-05 | — | Pending |
-| UX-06 | — | Pending |
-| VAL-01 | — | Pending |
-| VAL-02 | — | Pending |
-| VAL-03 | — | Pending |
-| META-01 | — | Pending |
-| META-02 | — | Pending |
-| META-03 | — | Pending |
-| EXEC-01 | — | Pending |
-| EXEC-03 | — | Pending |
-| PKG-01 | — | Pending |
-| PKG-02 | — | Pending |
-| PKG-03 | — | Pending |
-| PKG-04 | — | Pending |
-| PKG-05 | — | Pending |
+| CORE-01 | Phase 2 | Pending |
+| CORE-02 | Phase 2 | Pending |
+| CORE-03 | Phase 3 | Pending |
+| CORE-04 | Phase 3 | Pending |
+| CORE-05 | Phase 4 | Pending |
+| CORE-06 | Phase 4 | Pending |
+| CORE-07 | Phase 5 | Pending |
+| CORE-08 | Phase 2 | Pending |
+| CORE-09 | Phase 5 | Pending |
+| SCHEM-01 | Phase 1 | Pending |
+| SCHEM-02 | Phase 1 | Pending |
+| SCHEM-03 | Phase 1 | Pending |
+| SCHEM-04 | Phase 1 | Pending |
+| SCHEM-05 | Phase 1 | Pending |
+| IDENT-01 | Phase 3 | Pending |
+| IDENT-02 | Phase 3 | Pending |
+| IDENT-03 | Phase 3 | Pending |
+| IDENT-04 | Phase 3 | Pending |
+| IDENT-05 | Phase 3 | Pending |
+| RSRC-01 | Phase 2 | Pending |
+| RSRC-02 | Phase 2 | Pending |
+| RSRC-03 | Phase 2 | Pending |
+| RSRC-04 | Phase 2 | Pending |
+| RSRC-05 | Phase 2 | Pending |
+| RSRC-06 | Phase 2 | Pending |
+| RSRC-07 | Phase 2 | Pending |
+| RSRC-08 | Phase 5 | Pending |
+| REL-01 | Phase 2 | Pending |
+| REL-02 | Phase 2 | Pending |
+| REL-03 | Phase 3 | Pending |
+| REL-04 | Phase 3 | Pending |
+| REL-05 | Phase 4 | Pending |
+| REL-06 | Phase 4 | Pending |
+| REL-07 | Phase 2 | Pending |
+| REL-08 | Phase 4 | Pending |
+| SAFE-01 | Phase 4 | Pending |
+| SAFE-02 | Phase 4 | Pending |
+| SAFE-03 | Phase 3 | Pending |
+| SAFE-04 | Phase 4 | Pending |
+| SAFE-05 | Phase 4 | Pending |
+| UX-01 | Phase 3 | Pending |
+| UX-02 | Phase 3 | Pending |
+| UX-03 | Phase 3 | Pending |
+| UX-04 | Phase 4 | Pending |
+| UX-05 | Phase 3 | Pending |
+| UX-06 | Phase 1 | Pending |
+| VAL-01 | Phase 4 | Pending |
+| VAL-02 | Phase 5 | Pending |
+| VAL-03 | Phase 5 | Pending |
+| META-01 | Phase 3 | Pending |
+| META-02 | Phase 5 | Pending |
+| META-03 | Phase 5 | Pending |
+| EXEC-01 | Phase 5 | Pending |
+| EXEC-03 | Phase 5 | Pending |
+| PKG-01 | Phase 6 | Pending |
+| PKG-02 | Phase 6 | Pending |
+| PKG-03 | Phase 6 | Pending |
+| PKG-04 | Phase 1 | Pending |
+| PKG-05 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 57 total
-- Mapped to phases: 0
-- Unmapped: 57 ⚠️ (phase column filled by roadmapper)
+- v1 requirements: 59 total (note: original count of 57 was a miscalculation; the actual count is 59 as enumerated above)
+- Mapped to phases: 59
+- Unmapped: 0 ✓
 
 ---
 
 *Requirements defined: 2026-05-23*
-*Last updated: 2026-05-23 — initial definition from Go v1 spec port + Python v1 scoping decisions*
+*Last updated: 2026-05-23 — traceability table filled by roadmapper; all 59 v1 requirements assigned to phases 1-6*
