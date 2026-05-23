@@ -39,14 +39,19 @@ async def test_schema_registry_get(odoo: object) -> None:
 
     Covers SCHEM-02: all fields have store populated as a bool.
     Covers SCHEM-03: store=False fields are included (not filtered out at registry level).
+
+    Uses res.partner (guaranteed present in vanilla Odoo 17 CE base install).
     """
     registry = SchemaRegistry(odoo.client, OdooVersion(17, 0))  # type: ignore[attr-defined]
-    schema = await registry.get("project.project")
+    schema = await registry.get("res.partner")
 
     assert isinstance(schema, VersionedModelSchema)
     assert schema.odoo_version == "17.0"
-    assert schema.name == "project.project"
+    assert schema.name == "res.partner"
     assert len(schema.fields) > 0
+    # res.partner has both name (stored) and display_name (computed/not stored)
+    assert "name" in schema.fields, "res.partner must have a 'name' field"
+    assert "active" in schema.fields, "res.partner must have an 'active' field (archivable)"
 
     for fn, fs in schema.fields.items():
         assert isinstance(fs.store, bool), f"Field {fn!r}: store must be bool, got {type(fs.store)}"
@@ -75,9 +80,11 @@ async def test_snapshot_round_trip(odoo: object, tmp_path: Path) -> None:
 
     Covers SCHEM-04: snapshot JSON includes odoo_version, schema_format_version,
     and field-level store; VersionedSnapshot.load() restores identical data.
+
+    Uses res.partner (guaranteed present in vanilla Odoo 17 CE base install).
     """
     registry = SchemaRegistry(odoo.client, OdooVersion(17, 0))  # type: ignore[attr-defined]
-    snapshot_obj = await registry.build_snapshot(["project.project"])
+    snapshot_obj = await registry.build_snapshot(["res.partner"])
 
     path = tmp_path / "snap.json"
     snapshot_obj.save(path)
@@ -88,11 +95,13 @@ async def test_snapshot_round_trip(odoo: object, tmp_path: Path) -> None:
     assert loaded.odoo_version == "17.0"
     assert loaded.schema_format_version == SCHEMA_FORMAT_VERSION
     assert loaded.schema_format_version == 1
-    assert "project.project" in loaded.models
+    assert "res.partner" in loaded.models
 
     # Verify field-level store is preserved through round-trip
-    project_schema = loaded.models["project.project"]
-    for fn, fs in project_schema.fields.items():
+    partner_schema = loaded.models["res.partner"]
+    assert "name" in partner_schema.fields, "res.partner must have a 'name' field after round-trip"
+    assert "active" in partner_schema.fields, "res.partner must have an 'active' field after round-trip"
+    for fn, fs in partner_schema.fields.items():
         assert isinstance(fs.store, bool), f"After round-trip: field {fn!r} store must be bool"
 
 
