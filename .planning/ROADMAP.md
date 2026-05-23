@@ -18,7 +18,7 @@ everything for public PyPI release.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Bootstrap + Schema Registry** - Project scaffold, uv workspace, pyproject.toml, Pydantic types, versioned schema registry with `store` flag, write_xmlid/find_by_xmlid helpers
+- [x] **Phase 1: Bootstrap + Schema Registry** - Project scaffold, uv workspace, pyproject.toml, Pydantic types, versioned schema registry with `store` flag, write_xmlid/find_by_xmlid helpers (completed 2026-05-23)
 - [ ] **Phase 2: DSL Eval + Pure Pipeline** - Python DSL surface (resource/data/with/mail.config/resolve()), normalize stage, dependency DAG — no Odoo calls
 - [ ] **Phase 3: Diff + Plan + Import CLI** - First live Odoo calls: LiveState fetch, diff, plan (read seam), `plan` and `import` CLI commands, SAFE-03 no-silent-adoption
 - [ ] **Phase 4: Apply (core actions) — VAL-01 gate** - Sequential apply executor with GlobalLiveState, m2m tuple protocol, delete_behavior, stop-on-first-failure, VAL-01 acceptance tests pass
@@ -38,11 +38,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A schema snapshot serialized to JSON includes `odoo_version`, `schema_format_version`, and `store` at the field level; loading a snapshot whose version mismatches raises a `VersionMismatchError`.
   4. `write_xmlid(model, res_id, module, name)` and `find_by_xmlid(module, name)` round-trip correctly against `ir.model.data` via jsonrpc.
   5. The `store`-flag conflict between godoo-py `Introspector` and `field_cache.py` is resolved in code (SCHEM-05): implementation either uses the existing populated value or issues a supplemental `fields_get` call — verified by a test that reads a known computed non-stored field and confirms `store=False`.
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold: pyproject.toml, error hierarchy, Typer CLI skeleton with 5 commands (4 stubs + snapshot shell)
 - [x] 01-02-PLAN.md — Schema registry: VersionedFieldSchema/ModelSchema, SchemaRegistry, VersionedSnapshot, snapshot command wired end-to-end with acceptance tests
-- [ ] 01-03-PLAN.md — xmlid helpers: XmlIdRecord, write_xmlid, find_by_xmlid, unit tests, acceptance round-trip against real ir.model.data
+- [x] 01-03-PLAN.md — xmlid helpers: XmlIdRecord, write_xmlid, find_by_xmlid, unit tests, acceptance round-trip against real ir.model.data
 
 ### Phase 2: DSL Eval + Pure Pipeline
 **Goal**: The full Python DSL authoring surface is evaluable in isolation (no Odoo calls), the normalize stage produces stable canonical values, and the dependency DAG detects cycles — all fully unit-tested without Docker.
@@ -114,7 +114,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bootstrap + Schema Registry | 2/3 | In Progress|  |
+| 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
 | 2. DSL Eval + Pure Pipeline | 0/TBD | Not started | - |
 | 3. Diff + Plan + Import CLI | 0/TBD | Not started | - |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
