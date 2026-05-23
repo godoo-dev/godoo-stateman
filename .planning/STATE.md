@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-23)
 Phase: 01 — COMPLETE
 Plan: 3 of 3
 Status: Phase 01 complete
-Last activity: 2026-05-23 -- Phase 01 marked complete
+Last activity: 2026-05-23 -- Completed quick task 260523-twn: expand README into accurate Phase 1 README
 
 Progress: [██████████] 100%
 
@@ -82,6 +82,12 @@ None yet.
 - **VERIFY-FIRST (Phase 1):** Conflict on whether godoo-py `Introspector.get_schema()` already populates the `store` flag. Must read `introspector.py` and `field_cache.py` source before writing any schema code. See SCHEM-05.
 - **DESIGN SPIKE (Phase 2):** `resolve()` escape hatch semantics not fully specified. Must finalize before implementation. See RSRC-06.
 - **VERIFY (Phase 5):** `ModuleManager` cancellation behavior under `CancelledError` must be verified from source before designing the cancellation contract. See EXEC-01/RSRC-08.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260523-twn | Expand README into accurate Phase 1 README | 2026-05-23 | f439b15 | [260523-twn-expand-readme-md-from-stub-into-a-real-p](./quick/260523-twn-expand-readme-md-from-stub-into-a-real-p/) |
 
 ## Deferred Items
 
