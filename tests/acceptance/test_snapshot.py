@@ -1,7 +1,8 @@
-"""Acceptance tests for the schema registry snapshot pipeline.
+"""Acceptance tests for the schema registry snapshot pipeline and xmlid helpers.
 
 All tests in this module require Docker (a running Odoo 17 + Postgres container
-provided by the session-scoped ``odoo`` fixture in conftest.py).
+provided by the session-scoped ``odoo`` fixture in conftest.py), except
+``test_version_mismatch_on_load`` which only writes a local JSON file.
 
 Skip when Docker is unavailable:
     uv run pytest -m "not integration" -q
@@ -14,6 +15,7 @@ Requirements covered:
 - SCHEM-03: store=False fields are captured (not excluded at registry level)
 - SCHEM-04: snapshot round-trip; VersionMismatchError on format/version mismatch
 - SCHEM-05 / D-09: res.partner.display_name.store is False (regression gate)
+- Phase 1 criterion 4: find_by_xmlid / write_xmlid round-trip against real ir.model.data
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from pathlib import Path
 import pytest
 
 from godoo_stateman.errors import VersionMismatchError
+from godoo_stateman.identity import XmlIdRecord, find_by_xmlid, write_xmlid
 from godoo_stateman.schema.registry import SchemaRegistry
 from godoo_stateman.schema.snapshot import VersionedSnapshot
 from godoo_stateman.schema.version import SCHEMA_FORMAT_VERSION, OdooVersion
@@ -113,3 +116,99 @@ async def test_version_mismatch_on_load(tmp_path: Path) -> None:
 
     with pytest.raises(VersionMismatchError):
         VersionedSnapshot.load(path, "17.0")
+
+
+# ---------------------------------------------------------------------------
+# xmlid helper acceptance tests — Phase 1 criterion 4
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+async def test_xmlid_round_trip(odoo: object) -> None:
+    """find_by_xmlid then write_xmlid round-trip against real ir.model.data.
+
+    Covers Phase 1 success criterion 4: xmlid helpers verified against Odoo 17.
+
+    Steps:
+    1. Confirm the test xmlid is absent (clean state).
+    2. Look up an existing res.partner record (Administrator).
+    3. Call write_xmlid to create the xmlid row.
+    4. Call find_by_xmlid to confirm it is now present and data matches.
+    """
+    client = odoo.client  # type: ignore[attr-defined]
+    module = "stateman_test"
+    name = "acceptance_partner_1"
+
+    # 1. Confirm absent before test
+    before = await find_by_xmlid(client, module, name)
+    assert before is None, "Test xmlid should not exist before the round-trip test"
+
+    # 2. Locate an existing res.partner record to use as the target
+    partners = await client.search_read(
+        "res.partner",
+        [("name", "=", "Administrator")],
+        fields=["id"],
+        limit=1,
+    )
+    res_id: int = int(partners[0]["id"]) if partners else 1
+
+    # 3. Write the xmlid
+    created = await write_xmlid(client, "res.partner", res_id, module, name)
+
+    assert isinstance(created, XmlIdRecord)
+    assert created.module == module
+    assert created.name == name
+    assert created.model == "res.partner"
+    assert created.res_id == res_id
+    assert created.complete_name == f"{module}.{name}"
+
+    # 4. Round-trip: find_by_xmlid confirms the row exists and data is correct
+    found = await find_by_xmlid(client, module, name)
+    assert found is not None, "find_by_xmlid must return the row after write_xmlid"
+    assert found.res_id == res_id
+    assert found.model == "res.partner"
+    assert found.complete_name == f"{module}.{name}"
+
+
+@pytest.mark.integration
+async def test_xmlid_idempotent(odoo: object) -> None:
+    """write_xmlid called twice produces exactly one ir.model.data row.
+
+    Covers Phase 1 success criterion 4 (idempotency variant).
+
+    Calling write_xmlid a second time with identical args must:
+    - Not raise
+    - Not create a duplicate ir.model.data row
+    """
+    client = odoo.client  # type: ignore[attr-defined]
+    module = "stateman_test"
+    name = "acceptance_partner_2"
+
+    # Use the same res.partner.id=1 fallback (stable across Odoo 17 CE installs)
+    partners = await client.search_read(
+        "res.partner",
+        [("name", "=", "Administrator")],
+        fields=["id"],
+        limit=1,
+    )
+    res_id: int = int(partners[0]["id"]) if partners else 1
+
+    # First write — creates the row
+    first = await write_xmlid(client, "res.partner", res_id, module, name)
+    assert isinstance(first, XmlIdRecord)
+
+    # Second write — must be a no-op (no raise, returns XmlIdRecord)
+    second = await write_xmlid(client, "res.partner", res_id, module, name)
+    assert isinstance(second, XmlIdRecord)
+    assert second.res_id == res_id
+
+    # Confirm exactly one ir.model.data row exists for this xmlid
+    rows = await client.search_read(
+        "ir.model.data",
+        [("module", "=", module), ("name", "=", name)],
+        fields=["id"],
+    )
+    assert len(rows) == 1, (
+        f"Expected exactly 1 ir.model.data row for {module}.{name}, "
+        f"got {len(rows)} — write_xmlid is not idempotent"
+    )
