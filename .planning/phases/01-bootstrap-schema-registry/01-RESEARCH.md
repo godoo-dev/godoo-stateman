@@ -672,28 +672,31 @@ addopts = "--tb=short -q"
 |---|-------|---------|---------------|
 | A1 | `platformdirs>=4.9.6` is the correct current version | Standard Stack, Package Legitimacy | Version constraint on older version is fine (>=); risk is negligible |
 | A2 | `noupdate=True` in `ir.model.data.create()` correctly signals no-overwrite behavior via jsonrpc | Code Examples / identity.py | If Odoo ignores the `noupdate` flag on jsonrpc creates, stateman-owned xmlids could be overwritten by module upgrades. Verify against real Odoo 17 in acceptance test. |
-| A3 | `ir.model.data` has a `complete_name` field accessible via `search_read` | Code Examples / find_by_xmlid | If the field name differs, `find_by_xmlid` will return records missing the `complete_name` key. Verify by checking Odoo 17 `ir.model.data` field list in acceptance test. |
+| A3 | `ir.model.data` has a `complete_name` field accessible via `search_read` | Code Examples / find_by_xmlid | If the field name differs, `find_by_xmlid` will return records missing the `complete_name` key. RESOLVED in Open Questions Q1: do NOT request `complete_name` from `search_read`; construct it in Python as `f"{module}.{name}"`. |
 
-**If this table is empty (it is not):** A3 in particular should be verified in the acceptance test — it's a field name assumption based on Odoo convention that has not been source-verified against the actual `ir.model.data` model definition.
+**If this table is empty (it is not):** A3 is now mitigated by the Q1 resolution — `complete_name` is constructed in Python, never fetched from Odoo, so the field-name assumption is no longer load-bearing.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What is the exact set of fields on `ir.model.data` returned by `search_read`?**
    - What we know: `res_id`, `module`, `name`, `model` are standard fields. `complete_name` is used by godoo-py's `client.ref()` impl (returns `"module.name"` format).
    - What's unclear: Whether `complete_name` is a stored field on `ir.model.data` or a computed field. If computed and non-stored, `search_read` with `fields=["complete_name"]` may not work.
    - Recommendation: In the acceptance test, do a `search_read` on `ir.model.data` with `fields=["id","res_id","model","module","name"]` — construct `complete_name` as `f"{module}.{name}"` in Python rather than relying on Odoo to return it. This is safer and avoids the ambiguity.
+   - **RESOLVED:** Construct `complete_name` in Python as `f"{module}.{name}"`. Never request `complete_name` as a `search_read` field. `find_by_xmlid`/`write_xmlid` use `fields=["id", "res_id", "model"]` only (Plan 01-03, identity.py). This also retires Assumption A3.
 
 2. **Should `SCHEMA_FORMAT_VERSION` be a module-level constant or encoded in `OdooVersion`?**
    - What we know: It tracks breaking changes to stateman's snapshot format, independent of Odoo version.
    - What's unclear: Whether it belongs in `schema/version.py` alongside `OdooVersion` or in `schema/snapshot.py` where it is used.
    - Recommendation: Module-level constant `SCHEMA_FORMAT_VERSION: int = 1` in `schema/version.py` — planner decides exact location; both options are valid.
+   - **RESOLVED:** Constant `SCHEMA_FORMAT_VERSION: int = 1` lives in `schema/version.py`. `schema/snapshot.py` imports it from there rather than redefining it (Plan 01-02, Task 1).
 
 3. **Does `write_xmlid` need to handle the case where the existing xmlid points to a different model?**
    - What we know: `ir.model.data` enforces `(module, name)` uniqueness, not `(module, name, model)` uniqueness. An xmlid could theoretically point to `res.partner` when stateman expects `project.project`.
    - What's unclear: Whether to raise or silently overwrite in this case.
    - Recommendation: Raise `OdooValidationError` with a clear message if `existing.model != model`. The Phase 1 planner should explicitly add this guard to the `write_xmlid` contract.
+   - **RESOLVED:** Raise `OdooValidationError` when an existing xmlid points to a different model. The model-mismatch guard is an explicit step (Step 3) in `write_xmlid` (Plan 01-03, Task 1).
 
 ---
 
@@ -804,7 +807,7 @@ addopts = "--tb=short -q"
 ### Tertiary (MEDIUM confidence — training knowledge, not re-verified)
 
 - Typer 0.25.1 async limitation: synchronous-only `@app.command()` decorator — ASSUMED based on CLAUDE.md + godoo-py pattern evidence; D-19 is the locked decision regardless
-- `ir.model.data` field `complete_name`: computed as `"module.name"` — ASSUMED; see Open Question #1 for recommended mitigation
+- `ir.model.data` field `complete_name`: computed as `"module.name"` — ASSUMED; resolved in Open Questions Q1 by constructing in Python (no longer load-bearing)
 
 ---
 
