@@ -6,20 +6,19 @@ asyncio_mode = "auto" in pyproject.toml means no @pytest.mark.asyncio decorator 
 
 from __future__ import annotations
 
-import json
+import dataclasses
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from godoo.introspection.types import FieldSchema, ModelSchema
+from pydantic import ValidationError
 
 from godoo_stateman.errors import VersionMismatchError
 from godoo_stateman.schema.registry import SchemaRegistry
 from godoo_stateman.schema.snapshot import VersionedSnapshot
 from godoo_stateman.schema.version import SCHEMA_FORMAT_VERSION, OdooVersion
 from godoo_stateman.types.schema import VersionedFieldSchema, VersionedModelSchema
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -125,7 +124,7 @@ def test_odoo_version_str_non_zero_minor() -> None:
 def test_odoo_version_frozen() -> None:
     """OdooVersion is immutable (frozen dataclass)."""
     v = OdooVersion(major=17, minor=0)
-    with pytest.raises(Exception):  # FrozenInstanceError or AttributeError
+    with pytest.raises(dataclasses.FrozenInstanceError):
         v.major = 18  # type: ignore[misc]
 
 
@@ -156,7 +155,7 @@ def test_versioned_field_schema_frozen() -> None:
         relation=None,
         required=False,
     )
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         fs.store = False  # type: ignore[misc]
 
 

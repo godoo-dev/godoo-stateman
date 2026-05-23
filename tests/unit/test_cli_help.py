@@ -22,9 +22,7 @@ def test_help_lists_all_five_commands() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     for command in EXPECTED_COMMANDS:
-        assert command in result.output, (
-            f"Command '{command}' not found in --help output:\n{result.output}"
-        )
+        assert command in result.output, f"Command '{command}' not found in --help output:\n{result.output}"
 
 
 def test_plan_stub_exits_1() -> None:

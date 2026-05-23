@@ -20,11 +20,9 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, call
 
 import pytest
-
 from godoo.client.errors import OdooValidationError
 
 from godoo_stateman.identity import XmlIdRecord, find_by_xmlid, write_xmlid
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -75,9 +73,7 @@ async def test_find_by_xmlid_absent_does_not_raise() -> None:
 
 async def test_find_by_xmlid_present_returns_xmlid_record() -> None:
     """find_by_xmlid returns populated XmlIdRecord when record exists."""
-    client = _make_client(
-        search_read_return=[[{"id": 5, "res_id": 42, "model": "res.partner"}]]
-    )
+    client = _make_client(search_read_return=[[{"id": 5, "res_id": 42, "model": "res.partner"}]])
     result = await find_by_xmlid(client, "my_module", "my_record")
 
     assert result is not None
@@ -107,9 +103,7 @@ async def test_find_by_xmlid_uses_correct_fields() -> None:
 
 async def test_find_by_xmlid_complete_name_constructed_in_python() -> None:
     """complete_name is f'{module}.{name}' — NOT fetched from Odoo."""
-    client = _make_client(
-        search_read_return=[[{"id": 5, "res_id": 7, "model": "project.project"}]]
-    )
+    client = _make_client(search_read_return=[[{"id": 5, "res_id": 7, "model": "project.project"}]])
     result = await find_by_xmlid(client, "base", "user_admin")
 
     assert result is not None
@@ -159,7 +153,7 @@ async def test_write_xmlid_absent_calls_create() -> None:
     """write_xmlid creates a new ir.model.data row when xmlid is absent."""
     # First search_read (find_by_xmlid) returns absent; create returns new row id
     client = _make_client(create_return=10)
-    result = await write_xmlid(client, "res.partner", 42, "my_module", "my_record")
+    await write_xmlid(client, "res.partner", 42, "my_module", "my_record")
 
     # create called exactly once with correct payload including noupdate=True
     client.create.assert_called_once_with(
@@ -197,9 +191,7 @@ async def test_write_xmlid_absent_returns_xmlid_record() -> None:
 async def test_write_xmlid_idempotent_no_create_no_write() -> None:
     """write_xmlid is a no-op when xmlid exists with same res_id and model."""
     # find_by_xmlid returns existing row with same res_id and model
-    client = _make_client(
-        search_read_return=[[{"id": 5, "res_id": 42, "model": "res.partner"}]]
-    )
+    client = _make_client(search_read_return=[[{"id": 5, "res_id": 42, "model": "res.partner"}]])
     result = await write_xmlid(client, "res.partner", 42, "my_module", "my_record")
 
     client.create.assert_not_called()
@@ -266,9 +258,7 @@ async def test_write_xmlid_update_fetches_row_id_not_res_id() -> None:
 async def test_write_xmlid_raises_on_model_mismatch() -> None:
     """write_xmlid raises OdooValidationError when existing xmlid points to a different model."""
     # Existing xmlid points to "project.project", caller claims "res.partner"
-    client = _make_client(
-        search_read_return=[[{"id": 3, "res_id": 42, "model": "project.project"}]]
-    )
+    client = _make_client(search_read_return=[[{"id": 3, "res_id": 42, "model": "project.project"}]])
     with pytest.raises(OdooValidationError) as exc_info:
         await write_xmlid(client, "res.partner", 42, "my_module", "my_record")
 
@@ -277,9 +267,7 @@ async def test_write_xmlid_raises_on_model_mismatch() -> None:
 
 async def test_write_xmlid_model_mismatch_no_write_called() -> None:
     """write_xmlid does not call create or write before raising on model mismatch."""
-    client = _make_client(
-        search_read_return=[[{"id": 3, "res_id": 42, "model": "project.project"}]]
-    )
+    client = _make_client(search_read_return=[[{"id": 3, "res_id": 42, "model": "project.project"}]])
     with pytest.raises(OdooValidationError):
         await write_xmlid(client, "res.partner", 42, "my_module", "my_record")
 

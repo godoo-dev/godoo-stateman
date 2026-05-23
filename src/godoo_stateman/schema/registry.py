@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from platformdirs import user_cache_path
-
 from godoo.introspection import Introspector
+from platformdirs import user_cache_path
 
 from godoo_stateman.schema.snapshot import VersionedSnapshot
 from godoo_stateman.schema.version import SCHEMA_FORMAT_VERSION, OdooVersion
@@ -33,7 +32,7 @@ class SchemaRegistry:
     """
 
     def __init__(self, client: OdooClient, version: OdooVersion) -> None:
-        self._introspector = Introspector(client)  # type: ignore[arg-type]
+        self._introspector = Introspector(client)
         self._version = version
         self._cache: dict[str, VersionedModelSchema] = {}
 
@@ -56,7 +55,7 @@ class SchemaRegistry:
             fn: VersionedFieldSchema(
                 name=fs.name,
                 ttype=fs.ttype,
-                store=fs.store,        # source-verified: populated by Introspector
+                store=fs.store,  # source-verified: populated by Introspector
                 readonly=fs.readonly,
                 compute=fs.compute,
                 relation=fs.relation,
@@ -107,6 +106,6 @@ class SchemaRegistry:
         return VersionedSnapshot(
             odoo_version=str(self._version),
             schema_format_version=SCHEMA_FORMAT_VERSION,
-            captured_at=datetime.now(timezone.utc).isoformat(),
+            captured_at=datetime.now(UTC).isoformat(),
             models=models,
         )

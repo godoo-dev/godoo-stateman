@@ -43,5 +43,5 @@ class VersionedModelSchema(BaseModel):
     display_name: str
     transient: bool
     odoo_version: str  # str representation of OdooVersion, e.g. "17.0"
-    archivable: bool   # True if model has a stored writable 'active' field
+    archivable: bool  # True if model has a stored writable 'active' field
     fields: dict[str, VersionedFieldSchema]

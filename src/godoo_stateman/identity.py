@@ -24,7 +24,7 @@ Design decisions
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from godoo.client.errors import OdooValidationError
 
@@ -113,8 +113,7 @@ async def write_xmlid(
         )
     elif existing.model != model:
         raise OdooValidationError(
-            f"xmlid {module!r}.{name!r} model mismatch: "
-            f"points to {existing.model!r}, expected {model!r}"
+            f"xmlid {module!r}.{name!r} model mismatch: points to {existing.model!r}, expected {model!r}"
         )
     elif existing.res_id != res_id:
         # Fetch the ir.model.data row's own PK (id) for the write call.
@@ -124,7 +123,7 @@ async def write_xmlid(
             fields=["id"],
             limit=1,
         )
-        row_id = cast("int", int(rows[0]["id"]))
+        row_id = int(rows[0]["id"])
         await client.write("ir.model.data", [row_id], {"res_id": res_id})
 
     return XmlIdRecord(

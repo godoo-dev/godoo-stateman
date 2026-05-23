@@ -69,8 +69,7 @@ async def test_store_flag_regression(odoo: object) -> None:
 
     assert "display_name" in schema.fields, "res.partner must have display_name field"
     assert schema.fields["display_name"].store is False, (
-        f"res.partner.display_name.store should be False (computed field), "
-        f"got {schema.fields['display_name'].store!r}"
+        f"res.partner.display_name.store should be False (computed field), got {schema.fields['display_name'].store!r}"
     )
 
 
@@ -218,6 +217,5 @@ async def test_xmlid_idempotent(odoo: object) -> None:
         fields=["id"],
     )
     assert len(rows) == 1, (
-        f"Expected exactly 1 ir.model.data row for {module}.{name}, "
-        f"got {len(rows)} — write_xmlid is not idempotent"
+        f"Expected exactly 1 ir.model.data row for {module}.{name}, got {len(rows)} — write_xmlid is not idempotent"
     )

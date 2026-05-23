@@ -8,10 +8,9 @@ import re
 from pathlib import Path
 
 import typer
+from godoo.client.client import OdooClient, OdooClientConfig
 from rich.console import Console
 from rich.panel import Panel
-
-from godoo.client.client import OdooClient, OdooClientConfig
 
 from godoo_stateman.schema.registry import SchemaRegistry
 from godoo_stateman.schema.version import OdooVersion
@@ -53,6 +52,9 @@ async def _snapshot_impl(config: Path) -> None:
     if missing:
         raise typer.BadParameter(f"Missing required environment variables: {', '.join(missing)}")
 
+    # Post-guard: all four vars are confirmed non-empty strings above.
+    assert url and database and username and password  # narrow str | None → str
+
     # -------------------------------------------------------------------------
     # Step 2: Validate ODOO_VERSION — T-02-03 path traversal guard
     # -------------------------------------------------------------------------
@@ -74,8 +76,7 @@ async def _snapshot_impl(config: Path) -> None:
         host = parsed.hostname or ""
         if host not in ("localhost", "127.0.0.1"):
             console.print(
-                "[yellow]Warning: connecting over http to a non-local host — "
-                "credentials sent in plaintext[/yellow]"
+                "[yellow]Warning: connecting over http to a non-local host — credentials sent in plaintext[/yellow]"
             )
 
     client_config = OdooClientConfig(
