@@ -180,7 +180,7 @@ uv add networkx
   VersionedSnapshot (optional, Phase-1 artifact)
       |-- .ttype drives: False→None (scalar), False→[] (m2m/o2m)
       |-- .ttype == 'many2one': tuple(id, name) → int id  
-      |-- .ttype == 'many2many': ensure list, order-irrelevant
+      |-- .ttype == 'many2many': sorted(list(value)) — canonical order, CORE-08
       |
       v (normalized DesiredState)
 [Graph Stage]  build_graph(desired_state)
@@ -291,12 +291,14 @@ class Deferred:
     fn: Any             # Callable; typed Any to allow frozen Pydantic field storage
     deps: frozenset[str]  # slug names of all *refs — become DAG edges
 
-def resolve(fn: Callable[..., Any], *refs: Any) -> Deferred:
+def resolve(fn: Any, *refs: Any) -> Deferred:
     """Return a Deferred thunk. Never calls fn in Phase 2.
 
-    *refs must be ResourceNode/DataSourceNode instances — their .slug
-    attributes are extracted to form the DAG dep edges.
+    NOTE: This snippet is OUTDATED (single-.slug only). The correct implementation
+    is in 02-PATTERNS.md deferred.py section: slug-first, then node_key-fallback.
+    Using this snippet will silently drop DataSourceNode refs from Deferred.deps.
     """
+    # OUTDATED — use PATTERNS.md version (dual slug/node_key extraction)
     dep_slugs: frozenset[str] = frozenset(
         r.slug for r in refs if hasattr(r, "slug") and isinstance(r.slug, str)
     )
@@ -370,7 +372,8 @@ def _normalize_value(value: object, ttype: str) -> object:
         # CORE-02: False/None → empty list for relation fields
         if value is False or value is None:
             return []
-        return value
+        # CORE-08: m2m order-irrelevant — sort for canonical comparison
+        return sorted(list(value))
     elif ttype == "many2one":
         # CORE-02: False/None → None
         if value is False or value is None:
@@ -390,7 +393,11 @@ def _normalize_value(value: object, ttype: str) -> object:
         return value
 ```
 
-**Boolean edge case:** `boolean` ttype — Odoo returns `False` for an unset boolean field. In the desired-state config, authors write `False` when they mean the boolean IS false. After normalization, both become `None`. This means a config author cannot distinguish "explicitly False" from "unset" after normalize. Document this as a known limitation: if authors need to write explicit `False` for a boolean, write `False` (which normalizes to `None`) and let the diff stage compare against live Odoo's normalized `None`. In practice this is not ambiguous because the diff compares two normalized states.
+**Boolean edge case (RESOLVED — A1 decision):** `boolean` ttype is EXEMPTED from the
+`False`→`None` rule. `_normalize_value` returns `value` as-is when `ttype == "boolean"`,
+so `active = False` in a config file stays `False` after normalization. This lets the diff
+stage detect archive intent (desired `False` vs live `True`). The original note below
+suggesting both become `None` is INCORRECT and superseded by the A1 decision in the plan.
 
 ### Pattern 5: children() wrapper and flatten (D-07, D-08, D-09)
 
@@ -565,23 +572,35 @@ def _make_dsl_snapshot(models: dict[str, VersionedModelSchema]) -> VersionedSnap
 | A3 | NetworkX is added as a runtime dependency (not just dev dep) | Standard Stack | If left as dev dep only: `import networkx` fails at runtime for end users |
 | A4 | `ResourceNode.parent_slug` field tracks parent relationship for DAG edge construction | Pattern 5, graph.py | If not included: `build_graph()` cannot add parent→child edges without walking all parent resource fields again |
 
-**Claim A1 has the highest risk** — confirm with Marc before finalizing the normalizer implementation. The CONTEXT.md D-10 says the normalize decision is driven by `ttype`, which supports preserving `boolean False`, but CORE-02 says `False`→`None` for scalars without a `boolean` carve-out.
+**Claim A1 is RESOLVED** — `boolean` ttype is exempted from the `False`→`None` scalar rule (see 02-03 plan, A1 decision). The CONTEXT.md D-10 driven-by-ttype approach supports this. CORE-02's scalar rule has an implicit `boolean` carve-out per the planning context decision.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Boolean False normalization (A1)**
+1. **Boolean False normalization (A1)** — **(RESOLVED)**: `boolean` ttype is exempted from the
+   `False`→`None` scalar rule. `_normalize_value` branches on `ttype == "boolean"` before
+   the scalar `False`→`None` rule and returns `value` as-is. This preserves `active=False` as
+   `False` so the diff stage can detect archive intent (see 02-03 `test_boolean_false_preserved`).
    - What we know: CORE-02 says `False`→`None` for scalars; `boolean` is a scalar ttype; `active = False` is a legitimate desired-state value meaning "archive this record"
    - What's unclear: Should `boolean` ttype be exempted from the `False`→`None` rule?
    - Recommendation: Exempt `boolean` ttype — preserve `False` as `False`. The "unset" case for booleans in Odoo is still `False`, but the normalize contract just needs to be consistent (desired config `False` == live Odoo normalized `False` → `NoOp`).
 
-2. **`data.<model>` node key in DAG**
+2. **`data.<model>` node key in DAG** — **(RESOLVED)**: `DataSourceNode.node_key` is the
+   deterministic string `f"data.{model}[{','.join(f'{k}={v!r}' for k,v in sorted(selector.items()))}]"`,
+   constructed in `DataProxy.__getattr__` and stored as a field on `DataSourceNode`. This string
+   is used as the graph node identifier in `build_graph()` and as the DAG edge target in
+   `Deferred.deps` (see 02-01 nodes.py and 02-02 context.py `DataProxy.__getattr__`).
    - What we know: `DataSourceNode` has no `slug` — it's selector-based
    - What's unclear: How are data source nodes keyed in the DiGraph? (e.g., `"data.res_users[login=admin]"`)
    - Recommendation: Derive a deterministic string key from `(model, frozenset(selector.items()))`. Store as `DataSourceNode.node_key`.
 
-3. **`resolve()` refs that are `DataSourceNode` (not `ResourceNode`)**
+3. **`resolve()` refs that are `DataSourceNode` (not `ResourceNode`)** — **(RESOLVED)**:
+   `resolve()` extracts `.slug` first (ResourceNode), then `.node_key` (DataSourceNode), then
+   skips refs with neither. Both identifiers land in `Deferred.deps` and become DAG edges.
+   The correct implementation is in 02-PATTERNS.md `deferred.py` section (slug-first, node_key-
+   fallback). See `test_resolve_deps_from_data_source_node_key` (02-01) and
+   `test_deferred_data_source_edge` (02-04) for coverage.
    - What we know: D-04 says `*refs` are "resource references" — but `data.<model>()` returns a `DataSourceNode`
    - What's unclear: Can `resolve(fn, data_source_ref)` reference a data source? If so, does its `node_key` become a DAG edge?
    - Recommendation: Yes — any object with a `.slug` or `.node_key` attribute passed to `resolve()` should become a DAG edge. The `Deferred.deps` should use whatever identifier the ref provides.
