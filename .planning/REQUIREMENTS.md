@@ -55,11 +55,11 @@ The xmlid-based identity mechanism that replaces sidecar state files.
 
 The Python authoring surface for expressing desired Odoo state.
 
-- [ ] **RSRC-01**: The DSL provides `resource.<model_name>(slug, **fields)` as the constructor for managed resources; the positional `slug` is the stable identity key scoped to the config module.
-- [ ] **RSRC-02**: The DSL provides `data.<model_name>(**selector)` for read-only references to existing Odoo records; data-source records are never created or modified by plan/apply.
-- [ ] **RSRC-03**: The DSL supports `with` blocks for resource scoping; field values are set via attribute assignment inside `with` blocks.
-- [ ] **RSRC-04**: The DSL provides `mail.config["key"] = "val"` sugar (via an `odoo_module` helper) for declarative `ir.config_parameter` writes without requiring a full `resource()` declaration.
-- [ ] **RSRC-05**: The DSL supports the walrus-operator (`:=`) convention for capturing intermediate resource references without naming collisions.
+- [x] **RSRC-01**: The DSL provides `resource.<model_name>(slug, **fields)` as the constructor for managed resources; the positional `slug` is the stable identity key scoped to the config module.
+- [x] **RSRC-02**: The DSL provides `data.<model_name>(**selector)` for read-only references to existing Odoo records; data-source records are never created or modified by plan/apply.
+- [x] **RSRC-03**: The DSL supports `with` blocks for resource scoping; field values are set via attribute assignment inside `with` blocks.
+- [x] **RSRC-04**: The DSL provides `mail.config["key"] = "val"` sugar (via an `odoo_module` helper) for declarative `ir.config_parameter` writes without requiring a full `resource()` declaration.
+- [x] **RSRC-05**: The DSL supports the walrus-operator (`:=`) convention for capturing intermediate resource references without naming collisions.
 - [x] **RSRC-06**: The DSL provides a `resolve()` escape hatch for configs where the desired structure depends on a value that can only be known after a live Odoo read; `resolve()` defers the computation to the read seam at plan stage rather than DSL eval.
 - [x] **RSRC-07**: The DSL evaluator uses `exec()` with restricted builtins; it does not use RestrictedPython (which breaks walrus operators).
 - [ ] **RSRC-08**: Module install/upgrade is expressed as a first-class resource in the DSL and is placed at the highest-risk tier in the dependency DAG (level 0, before any record operations); module operations thread cancellation through every long-running call.
@@ -219,11 +219,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | IDENT-03 | Phase 3 | Pending |
 | IDENT-04 | Phase 3 | Pending |
 | IDENT-05 | Phase 3 | Pending |
-| RSRC-01 | Phase 2 | Pending |
-| RSRC-02 | Phase 2 | Pending |
-| RSRC-03 | Phase 2 | Pending |
-| RSRC-04 | Phase 2 | Pending |
-| RSRC-05 | Phase 2 | Pending |
+| RSRC-01 | Phase 2 | Complete |
+| RSRC-02 | Phase 2 | Complete |
+| RSRC-03 | Phase 2 | Complete |
+| RSRC-04 | Phase 2 | Complete |
+| RSRC-05 | Phase 2 | Complete |
 | RSRC-06 | Phase 2 | Complete |
 | RSRC-07 | Phase 2 | Complete |
 | RSRC-08 | Phase 5 | Pending |

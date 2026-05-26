@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-26T13:33:27.349Z"
+last_updated: "2026-05-26T13:42:59.228Z"
 last_activity: 2026-05-26
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
   percent: 17
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-23)
 ## Current Position
 
 Phase: 02 (dsl-eval-pure-pipeline) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-05-26
 
-Progress: [██████░░░░] 57%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [██████░░░░] 57%
 | Phase 01 P02 | 3m 37s | 2 tasks | 11 files |
 | Phase 01 P03 | 4m 19s | 2 tasks | 4 files |
 | Phase 02-dsl-eval-pure-pipeline P01 | 8m | 2 tasks | 10 files |
+| Phase 02-dsl-eval-pure-pipeline P02 | 15m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [02-01]: resolve() uses slug-first/node_key-fallback — single-slug-only variant silently drops DataSourceNode refs from the DAG
 - [02-01]: DesiredState requires arbitrary_types_allowed=True — ResourceNode.fields may hold Deferred whose fn carries a callable
 - [02-01]: networkx is a runtime dependency (not dev-only) — must be in [project.dependencies] for end-user pip installs
+- [Phase ?]: [02-02]: _flatten() uses object-id set to prevent duplicate child nodes
+- [Phase ?]: [02-02]: exec_locals checked before exec_globals for module variable — Pitfall 2 fix
+- [Phase ?]: [02-02]: replace('_', '.', 1) maps DSL model names to dotted Odoo form
 
 ### Pending Todos
 
@@ -105,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-26T13:33:27.343Z
-Stopped at: Completed 02-01-PLAN.md (foundation types)
-Resume file: .planning/phases/02-dsl-eval-pure-pipeline/02-02-PLAN.md
+Last session: 2026-05-26T13:42:59.222Z
+Stopped at: Completed 02-02-PLAN.md (DSL proxy objects + eval)
+Resume file: .planning/phases/02-dsl-eval-pure-pipeline/02-03-PLAN.md

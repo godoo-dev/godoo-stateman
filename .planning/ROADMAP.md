@@ -63,7 +63,7 @@ Plans:
   4. Introducing a circular dependency between two managed resources causes `build_graph()` to raise a `CycleError` with the cycle path in the error message before any Odoo call is attempted.
   5. The `resolve()` design spike is finalized: semantics (deferred computation firing at the read seam), interaction with the dependency DAG, and the `exec()` restricted-builtins approach are documented and passing unit tests.
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 Plans:
 **Wave 1**
 
@@ -71,7 +71,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — DSL eval: context.py proxy objects + eval.py exec() evaluator with flatten + test_eval.py covering RSRC-01..07
+- [x] 02-02-PLAN.md — DSL eval: context.py proxy objects + eval.py exec() evaluator with flatten + test_eval.py covering RSRC-01..07
 - [ ] 02-03-PLAN.md — Normalize stage: normalize.py schema-driven canonicalization (CORE-02, CORE-08) + test_normalize.py
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
-| 2. DSL Eval + Pure Pipeline | 1/4 | In Progress|  |
+| 2. DSL Eval + Pure Pipeline | 2/4 | In Progress|  |
 | 3. Diff + Plan + Import CLI | 0/TBD | Not started | - |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
