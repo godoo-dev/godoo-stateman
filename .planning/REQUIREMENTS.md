@@ -16,13 +16,13 @@ Requirements for the initial public release. Every requirement must be satisfied
 The seven-stage reconciliation pipeline: config → normalize → graph → diff → plan → apply → verify.
 
 - [x] **CORE-01**: The engine evaluates a Python `.py` config file and produces a desired-state resource tree with zero Odoo calls during evaluation.
-- [ ] **CORE-02**: The normalize stage canonicalizes all Odoo field values into a stable internal representation before any comparison — including `False`-to-`None` conversion for scalars and `False`-to-`[]` for relation fields — so that two runs against an unchanged Odoo produce identical normalized state.
+- [x] **CORE-02**: The normalize stage canonicalizes all Odoo field values into a stable internal representation before any comparison — including `False`-to-`None` conversion for scalars and `False`-to-`[]` for relation fields — so that two runs against an unchanged Odoo produce identical normalized state.
 - [ ] **CORE-03**: The diff stage computes a per-resource plan action (`Create | Update | NoOp | Delete | Archive | Reject`) for each resource in the desired-state tree.
 - [ ] **CORE-04**: The plan stage resolves data-source reads against live Odoo (the "read seam") and serializes an ordered, reviewable set of plan steps without mutating Odoo.
 - [ ] **CORE-05**: The apply stage executes plan steps sequentially in dependency order over jsonrpc, stops on the first failure, and reports per-step status (`ok | error | skipped`) with a `[N/total]` progress counter.
 - [ ] **CORE-06**: A second apply of an unchanged config against an unchanged Odoo instance produces an all-NoOp plan (idempotency invariant).
 - [ ] **CORE-07**: The verify stage re-runs the plan on touched resources after apply and reports any remaining delta between applied state and desired state.
-- [ ] **CORE-08**: The engine normalizes Many2one fields to their integer ID for comparison (discarding the display-name tuple returned by Odoo), and treats Many2many field order as irrelevant during diff.
+- [x] **CORE-08**: The engine normalizes Many2one fields to their integer ID for comparison (discarding the display-name tuple returned by Odoo), and treats Many2many field order as irrelevant during diff.
 - [ ] **CORE-09**: Translation field changes (non-default-language values) are detected in the diff stage and written as separate per-language apply passes after the primary create/update.
 
 ---
@@ -201,13 +201,13 @@ Which phases cover which requirements. Populated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CORE-01 | Phase 2 | Complete |
-| CORE-02 | Phase 2 | Pending |
+| CORE-02 | Phase 2 | Complete |
 | CORE-03 | Phase 3 | Pending |
 | CORE-04 | Phase 3 | Pending |
 | CORE-05 | Phase 4 | Pending |
 | CORE-06 | Phase 4 | Pending |
 | CORE-07 | Phase 5 | Pending |
-| CORE-08 | Phase 2 | Pending |
+| CORE-08 | Phase 2 | Complete |
 | CORE-09 | Phase 5 | Pending |
 | SCHEM-01 | Phase 1 | Complete |
 | SCHEM-02 | Phase 1 | Complete |
