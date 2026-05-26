@@ -18,7 +18,6 @@ from godoo_stateman.dsl.types.desired import DesiredState
 from godoo_stateman.dsl.types.nodes import DataSourceNode, ResourceNode
 from godoo_stateman.errors import CycleError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

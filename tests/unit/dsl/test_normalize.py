@@ -10,11 +10,10 @@ from typing import Any
 
 from godoo_stateman.dsl.normalize import normalize
 from godoo_stateman.dsl.types.desired import DesiredState
-from godoo_stateman.dsl.types.nodes import ResourceNode, DataSourceNode
+from godoo_stateman.dsl.types.nodes import ResourceNode
 from godoo_stateman.schema.snapshot import VersionedSnapshot
 from godoo_stateman.schema.version import SCHEMA_FORMAT_VERSION
 from godoo_stateman.types.schema import VersionedFieldSchema, VersionedModelSchema
-
 
 # ---------------------------------------------------------------------------
 # Fixture helpers
