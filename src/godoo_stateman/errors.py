@@ -16,3 +16,24 @@ class VersionMismatchError(StatemanError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class DslEvalError(StatemanError):
+    """Raised when a DSL config file fails to evaluate."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class MissingModuleError(DslEvalError):
+    """Raised when a DSL config file does not declare a top-level `module = "..."` variable."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class CycleError(StatemanError):
+    """Raised when the dependency graph contains a cycle."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
