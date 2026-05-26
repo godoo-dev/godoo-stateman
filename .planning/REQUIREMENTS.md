@@ -71,12 +71,12 @@ The Python authoring surface for expressing desired Odoo state.
 The dependency DAG, cycle detection, and cross-resource relation resolution.
 
 - [x] **REL-01**: The engine builds a directed acyclic dependency graph (DAG) across all managed resources, inline child resources, and data sources before producing a plan.
-- [ ] **REL-02**: The engine detects cycles in the dependency graph across mixed node types (managed resources, inline children, data sources) and reports the cycle path before any Odoo mutation.
+- [x] **REL-02**: The engine detects cycles in the dependency graph across mixed node types (managed resources, inline children, data sources) and reports the cycle path before any Odoo mutation.
 - [ ] **REL-03**: Data-source records resolve at the plan stage (read seam), not at DSL eval; their remote IDs are available to the diff and apply stages via `GlobalLiveState`.
 - [ ] **REL-04**: Many2many fields may reference data-source records; m2m-to-data-source relations must resolve correctly — this was structurally blocked in Go v1 and must be fixed from the start.
 - [ ] **REL-05**: After each `Create` step in apply, the new record's remote integer ID is registered in `GlobalLiveState` before the next step executes, so that later steps referencing it via m2m or m2o resolve to the correct ID.
 - [ ] **REL-06**: Many2many writes use the `(6, 0, [ids])` tuple-command protocol required by Odoo's `write()` API; the apply layer never passes a flat ID list directly.
-- [ ] **REL-07**: Inline One2many children are declared under their parent resource and their identity is scoped to the parent context; they participate in cycle detection alongside top-level resources.
+- [x] **REL-07**: Inline One2many children are declared under their parent resource and their identity is scoped to the parent context; they participate in cycle detection alongside top-level resources.
 - [ ] **REL-08**: Within a dependency level, the apply executor orders operations as: Creates before Updates before Deletes/Archives.
 
 ---
@@ -228,12 +228,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 | RSRC-07 | Phase 2 | Complete |
 | RSRC-08 | Phase 5 | Pending |
 | REL-01 | Phase 2 | Complete |
-| REL-02 | Phase 2 | Pending |
+| REL-02 | Phase 2 | Complete |
 | REL-03 | Phase 3 | Pending |
 | REL-04 | Phase 3 | Pending |
 | REL-05 | Phase 4 | Pending |
 | REL-06 | Phase 4 | Pending |
-| REL-07 | Phase 2 | Pending |
+| REL-07 | Phase 2 | Complete |
 | REL-08 | Phase 4 | Pending |
 | SAFE-01 | Phase 4 | Pending |
 | SAFE-02 | Phase 4 | Pending |

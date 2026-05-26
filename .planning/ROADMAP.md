@@ -20,7 +20,7 @@ everything for public PyPI release.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Bootstrap + Schema Registry** - Project scaffold, uv workspace, pyproject.toml, Pydantic types, versioned schema registry with `store` flag, write_xmlid/find_by_xmlid helpers (completed 2026-05-23)
-- [ ] **Phase 2: DSL Eval + Pure Pipeline** - Python DSL surface (resource/data/with/mail.config/resolve()), normalize stage, dependency DAG — no Odoo calls
+- [x] **Phase 2: DSL Eval + Pure Pipeline** - Python DSL surface (resource/data/with/mail.config/resolve()), normalize stage, dependency DAG — no Odoo calls (completed 2026-05-26)
 - [ ] **Phase 3: Diff + Plan + Import CLI** - First live Odoo calls: LiveState fetch, diff, plan (read seam), `plan` and `import` CLI commands, SAFE-03 no-silent-adoption
 - [ ] **Phase 4: Apply (core actions) — VAL-01 gate** - Sequential apply executor with GlobalLiveState, m2m tuple protocol, delete_behavior, stop-on-first-failure, VAL-01 acceptance tests pass
 - [ ] **Phase 5: Module Ops + Verify + Snapshot — VAL-02 gate** - Module install/upgrade (cancellation-threaded), verify stage, translation diff/apply, snapshot export/restore, VAL-02 acceptance tests pass
@@ -63,7 +63,7 @@ Plans:
   4. Introducing a circular dependency between two managed resources causes `build_graph()` to raise a `CycleError` with the cycle path in the error message before any Odoo call is attempted.
   5. The `resolve()` design spike is finalized: semantics (deferred computation firing at the read seam), interaction with the dependency DAG, and the `exec()` restricted-builtins approach are documented and passing unit tests.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
 **Wave 1**
 
@@ -76,7 +76,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-04-PLAN.md — Graph + wire: graph.py build_graph() with CycleError + test_graph.py (REL-01/02/07) + plan stub wired to eval_config()
+- [x] 02-04-PLAN.md — Graph + wire: graph.py build_graph() with CycleError + test_graph.py (REL-01/02/07) + plan stub wired to eval_config()
 
 ### Phase 3: Diff + Plan + Import CLI
 
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
-| 2. DSL Eval + Pure Pipeline | 3/4 | In Progress|  |
+| 2. DSL Eval + Pure Pipeline | 4/4 | Complete   | 2026-05-26 |
 | 3. Diff + Plan + Import CLI | 0/TBD | Not started | - |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
