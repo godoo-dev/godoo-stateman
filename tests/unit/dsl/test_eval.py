@@ -24,7 +24,7 @@ from godoo_stateman.errors import DslEvalError, MissingModuleError
 def _write_config(tmp_path: Path, content: str) -> Path:
     """Write content to a temporary config.py and return the path."""
     config_path = tmp_path / "config.py"
-    config_path.write_text(content)
+    config_path.write_text(content, encoding="utf-8")
     return config_path
 
 
