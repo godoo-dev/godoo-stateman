@@ -15,7 +15,7 @@ Requirements for the initial public release. Every requirement must be satisfied
 
 The seven-stage reconciliation pipeline: config → normalize → graph → diff → plan → apply → verify.
 
-- [ ] **CORE-01**: The engine evaluates a Python `.py` config file and produces a desired-state resource tree with zero Odoo calls during evaluation.
+- [x] **CORE-01**: The engine evaluates a Python `.py` config file and produces a desired-state resource tree with zero Odoo calls during evaluation.
 - [ ] **CORE-02**: The normalize stage canonicalizes all Odoo field values into a stable internal representation before any comparison — including `False`-to-`None` conversion for scalars and `False`-to-`[]` for relation fields — so that two runs against an unchanged Odoo produce identical normalized state.
 - [ ] **CORE-03**: The diff stage computes a per-resource plan action (`Create | Update | NoOp | Delete | Archive | Reject`) for each resource in the desired-state tree.
 - [ ] **CORE-04**: The plan stage resolves data-source reads against live Odoo (the "read seam") and serializes an ordered, reviewable set of plan steps without mutating Odoo.
@@ -60,8 +60,8 @@ The Python authoring surface for expressing desired Odoo state.
 - [ ] **RSRC-03**: The DSL supports `with` blocks for resource scoping; field values are set via attribute assignment inside `with` blocks.
 - [ ] **RSRC-04**: The DSL provides `mail.config["key"] = "val"` sugar (via an `odoo_module` helper) for declarative `ir.config_parameter` writes without requiring a full `resource()` declaration.
 - [ ] **RSRC-05**: The DSL supports the walrus-operator (`:=`) convention for capturing intermediate resource references without naming collisions.
-- [ ] **RSRC-06**: The DSL provides a `resolve()` escape hatch for configs where the desired structure depends on a value that can only be known after a live Odoo read; `resolve()` defers the computation to the read seam at plan stage rather than DSL eval.
-- [ ] **RSRC-07**: The DSL evaluator uses `exec()` with restricted builtins; it does not use RestrictedPython (which breaks walrus operators).
+- [x] **RSRC-06**: The DSL provides a `resolve()` escape hatch for configs where the desired structure depends on a value that can only be known after a live Odoo read; `resolve()` defers the computation to the read seam at plan stage rather than DSL eval.
+- [x] **RSRC-07**: The DSL evaluator uses `exec()` with restricted builtins; it does not use RestrictedPython (which breaks walrus operators).
 - [ ] **RSRC-08**: Module install/upgrade is expressed as a first-class resource in the DSL and is placed at the highest-risk tier in the dependency DAG (level 0, before any record operations); module operations thread cancellation through every long-running call.
 
 ---
@@ -70,7 +70,7 @@ The Python authoring surface for expressing desired Odoo state.
 
 The dependency DAG, cycle detection, and cross-resource relation resolution.
 
-- [ ] **REL-01**: The engine builds a directed acyclic dependency graph (DAG) across all managed resources, inline child resources, and data sources before producing a plan.
+- [x] **REL-01**: The engine builds a directed acyclic dependency graph (DAG) across all managed resources, inline child resources, and data sources before producing a plan.
 - [ ] **REL-02**: The engine detects cycles in the dependency graph across mixed node types (managed resources, inline children, data sources) and reports the cycle path before any Odoo mutation.
 - [ ] **REL-03**: Data-source records resolve at the plan stage (read seam), not at DSL eval; their remote IDs are available to the diff and apply stages via `GlobalLiveState`.
 - [ ] **REL-04**: Many2many fields may reference data-source records; m2m-to-data-source relations must resolve correctly — this was structurally blocked in Go v1 and must be fixed from the start.
@@ -200,7 +200,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 2 | Pending |
+| CORE-01 | Phase 2 | Complete |
 | CORE-02 | Phase 2 | Pending |
 | CORE-03 | Phase 3 | Pending |
 | CORE-04 | Phase 3 | Pending |
@@ -224,10 +224,10 @@ Which phases cover which requirements. Populated during roadmap creation.
 | RSRC-03 | Phase 2 | Pending |
 | RSRC-04 | Phase 2 | Pending |
 | RSRC-05 | Phase 2 | Pending |
-| RSRC-06 | Phase 2 | Pending |
-| RSRC-07 | Phase 2 | Pending |
+| RSRC-06 | Phase 2 | Complete |
+| RSRC-07 | Phase 2 | Complete |
 | RSRC-08 | Phase 5 | Pending |
-| REL-01 | Phase 2 | Pending |
+| REL-01 | Phase 2 | Complete |
 | REL-02 | Phase 2 | Pending |
 | REL-03 | Phase 3 | Pending |
 | REL-04 | Phase 3 | Pending |
