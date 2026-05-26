@@ -287,6 +287,18 @@ def test_children_underscore_model_normalization(tmp_path: Path) -> None:
     )
 
 
+def test_resource_builder_rejects_underscore_prefix(tmp_path: Path) -> None:
+    """WR-02/CR-01: assigning a _-prefixed attribute on the resource builder raises AttributeError."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'with resource.res_partner("p1") as r:\n'
+        '    r._secret = "bad"\n',
+    )
+    with pytest.raises((AttributeError, NameError)):
+        eval_config(path)
+
+
 def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:
     """CORE-01: eval_config() makes zero Odoo/network calls (purity invariant).
 

@@ -66,9 +66,6 @@ class _ResourceBuilder:
     still appends the node.
     """
 
-    # Attributes whose names must NOT be forwarded to the fields dict.
-    _RESERVED: frozenset[str] = frozenset({"_node", "_fields"})
-
     # Declared here so mypy knows about them; set via object.__setattr__ in __init__.
     _node: ResourceNode
     _fields: dict[str, Any]
@@ -80,16 +77,13 @@ class _ResourceBuilder:
         collector.resources.append(node)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name in _ResourceBuilder._RESERVED:
-            object.__setattr__(self, name, value)
-        elif name.startswith("_"):
+        if name.startswith("_"):
             raise AttributeError(
                 f"Cannot assign {name!r} on ResourceBuilder — "
                 "Odoo field names do not start with '_'. "
                 "Did you mean to write without the leading underscore?"
             )
-        else:
-            self._fields[name] = value
+        self._fields[name] = value
 
     def __enter__(self) -> _ResourceBuilder:
         return self

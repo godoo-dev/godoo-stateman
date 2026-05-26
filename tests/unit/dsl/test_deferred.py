@@ -84,3 +84,25 @@ def test_deferred_deps_type() -> None:
     """Deferred.deps is always a frozenset."""
     d = Deferred(fn=lambda: None, deps=frozenset())
     assert isinstance(d.deps, frozenset)
+
+
+def test_resolve_deps_from_resource_builder() -> None:
+    """WR-01: resolve() extracts .slug from a _ResourceBuilder via its ._node attribute."""
+    # Simulate a _ResourceBuilder via a minimal duck-typed object — avoids circular import.
+    inner_node = _make_resource_node("partner1")
+
+    class _FakeBuilder:
+        _node = inner_node
+
+    result = resolve(lambda x: x, _FakeBuilder())
+    assert "partner1" in result.deps, (
+        "resolve() must produce a DAG edge when given a _ResourceBuilder (has ._node.slug)"
+    )
+
+
+def test_resolve_raises_on_unrecognised_ref() -> None:
+    """WR-01: resolve() raises TypeError for unrecognised ref types (no silent drop)."""
+    import pytest
+
+    with pytest.raises(TypeError, match="resolve\\(\\) ref must be"):
+        resolve(lambda x: x, object())

@@ -31,9 +31,18 @@ def resolve(fn: Any, *refs: Any) -> Deferred:
     """
     deps: list[str] = []
     for r in refs:
-        if hasattr(r, "slug") and isinstance(r.slug, str):
+        # Duck-typed check for _ResourceBuilder: has ._node whose .slug is a str.
+        # Avoids a circular import (context.py imports deferred.py).
+        inner = getattr(r, "_node", None)
+        if inner is not None and hasattr(inner, "slug") and isinstance(inner.slug, str):
+            deps.append(inner.slug)
+        elif hasattr(r, "slug") and isinstance(r.slug, str):
             deps.append(r.slug)
         elif hasattr(r, "node_key") and isinstance(r.node_key, str):
             deps.append(r.node_key)
-        # else: skip — unrecognized ref type, produces no DAG edge
+        else:
+            raise TypeError(
+                f"resolve() ref must be a ResourceNode, DataSourceNode, or resource builder; "
+                f"got {type(r).__name__!r}"
+            )
     return Deferred(fn=fn, deps=frozenset(deps))
