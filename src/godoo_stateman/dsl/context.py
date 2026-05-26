@@ -13,9 +13,11 @@ Design notes
 - All classes are sync — no async, no Odoo I/O.
 - ``_Collector`` accumulates resources/data_sources/config_parameters during a
   single ``eval_config()`` call; it is never reused across calls.
-- ``ResourceProxy.__getattr__`` converts dot-notation model names back to the
-  dotted Odoo form (e.g. ``resource.res_partner`` → model ``"res.partner"``).
-  The underscore-to-dot substitution is intentional DSL sugar (D-03).
+- ``ResourceProxy.__getattr__`` converts attribute names to dotted Odoo model
+  names by replacing ALL underscores with dots (e.g. ``resource.res_partner``
+  → ``"res.partner"``, ``resource.sale_order_line`` → ``"sale.order.line"``).
+  Full replacement is correct because Odoo model ``_name`` values are dot-separated
+  and no segment contains an underscore. This is intentional DSL sugar (D-03).
 - ``_ResourceBuilder`` is the mutable builder exposed inside ``with`` blocks.
   The final ``ResourceNode`` (frozen dataclass) is produced on context-manager
   exit (or immediately on the first call when no ``with`` block is used).
@@ -110,8 +112,9 @@ class _ModelResourceCallable:
 class ResourceProxy:
     """DSL ``resource`` object — attribute access returns a per-model callable.
 
-    DSL sugar: ``resource.res_partner`` translates to model ``"res.partner"``.
-    Underscores in the model name are substituted with dots.
+    DSL sugar: ``resource.sale_order_line`` translates to model ``"sale.order.line"``.
+    All underscores in the attribute name are substituted with dots, so 3+ segment
+    Odoo models (e.g. ``sale.order.line``, ``account.move.line``) are handled correctly.
     """
 
     def __init__(self, collector: _Collector) -> None:
@@ -119,8 +122,9 @@ class ResourceProxy:
 
     def __getattr__(self, model_name: str) -> _ModelResourceCallable:
         # Convert DSL-style underscore names to dotted Odoo model names.
-        # e.g. "res_partner" → "res.partner", "project_project" → "project.project"
-        model = model_name.replace("_", ".", 1)
+        # Full replacement: all underscores become dots.
+        # e.g. "res_partner" → "res.partner", "sale_order_line" → "sale.order.line"
+        model = model_name.replace("_", ".")
         return _ModelResourceCallable(model, self._collector)
 
 
@@ -148,14 +152,16 @@ class _ModelDataCallable:
 class DataProxy:
     """DSL ``data`` object — attribute access returns a per-model callable.
 
-    Underscore substitution mirrors ``ResourceProxy``.
+    Underscore substitution mirrors ``ResourceProxy`` — all underscores become dots.
     """
 
     def __init__(self, collector: _Collector) -> None:
         self._collector = collector
 
     def __getattr__(self, model_name: str) -> _ModelDataCallable:
-        model = model_name.replace("_", ".", 1)
+        # Full replacement: all underscores become dots (mirrors ResourceProxy).
+        # e.g. "sale_order_line" → "sale.order.line"
+        model = model_name.replace("_", ".")
         return _ModelDataCallable(model, self._collector)
 
 

@@ -197,6 +197,31 @@ def test_inline_children_flatten(tmp_path: Path) -> None:
             )
 
 
+def test_three_segment_model_name(tmp_path: Path) -> None:
+    """MA-01: 3-segment model names translate correctly via full underscore-to-dot replacement.
+
+    resource.sale_order_line → model "sale.order.line" (not "sale.order_line").
+    data.account_move_line → model "account.move.line".
+    """
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'resource.sale_order_line("line1", product_id=1)\n'
+        'data.account_move_line(move_id=42)\n',
+    )
+    state = eval_config(path)
+    assert len(state.resources) == 1
+    node = state.resources[0]
+    assert node.model == "sale.order.line", (
+        f"Expected 'sale.order.line', got {node.model!r} — full underscore replacement broken"
+    )
+    assert len(state.data_sources) == 1
+    ds = state.data_sources[0]
+    assert ds.model == "account.move.line", (
+        f"Expected 'account.move.line', got {ds.model!r} — full underscore replacement broken"
+    )
+
+
 def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:
     """CORE-01: eval_config() makes zero Odoo/network calls (purity invariant).
 
