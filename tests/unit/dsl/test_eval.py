@@ -1,0 +1,228 @@
+"""Unit tests for eval_config() — CORE-01, RSRC-01 through RSRC-07.
+
+All tests use tmp_path; no Docker, no Odoo calls.
+asyncio_mode = "auto" in pyproject.toml — no @pytest.mark.asyncio needed.
+All test functions are top-level def (no class TestX).
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from godoo_stateman.dsl.eval import eval_config
+from godoo_stateman.dsl.types.nodes import ChildrenWrapper, ResourceNode
+from godoo_stateman.errors import MissingModuleError
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _write_config(tmp_path: Path, content: str) -> Path:
+    """Write content to a temporary config.py and return the path."""
+    config_path = tmp_path / "config.py"
+    config_path.write_text(content)
+    return config_path
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+
+def test_resource_constructor(tmp_path: Path) -> None:
+    """RSRC-01: resource.<model>(slug, **fields) creates a ResourceNode."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'resource.res_partner("p1", name="Acme")\n',
+    )
+    state = eval_config(path)
+    assert len(state.resources) == 1
+    node = state.resources[0]
+    assert node.slug == "p1"
+    assert node.model == "res.partner"
+    assert node.fields["name"] == "Acme"
+
+
+def test_data_source(tmp_path: Path) -> None:
+    """RSRC-02: data.<model>(**selector) creates a DataSourceNode."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'data.res_users(login="admin")\n',
+    )
+    state = eval_config(path)
+    assert len(state.data_sources) == 1
+    node = state.data_sources[0]
+    assert node.model == "res.users"
+    assert node.selector == {"login": "admin"}
+
+
+def test_with_block(tmp_path: Path) -> None:
+    """RSRC-03: with block + attribute assignment populates resource fields."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'with resource.res_partner("p1") as r:\n'
+        '    r.name = "Acme"\n'
+        '    r.email = "acme@example.com"\n',
+    )
+    state = eval_config(path)
+    assert len(state.resources) == 1
+    node = state.resources[0]
+    assert node.fields["name"] == "Acme"
+    assert node.fields["email"] == "acme@example.com"
+
+
+def test_mail_config(tmp_path: Path) -> None:
+    """RSRC-04: mail.config["key"] = "val" appends a config_parameter entry."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'mail.config["web.base.url"] = "https://odoo.example.com"\n',
+    )
+    state = eval_config(path)
+    assert len(state.config_parameters) == 1
+    entry = state.config_parameters[0]
+    assert entry["key"] == "web.base.url"
+    assert entry["value"] == "https://odoo.example.com"
+
+
+def test_walrus_operator(tmp_path: Path) -> None:
+    """RSRC-05: walrus := inside expression context works and resource ref is captured."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        '_ = (p := resource.res_partner("p1"))\n'
+        'resource.project_project("proj", partner_id=p)\n',
+    )
+    state = eval_config(path)
+    assert len(state.resources) == 2
+    # The project's partner_id should be the _ResourceBuilder for p1.
+    # The builder exposes _node which is the ResourceNode.
+    proj = next(n for n in state.resources if n.slug == "proj")
+    # partner_id is the _ResourceBuilder returned by resource.res_partner("p1")
+    # We can't do isinstance check here directly, but verify it has a _node or is ResourceNode
+    partner_id_val = proj.fields["partner_id"]
+    # The value set via the walrus is a _ResourceBuilder — check it wraps the right node
+    assert hasattr(partner_id_val, "_node") or isinstance(partner_id_val, ResourceNode)
+    # Verify it points to p1
+    if hasattr(partner_id_val, "_node"):
+        assert partner_id_val._node.slug == "p1"
+    else:
+        assert partner_id_val.slug == "p1"
+
+
+def test_restricted_builtins_blocks_import(tmp_path: Path) -> None:
+    """RSRC-07: import statement in config raises NameError — __import__ absent."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'import os\n',
+    )
+    # import statement uses __import__ under the hood; absent from _SAFE_BUILTINS
+    with pytest.raises((NameError, ImportError)):
+        eval_config(path)
+
+
+def test_restricted_builtins_blocks_open(tmp_path: Path) -> None:
+    """RSRC-07: open() in config raises NameError — open absent from _SAFE_BUILTINS."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'open("/etc/passwd")\n',
+    )
+    with pytest.raises(NameError):
+        eval_config(path)
+
+
+def test_missing_module_raises(tmp_path: Path) -> None:
+    """D-02: config with no module = "..." declaration raises MissingModuleError."""
+    path = _write_config(
+        tmp_path,
+        'resource.res_partner("p1", name="Acme")\n',
+    )
+    with pytest.raises(MissingModuleError):
+        eval_config(path)
+
+
+def test_module_declaration_extracted(tmp_path: Path) -> None:
+    """D-02: module declaration in exec_locals is correctly extracted."""
+    path = _write_config(
+        tmp_path,
+        'module = "my_project"\n',
+    )
+    state = eval_config(path)
+    assert state.module == "my_project"
+
+
+def test_inline_children_flatten(tmp_path: Path) -> None:
+    """D-09: children() wrapper is stripped; child node promoted to top-level with prefixed slug."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'with resource.sale_order("order1") as o:\n'
+        '    o.name = "SO001"\n'
+        '    o.lines = children("sale.order.line", "order_id", [\n'
+        '        resource.sale_order_line("line1", product_id=1),\n'
+        '    ])\n',
+    )
+    state = eval_config(path)
+    # Should have 2 resources: parent + child
+    assert len(state.resources) == 2
+
+    slugs = {n.slug for n in state.resources}
+    assert "order1" in slugs
+    assert "order1.line1" in slugs
+
+    # Parent's 'lines' field should be a list of slug strings, not ChildrenWrapper
+    parent = next(n for n in state.resources if n.slug == "order1")
+    assert not isinstance(parent.fields.get("lines"), ChildrenWrapper)
+    assert parent.fields["lines"] == ["order1.line1"]
+
+    # Child should have parent_slug set and inverse_field pointing to parent
+    child = next(n for n in state.resources if n.slug == "order1.line1")
+    assert child.parent_slug == "order1"
+    assert "order_id" in child.fields
+
+    # No ChildrenWrapper anywhere in any resource fields
+    for node in state.resources:
+        for fval in node.fields.values():
+            assert not isinstance(fval, ChildrenWrapper), (
+                f"ChildrenWrapper found in {node.slug}.fields after eval_config()"
+            )
+
+
+def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:
+    """CORE-01: eval_config() makes zero Odoo/network calls (purity invariant).
+
+    Patches ``godoo.client.client.OdooClient`` to a Mock that raises on any
+    call — if eval_config() touches the client, the test fails.
+    """
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'with resource.res_partner("p1") as r:\n'
+        '    r.name = "Acme"\n'
+        '_ = data.res_users(login="admin")\n'
+        'mail.config["web.base.url"] = "https://odoo.example.com"\n',
+    )
+
+    # Patch OdooClient so any instantiation or call raises AssertionError.
+    # This is the nuclear option: if eval_config() touches Odoo transport at all,
+    # the test will fail with a clear message.
+    def _fail_on_odoo(*args: object, **kwargs: object) -> None:
+        raise AssertionError("eval_config() must not access OdooClient — purity violation")
+
+    with patch("godoo.client.client.OdooClient", side_effect=_fail_on_odoo):
+        state = eval_config(path)
+
+    # Verify the result is correct (proves real eval ran to completion).
+    assert state.module == "test_mod"
+    assert len(state.resources) == 1
+    assert len(state.data_sources) == 1
+    assert len(state.config_parameters) == 1
