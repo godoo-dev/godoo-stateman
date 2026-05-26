@@ -1,13 +1,18 @@
 """DSL config file evaluator — eval_config() entry point.
 
-Reads a ``.py`` config file, executes it in a restricted sandbox, and returns
+Reads a ``.py`` config file, executes it in a restricted namespace, and returns
 a fully constructed :class:`~godoo_stateman.dsl.types.desired.DesiredState`.
 
-Security boundaries
--------------------
-``_SAFE_BUILTINS`` is the only ``__builtins__`` passed to ``exec()``.  Missing
-keys such as ``__import__``, ``open``, ``eval``, and ``exec`` are absent —
-any config attempting to call them receives a ``NameError`` (T-02-03, T-02-04).
+Trust boundary (NOT a security sandbox)
+----------------------------------------
+``_SAFE_BUILTINS`` is the only ``__builtins__`` passed to ``exec()``.  This
+restricts *accidental* use of I/O functions (``open``, ``__import__``, etc.)
+by **trusted** DSL authors — it is not a security boundary.  Because
+``getattr`` is present in the allowlist, a determined author can traverse the
+object graph (``object.__subclasses__()`` → ``__init__.__globals__`` → real
+``__builtins__``) to reach ``__import__`` and arbitrary I/O.  See CLAUDE.md
+for the trusted-author constraint.  Do not accept configs from untrusted
+sources without a real sandbox (e.g. subprocess + seccomp).
 
 Purity invariant
 ----------------
@@ -37,16 +42,22 @@ from godoo_stateman.dsl.types.nodes import ChildrenWrapper, ResourceNode
 from godoo_stateman.errors import MissingModuleError
 
 # ---------------------------------------------------------------------------
-# Restricted builtins — the exec() security boundary (RSRC-07, T-02-03/04)
+# Restricted builtins — accidental-I/O guard for trusted DSL authors
+# (RSRC-07, T-02-03/04)
 # ---------------------------------------------------------------------------
 
-#: Allowlist of Python builtins available inside DSL config files.
+#: NOTE: This is NOT a security sandbox against malicious config authors.
+#: ``getattr`` in the allowlist enables full object-graph traversal
+#: (object.__subclasses__() -> __init__.__globals__ -> real __builtins__)
+#: to reach __import__ and therefore os.system. This allowlist only
+#: prevents *accidental* use of I/O functions by trusted DSL authors
+#: (see CLAUDE.md trusted-author constraint). Do not accept configs from
+#: untrusted sources without a real sandbox (e.g. subprocess + seccomp).
 #:
+#: Allowlist of Python builtins available inside DSL config files.
 #: Deliberately absent: ``__import__``, ``open``, ``eval``, ``exec``,
 #: ``compile``, ``globals``, ``locals``, ``vars``, ``dir``, ``help``,
 #: ``input``, ``print``, ``breakpoint``, ``__build_class__``.
-#:
-#: Absence means a ``NameError`` on first use — not ``ImportError``.
 _SAFE_BUILTINS: dict[str, object] = {
     "True": True,
     "False": False,

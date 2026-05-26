@@ -28,13 +28,13 @@ def test_help_lists_all_five_commands() -> None:
         assert command in result.output, f"Command '{command}' not found in --help output:\n{result.output}"
 
 
-def test_plan_stub_exits_1() -> None:
-    """plan stub prints Phase 3 note and exits with code 1 when given a valid config path."""
+def test_plan_stub_exits_0() -> None:
+    """plan stub prints Phase 3 note and exits with code 0 on success (BL-02 fix)."""
     with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
         f.write('module = "test_module"\n')
         config_path = f.name
     result = runner.invoke(app, ["plan", config_path])
-    assert result.exit_code == 1, f"Expected exit 1, got {result.exit_code}:\n{result.output}"
+    assert result.exit_code == 0, f"Expected exit 0, got {result.exit_code}:\n{result.output}"
     assert "Phase 3" in result.output
 
 

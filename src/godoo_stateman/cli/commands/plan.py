@@ -29,4 +29,4 @@ def plan(
         f"data_sources={len(state.data_sources)}[/green]"
     )
     console.print("[yellow]Full plan output: Phase 3[/yellow]")
-    raise typer.Exit(code=1)
+    raise typer.Exit(code=0)
