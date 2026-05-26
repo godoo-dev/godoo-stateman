@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-26T13:28:01.447Z"
-last_activity: 2026-05-26 -- Phase 02 execution started
+last_updated: "2026-05-26T13:33:27.349Z"
+last_activity: 2026-05-26
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
   percent: 17
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-23)
 ## Current Position
 
 Phase: 02 (dsl-eval-pure-pipeline) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 02
-Last activity: 2026-05-26 -- Phase 02 execution started
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-05-26
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100%
 *Updated after each plan completion*
 | Phase 01 P02 | 3m 37s | 2 tasks | 11 files |
 | Phase 01 P03 | 4m 19s | 2 tasks | 4 files |
+| Phase 02-dsl-eval-pure-pipeline P01 | 8m | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,10 @@ Recent decisions affecting current work:
 - [Phase ?]: [01-02]: SCHEMA_FORMAT_VERSION in schema/version.py; snapshot.py imports it from there (Q2 RESOLVED)
 - [Phase 01-03]: find_by_xmlid returns None on absence — never raises OdooMissingError (D-14)
 - [Phase 01-03]: write_xmlid model-mismatch guard raises OdooValidationError (Open Question Q3 RESOLVED)
+- [02-01]: fn: Any (not Callable[...,Any]) on Deferred — Callable causes PydanticSchemaGenerationError in frozen Pydantic field storage
+- [02-01]: resolve() uses slug-first/node_key-fallback — single-slug-only variant silently drops DataSourceNode refs from the DAG
+- [02-01]: DesiredState requires arbitrary_types_allowed=True — ResourceNode.fields may hold Deferred whose fn carries a callable
+- [02-01]: networkx is a runtime dependency (not dev-only) — must be in [project.dependencies] for end-user pip installs
 
 ### Pending Todos
 
@@ -79,7 +84,7 @@ None yet.
 ### Blockers/Concerns
 
 - **VERIFY-FIRST (Phase 1):** Conflict on whether godoo-py `Introspector.get_schema()` already populates the `store` flag. Must read `introspector.py` and `field_cache.py` source before writing any schema code. See SCHEM-05.
-- **DESIGN SPIKE (Phase 2):** `resolve()` escape hatch semantics not fully specified. Must finalize before implementation. See RSRC-06.
+- ~~**DESIGN SPIKE (Phase 2):** `resolve()` escape hatch semantics not fully specified.~~ RESOLVED in 02-01: Deferred thunk + slug/node_key DAG edges; unit-tested in test_deferred.py.
 - **VERIFY (Phase 5):** `ModuleManager` cancellation behavior under `CancelledError` must be verified from source before designing the cancellation contract. See EXEC-01/RSRC-08.
 
 ### Quick Tasks Completed
@@ -100,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-23T21:09:06.244Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-dsl-eval-pure-pipeline/02-CONTEXT.md
+Last session: 2026-05-26T13:33:27.343Z
+Stopped at: Completed 02-01-PLAN.md (foundation types)
+Resume file: .planning/phases/02-dsl-eval-pure-pipeline/02-02-PLAN.md
