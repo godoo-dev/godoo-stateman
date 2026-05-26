@@ -39,7 +39,7 @@ from typing import Any
 from godoo_stateman.dsl.context import _Collector, build_dsl_namespace
 from godoo_stateman.dsl.types.desired import DesiredState
 from godoo_stateman.dsl.types.nodes import ChildrenWrapper, ResourceNode
-from godoo_stateman.errors import MissingModuleError
+from godoo_stateman.errors import DslEvalError, MissingModuleError
 
 # ---------------------------------------------------------------------------
 # Restricted builtins — accidental-I/O guard for trusted DSL authors
@@ -141,7 +141,11 @@ def _flatten(resources: list[ResourceNode]) -> list[ResourceNode]:
                 for child in fval.children:
                     # D-09: auto-prefix slug with parent slug.
                     child_slug = f"{parent.slug}.{child.slug}"
-                    # Merge inverse_field into child fields pointing to parent.
+                    # Merge inverse_field into child fields, storing a reference to the ORIGINAL
+                    # (pre-rebuild) parent ResourceNode. Note: the rebuilt parent (with flat_fields
+                    # replacing ChildrenWrapper values) is a separate object produced below via
+                    # dataclasses.replace(). The apply stage (Phase 3) must handle
+                    # ResourceNode-valued inverse_fields by resolving them to IDs.
                     child_fields = {**child.fields, fval.inverse_field: parent}
                     child_nodes.append(
                         ResourceNode(
@@ -198,7 +202,7 @@ def eval_config(path: Path) -> DesiredState:
     Any exception raised by the config file itself
         Propagates unchanged (e.g. ``NameError`` for blocked builtins).
     """
-    source = path.read_text()
+    source = path.read_text(encoding="utf-8")
     code = compile(source, str(path), "exec")
 
     collector = _Collector()
@@ -226,6 +230,15 @@ def eval_config(path: Path) -> DesiredState:
     module: str = module_raw
 
     flat_resources = _flatten(collector.resources)
+
+    seen_slugs: set[str] = set()
+    for node in flat_resources:
+        if node.slug in seen_slugs:
+            raise DslEvalError(
+                f"Duplicate resource slug {node.slug!r} in {path}. "
+                "Each resource must have a unique slug within the config."
+            )
+        seen_slugs.add(node.slug)
 
     return DesiredState(
         module=module,

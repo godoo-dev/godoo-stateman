@@ -14,7 +14,7 @@ import pytest
 
 from godoo_stateman.dsl.eval import _flatten, eval_config
 from godoo_stateman.dsl.types.nodes import ChildrenWrapper, ResourceNode
-from godoo_stateman.errors import MissingModuleError
+from godoo_stateman.errors import DslEvalError, MissingModuleError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -297,6 +297,48 @@ def test_resource_builder_rejects_underscore_prefix(tmp_path: Path) -> None:
     )
     with pytest.raises((AttributeError, NameError)):
         eval_config(path)
+
+
+def test_duplicate_slug_top_level_raises(tmp_path: Path) -> None:
+    """WR-02: two top-level resources with the same slug raise DslEvalError."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'resource.res_partner("p1", name="A")\n'
+        'resource.res_partner("p1", name="B")\n',
+    )
+    with pytest.raises(DslEvalError, match="Duplicate resource slug 'p1'"):
+        eval_config(path)
+
+
+def test_duplicate_slug_children_raises(tmp_path: Path) -> None:
+    """WR-02: two sibling children with the same slug raise DslEvalError (promoted slug collision)."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'with resource.sale_order("order1") as o:\n'
+        '    o.name = "SO001"\n'
+        '    o.lines = children("sale.order.line", "order_id", [\n'
+        '        resource.sale_order_line("line1", product_id=1),\n'
+        '        resource.sale_order_line("line1", product_id=2),\n'
+        '    ])\n',
+    )
+    with pytest.raises(DslEvalError, match=r"Duplicate resource slug 'order1\.line1'"):
+        eval_config(path)
+
+
+def test_distinct_slugs_pass(tmp_path: Path) -> None:
+    """WR-02: a config with distinct slugs (including children) evaluates without error."""
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'resource.res_partner("p1", name="A")\n'
+        'resource.res_partner("p2", name="B")\n',
+    )
+    state = eval_config(path)
+    assert len(state.resources) == 2
+    slugs = {n.slug for n in state.resources}
+    assert slugs == {"p1", "p2"}
 
 
 def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:

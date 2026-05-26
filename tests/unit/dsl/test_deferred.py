@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import dataclasses
 
+import pytest
+
 from godoo_stateman.dsl.types.deferred import Deferred, resolve
 from godoo_stateman.dsl.types.nodes import DataSourceNode, ResourceNode
 
@@ -102,7 +104,5 @@ def test_resolve_deps_from_resource_builder() -> None:
 
 def test_resolve_raises_on_unrecognised_ref() -> None:
     """WR-01: resolve() raises TypeError for unrecognised ref types (no silent drop)."""
-    import pytest
-
     with pytest.raises(TypeError, match="resolve\\(\\) ref must be"):
         resolve(lambda x: x, object())
