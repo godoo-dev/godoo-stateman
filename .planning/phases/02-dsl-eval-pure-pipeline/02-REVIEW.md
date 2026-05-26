@@ -1,8 +1,8 @@
 ---
 phase: 02-dsl-eval-pure-pipeline
-reviewed: 2026-05-26T00:00:00Z
+reviewed: 2026-05-26T12:00:00Z
 depth: deep
-files_reviewed: 11
+files_reviewed: 13
 files_reviewed_list:
   - src/godoo_stateman/dsl/context.py
   - src/godoo_stateman/dsl/eval.py
@@ -18,402 +18,174 @@ files_reviewed_list:
   - tests/unit/dsl/test_graph.py
   - tests/unit/dsl/test_deferred.py
 findings:
-  blocker: 2
-  major: 4
-  minor: 4
-  nit: 2
-  total: 12
-status: issues_found
+  critical: 0
+  warning: 2
+  info: 4
+  total: 6
+status: passed
 ---
 
-# Phase 02: DSL Eval + Pure Pipeline — Code Review Report
+# Phase 02: Code Review Report (Re-Review)
 
-**Reviewed:** 2026-05-26
-**Depth:** deep (cross-file, runtime-verified escape probes)
-**Files Reviewed:** 13 (11 src + 2 test files cross-checked; 4 test files in scope)
-**Status:** issues_found
-**Tests:** 46 passed, 0 failed
-
----
+**Reviewed:** 2026-05-26T12:00:00Z
+**Depth:** deep (cross-file, call-chain traced)
+**Files Reviewed:** 13
+**Status:** passed — no new blockers found; all previously fixed issues confirmed resolved
 
 ## Summary
 
-The pipeline architecture is sound: frozen Pydantic models, clean separation of eval/normalize/graph stages, zero Odoo I/O, NetworkX cycle detection implemented correctly (catches `NetworkXNoCycle`, not a `None`-check), and boolean `False` preservation in normalize is correct. Mypy strict and ruff pass cleanly.
+This re-review confirms the three targeted fixes from the prior round are correct and complete:
 
-Two blockers were found and runtime-verified:
+- **BL-02 (plan.py exit code):** `raise typer.Exit(code=0)` is present on the success path at `plan.py:32`. Confirmed fixed.
+- **BL-01 (eval.py sandbox documentation):** Both the module-level docstring and the inline `_SAFE_BUILTINS` block comment now accurately describe the trust boundary, name the `getattr` escape vector explicitly, and refer to CLAUDE.md for the trusted-author constraint. No false security claims remain. Confirmed fixed; treated as informational only going forward.
+- **MA-01 (model name translation):** Both `ResourceProxy.__getattr__` (`context.py:127`) and `DataProxy.__getattr__` (`context.py:164`) now use `model_name.replace("_", ".")` (full replacement, no count limit). `test_three_segment_model_name` covers `sale.order.line` and `account.move.line`. Confirmed fixed.
 
-1. The `exec()` sandbox allows a full escape to `os.system` via `getattr` + `__subclasses__()` traversal. The sandbox is not meaningfully effective once `getattr` is in the allowlist.
-2. `plan.py` always exits with code `1` regardless of success or failure — the stub is broken for any caller that checks exit codes.
+Open-by-design issues from the prior review (MA-02 sorted() TypeError on mixed m2x lists, MA-03 children() silent drop, MA-04 module-extraction dead fallback branch) are acknowledged and not re-raised. They remain in the prior review document for reference.
 
-Four major issues exist: the underscore-to-dot substitution silently produces wrong model names for all 3-part Odoo models (`sale.order.line`, `account.move.line`, `product.template.attribute.value`, etc.), `children()` silently drops unrecognized items, `sorted()` on m2x fields can crash with `TypeError` on mixed-type lists, and the module extraction uses a `or`-idiom that creates a dead fallback branch.
-
----
-
-## BLOCKER Issues
-
-### BL-01: exec() sandbox escape via getattr + \_\_subclasses\_\_() traversal
-
-**File:** `src/godoo_stateman/dsl/eval.py:50-84`
-
-**Issue:** `getattr` is in `_SAFE_BUILTINS`. Any Python object's `__mro__` chain leads to `object`, whose `__subclasses__()` returns all live subclasses. Their `__init__.__globals__` dicts contain a reference to the real `__builtins__` module/dict, which carries `__import__`. This chain was runtime-verified to reach `os.system`:
-
-```python
-# This runs inside the exec() sandbox and succeeds:
-_subs = getattr(getattr(list, '__mro__')[1], '__subclasses__')()
-for _cls in _subs:
-    _g = getattr(getattr(_cls, '__init__', None), '__globals__', None)
-    if _g and isinstance(_g.get('__builtins__'), dict) and '__import__' in _g['__builtins__']:
-        _os = _g['__builtins__']['__import__']('os')
-        escaped = getattr(_os, 'system')
-        break
-```
-
-The sandbox docstring claims "Missing keys such as `__import__`, `open`, `eval`, and `exec` are absent — any config attempting to call them receives a `NameError`." This is false: they are reachable via the object graph.
-
-**Context:** The CLAUDE.md design document states "config author is a trusted party," which mitigates the risk significantly. However the sandbox comment actively misleads anyone reviewing or auditing the code. If this surface ever changes scope (e.g. accepting configs from less-trusted sources), the false safety claim is a liability.
-
-**Fix options (pick one based on actual threat model):**
-
-Option A — Remove `getattr`, `hasattr`, and `isinstance` from `_SAFE_BUILTINS` and update the docstring to accurately state the limitation. This breaks some DSL expressiveness but restores the "no I/O" claim.
-
-Option B — Keep `getattr` but update the docstring to accurately describe the trust boundary: "This sandbox is not a security barrier against malicious configs. It only prevents accidental use of common I/O functions by trusted authors."
-
-Option C — Add `__builtins__: {}` to the exec globals AND set `__globals__` to a frozen dict on any callables in the namespace. This is the approach RestrictedPython takes; complex to maintain.
-
-The minimum acceptable fix is **Option B** — replace the misleading comment before the docstring claim causes a false security assumption downstream:
-
-```python
-#: NOTE: This is NOT a security sandbox against malicious config authors.
-#: ``getattr`` in the allowlist enables full object-graph traversal to
-#: reach the real builtins. This allowlist only prevents *accidental* use
-#: of I/O functions by trusted DSL authors (see CLAUDE.md trusted-author
-#: constraint). Do not expand scope to untrusted input without a full
-#: sandbox solution (e.g. a subprocess with no imports + seccomp).
-_SAFE_BUILTINS: dict[str, object] = {
-    ...
-}
-```
+The deep cross-file pass found two new warnings and four informational items. None block shipping.
 
 ---
 
-### BL-02: plan.py always exits with code 1 regardless of success
+## Warnings
 
-**File:** `src/godoo_stateman/cli/commands/plan.py:32`
+### WR-01: `eval.py:202` — `or` operator in module extraction produces a misleading error for wrong-typed module values
 
-**Issue:** Line 32 unconditionally raises `typer.Exit(code=1)` after printing a successful evaluation summary. Any caller or CI script that checks the exit code of `godoo-stateman plan` will treat a successful evaluation as a failure.
+**File:** `src/godoo_stateman/dsl/eval.py:202`
 
+**Issue:** The module extraction reads:
 ```python
-console.print("[yellow]Full plan output: Phase 3[/yellow]")
-raise typer.Exit(code=1)   # <-- BUG: should be code=0 for success
+module: object = exec_locals.get("module") or exec_globals.get("module")
 ```
+The `or` short-circuits on any falsy value, not only `None`. If a DSL author writes `module = 0` or `module = False`, `exec_locals.get("module")` returns a falsy non-`None` value, which causes the `or` to fall through to `exec_globals.get("module")`. Since `exec_globals` never contains a `"module"` key (nothing in `dsl_ns` or `_SAFE_BUILTINS` defines one), the fallback always returns `None`. The subsequent check `not isinstance(module, str) or not module` then raises `MissingModuleError` saying "Config file X must declare: module = `<name>`" — but the variable *was* declared, just with the wrong type. The error message is misleading and makes the bug harder to diagnose.
 
-**Fix:**
+This does not cause silent data corruption — `MissingModuleError` is always raised. The `exec_globals` fallback is also dead code in practice, as noted in the prior review (MA-04).
 
+**Fix:** Replace the truthiness short-circuit with an explicit `None` check:
 ```python
-console.print("[yellow]Full plan output: Phase 3[/yellow]")
-raise typer.Exit(code=0)
-```
-
----
-
-## MAJOR Issues
-
-### MA-01: ResourceProxy and DataProxy produce wrong model names for all 3-segment Odoo models
-
-**File:** `src/godoo_stateman/dsl/context.py:123, 158`
-
-**Issue:** `model_name.replace("_", ".", 1)` substitutes only the first underscore, so any Odoo model with three or more name segments is silently silently mis-translated:
-
-| DSL expression | Produced model | Correct model |
-|---|---|---|
-| `resource.sale_order_line(...)` | `"sale.order_line"` | `"sale.order.line"` |
-| `resource.account_move_line(...)` | `"account.move_line"` | `"account.move.line"` |
-| `resource.product_template_attribute_value(...)` | `"product.template_attribute_value"` | `"product.template.attribute.value"` |
-
-No error is raised. The wrong model name silently propagates into `ResourceNode.model`, which is then used in schema lookups, xmlid construction, and Odoo API calls in later phases. The bug only manifests at plan/apply time as a cryptic Odoo error.
-
-The `children()` helper docstring already uses `"sale.order.line"` as its example of a 3-part model name (context.py:210), confirming this is a real intended use case — but it must be passed as the string argument to `children()`, not via `resource.sale_order_line`.
-
-**Fix:** Replace `replace("_", ".", 1)` with a full replacement, or document the constraint as a hard limitation with a clear user-facing error:
-
-```python
-# Option A — full replacement (DSL authors use underscores throughout):
-model = model_name.replace("_", ".")
-
-# Option B — keep 1-replacement but validate and raise:
-model = model_name.replace("_", ".", 1)
-if "_" in model:
-    raise ValueError(
-        f"Model '{model_name}' cannot be expressed via attribute access — "
-        f"use resource['sale.order.line']('slug', ...) for 3-segment models"
-    )
-```
-
-Option A is simpler but changes the translation convention. Option B keeps backwards compatibility and surfaces the error immediately. Either requires updating the D-03 documentation.
-
----
-
-### MA-02: sorted() call on many2many/one2many fields crashes with TypeError on mixed-type content
-
-**File:** `src/godoo_stateman/dsl/normalize.py:48`
-
-**Issue:** `sorted(list(value))` is called unconditionally for all `many2many` and `one2many` fields. If the DSL author mixes types in the list (e.g. `category_ids = [3, "ref_string", 1]`) or passes resource proxy objects as elements, `sorted()` raises `TypeError: '<' not supported between instances of 'str' and 'int'`. This is an unhandled exception that bubbles out of `normalize()` as an internal crash with no user-facing context about which field or resource caused the failure.
-
-```python
-return sorted(list(value))   # crashes if items are not mutually comparable
-```
-
-**Fix:**
-
-```python
-try:
-    return sorted(list(value))
-except TypeError as exc:
-    raise ValueError(
-        f"Field value for a many2many/one2many field contains non-sortable items: "
-        f"{value!r}"
-    ) from exc
-```
-
-A better long-term fix is to validate that m2x list items are integers at this stage, but the immediate fix is a wrapped error with context.
-
----
-
-### MA-03: children() silently drops unrecognized items — data loss with no diagnostic
-
-**File:** `src/godoo_stateman/dsl/context.py:217-222`
-
-**Issue:** The `else: silently skip` branch in `children()` means that if a DSL author passes any non-`_ResourceBuilder`/non-`ResourceNode` item in `children_list` (e.g. a `DataSourceNode`, a plain dict, or a `None`), it is silently dropped from the output with no error or warning. The resulting `ChildrenWrapper` will have fewer children than declared, and the discrepancy is not surfaced until much later (if at all).
-
-```python
-for item in children_list:
-    if isinstance(item, _ResourceBuilder):
-        resolved.append(item._node)
-    elif isinstance(item, ResourceNode):
-        resolved.append(item)
-    # else: silently skip unrecognized items (defensive)
-```
-
-**Fix:** Replace the silent skip with an explicit error:
-
-```python
-    else:
-        raise TypeError(
-            f"children() received an unexpected item type {type(item).__name__!r}. "
-            f"Each child must be a resource call result "
-            f"(e.g. resource.sale_order_line('slug', ...))."
-        )
-```
-
----
-
-### MA-04: module extraction uses 'or'-idiom that masks falsy-module values and is partly dead code
-
-**File:** `src/godoo_stateman/dsl/eval.py:191`
-
-**Issue:** `exec_locals.get("module") or exec_globals.get("module")` uses Python's truthiness short-circuit. If `module` is set to any falsy non-None value in `exec_locals` (e.g. `module = 0` or `module = False`), the `or` falls through to `exec_globals`, which never has a `"module"` key (since `dsl_ns` does not include one). The `exec_globals` fallback is therefore dead code in practice — it can never return a useful value.
-
-More importantly, a DSL author who accidentally writes `module = 0` gets `MissingModuleError` with the message "must declare: module = `<name>`" when they *did* declare it — just with a wrong type. The error message is confusing in that case.
-
-The `or`-idiom also creates a latent risk: if `dsl_ns` ever acquires a key named `"module"` in the future, the fallback would silently pick it up for any config with `module = 0`.
-
-**Fix:**
-
-```python
-# Check exec_locals first (module-level assignments go there with separate globals/locals).
-# exec_globals fallback is preserved for completeness (see Pitfall 2 in module docstring)
-# but in practice dsl_ns has no 'module' key so it always returns None.
-_module_locals = exec_locals.get("module")
-_module_globals = exec_globals.get("module")
-module: object = _module_locals if _module_locals is not None else _module_globals
-if not isinstance(module, str) or not module:
+module_raw: object = exec_locals.get("module")
+if module_raw is None:
+    module_raw = exec_globals.get("module")
+if not isinstance(module_raw, str) or not module_raw:
     raise MissingModuleError(
-        f'Config file {path} must declare: module = "<name>" (got {module!r})'
+        f'Config file {path} must declare: module = "<name>" (got {type(module_raw).__name__}: {module_raw!r})'
     )
+module: str = module_raw
 ```
-
-This uses `is not None` instead of truthiness, provides a clearer error message with the actual value, and the intent of the two-dict lookup is preserved without the `or`-masking.
+This preserves the Pitfall-2 two-dict lookup without the falsy-value masking, and the error message includes the actual value to aid debugging.
 
 ---
 
-## MINOR Issues
+### WR-02: `context.py:70` — `_ResourceBuilder._RESERVED` does not guard underscore-prefixed field names; typos inject bogus keys into `ResourceNode.fields`
 
-### MI-01: test_restricted_builtins_blocks_import accepts ImportError but documents NameError
+**File:** `src/godoo_stateman/dsl/context.py:70`
 
-**File:** `tests/unit/dsl/test_eval.py:128-129`
+**Issue:** `_RESERVED = frozenset({"_node", "_fields"})` only protects the two private instance attributes that `_ResourceBuilder` actually owns. Any other name not in the set routes through `__setattr__` to `self._fields[name] = value`. This includes:
 
-**Issue:** The test comment says "import statement uses `__import__` under the hood; absent from `_SAFE_BUILTINS`" and implies a `NameError`. On Python 3.14 (the target runtime, verified), `import os` inside `exec()` with no `__import__` raises `ImportError: __import__ not found`, not `NameError`. The test correctly accepts both via `pytest.raises((NameError, ImportError))`, but the comment is inaccurate and could mislead a future maintainer who tries to tighten the `except` clause.
+- `r._RESERVED = "x"` — writes `{"_RESERVED": "x"}` into `node.fields` (bogus Odoo field)
+- `r._name = "Acme"` (typo for `r.name`) — writes `{"_name": "Acme"}` into `node.fields` silently
 
-**Fix:** Update the comment to reflect the actual runtime behavior:
+These are injected into `ResourceNode.fields` and propagate into `DesiredState`. At plan/apply time the diff stage will attempt to reconcile `_name` or `_RESERVED` against the live Odoo schema, producing a cryptic field-not-found error with no indication that the cause was a typo at DSL-authoring time.
 
-```python
-# On CPython 3.14, 'import os' inside exec() with __import__ absent raises
-# ImportError ("__import__ not found"), not NameError. Both are accepted defensively.
-with pytest.raises((NameError, ImportError)):
-    eval_config(path)
-```
+Under the trusted-author constraint this is not a security issue, but it silently corrupts plan data on any underscore typo.
 
----
-
-### MI-02: _ResourceBuilder._RESERVED frozenset does not protect all private attributes
-
-**File:** `src/godoo_stateman/dsl/context.py:68`
-
-**Issue:** `_RESERVED = frozenset({"_node", "_fields"})`. Other dunder and private attributes (`__class__`, `__dict__`, `__enter__`, `__exit__`) are not in `_RESERVED`, so `r.__class__ = SomeClass` from a DSL config would route through `__setattr__` and be written to `_fields` instead of raising an error (Python allows writing `__class__` as a regular key to a dict). This is not exploitable under the trusted-author constraint but is inconsistent with the stated intent of the guard.
-
-**Fix:** Either expand `_RESERVED` to protect dunder names, or add a check in `__setattr__`:
-
+**Fix:** Reject names starting with `_` in `__setattr__`, since no valid Odoo field name begins with an underscore:
 ```python
 def __setattr__(self, name: str, value: Any) -> None:
-    if name in _ResourceBuilder._RESERVED or name.startswith("__"):
+    if name in _ResourceBuilder._RESERVED:
         object.__setattr__(self, name, value)
+    elif name.startswith("_"):
+        raise AttributeError(
+            f"Cannot assign {name!r} on ResourceBuilder — "
+            "Odoo field names do not start with '_'. "
+            "Did you mean to write without the leading underscore?"
+        )
     else:
         self._fields[name] = value
 ```
 
 ---
 
-### MI-03: many2one normalization silently passes through non-2-element tuples/lists
+## Info
 
-**File:** `src/godoo_stateman/dsl/normalize.py:54-55`
+### IN-01: `eval.py:103` — `_flatten()` does not handle nested `ChildrenWrapper` (children-of-children); violates the DesiredState invariant silently
 
-**Issue:** The `many2one` branch handles `(id, name)` tuples but only when `len(value) == 2`. A DSL author who writes `parent_id = (42,)` (single-element tuple) or `parent_id = [42, "Name", "extra"]` (3-element list) gets a silent passthrough. The diff stage in Phase 3 will then compare a tuple/list against an integer from Odoo, producing a spurious diff on every run.
+**File:** `src/godoo_stateman/dsl/eval.py:103`
 
+**Issue:** `_flatten()` performs a single-pass expansion of `ChildrenWrapper` values found directly in a parent node's fields. It does not recurse into the promoted child nodes to check whether their fields also contain `ChildrenWrapper` instances. If a DSL author nests `children()` calls (a child itself has a `children()` field), the inner `ChildrenWrapper` survives into `DesiredState.resources[n].fields`, violating the invariant in `nodes.py:57` ("DesiredState must never hold ChildrenWrapper values"). No error is raised; the corruption is discovered only when the diff stage tries to introspect field values.
+
+There is no test asserting that nested `children()` calls either work correctly or raise a clear error.
+
+**Fix (minimal — assert the invariant at the end of `_flatten()`):**
 ```python
-if isinstance(value, (list, tuple)) and len(value) == 2:
-    return int(value[0])
-return value   # silent passthrough for wrong-length sequences
+# After building flat[], enforce the post-condition:
+for node in flat:
+    for fname, fval in node.fields.items():
+        if isinstance(fval, ChildrenWrapper):
+            raise ValueError(
+                f"ChildrenWrapper survived flattening in {node.slug}.{fname}. "
+                "Nested children() calls (children of children) are not supported."
+            )
+return flat
 ```
-
-**Fix:**
-
-```python
-if isinstance(value, (list, tuple)):
-    if len(value) == 2:
-        return int(value[0])
-    raise ValueError(
-        f"many2one field value must be an int or a 2-element (id, name) sequence, "
-        f"got {len(value)}-element {type(value).__name__}: {value!r}"
-    )
-return value
-```
+This converts the silent corruption into a clear, early error until recursive expansion is implemented.
 
 ---
 
-### MI-04: config_parameters allows silent duplicate keys
+### IN-02: `context.py:207` — `children()` does not apply underscore-to-dot normalisation to `child_model`; inconsistent with `ResourceProxy` sugar
 
-**File:** `src/godoo_stateman/dsl/context.py:178`
+**File:** `src/godoo_stateman/dsl/context.py:207`
 
-**Issue:** `ConfigParameterProxy.__setitem__` appends a new dict entry each time. If a DSL author sets the same key twice:
-
+**Issue:** `ResourceProxy.__getattr__` automatically translates `resource.sale_order_line` to model `"sale.order.line"` (DSL sugar). The `children()` helper accepts `child_model` as a raw string and does not apply the same translation. A DSL author writing:
 ```python
-mail.config["web.base.url"] = "https://staging.example.com"
-mail.config["web.base.url"] = "https://prod.example.com"
+o.lines = children("sale_order_line", "order_id", [...])
 ```
+gets `child_model="sale_order_line"` stored verbatim in the `ChildrenWrapper`. The promoted child nodes then receive `model="sale_order_line"`, which does not match any Odoo schema key. The `normalize()` stage silently passes through all child fields (unknown-model path), and the apply stage will fail with an Odoo model-not-found error.
 
-Both entries appear in `config_parameters` with the same key and different values. No error is raised. The apply stage will receive two conflicting instructions for the same `ir.config_parameter` key, and behavior depends on whichever the apply loop processes last — non-deterministic if iteration order is not guaranteed.
+The docstring says `child_model` should be a "dotted" name (`"sale.order.line"`), which is correct but relies on the author knowing to use a different convention than the one used for all other resource references.
 
-**Fix:** Validate uniqueness at set time:
-
+**Fix:** Mirror `ResourceProxy` inside `children()`:
 ```python
-def __setitem__(self, key: str, value: str) -> None:
-    existing_keys = {entry["key"] for entry in self._collector.config_parameters}
-    if key in existing_keys:
-        raise ValueError(
-            f"Duplicate config_parameter key {key!r}. "
-            f"Each key may only be set once per config file."
-        )
-    self._collector.config_parameters.append({"key": key, "value": value})
-```
-
----
-
-## NIT Issues
-
-### NI-01: ResourceNode.fields and DataSourceNode.selector are mutable dicts in frozen dataclasses
-
-**File:** `src/godoo_stateman/dsl/types/nodes.py:27, 41`
-
-**Issue:** `@dataclass(frozen=True)` prevents attribute reassignment but does not prevent mutation of the dict contents. The `ResourceNode` docstring acknowledges this: "Mutation of the dict contents is possible but undocumented behaviour; callers should treat the dict as logically immutable." The same is true for `DesiredState.config_parameters: tuple[dict[str, str], ...]` — each inner dict is mutable.
-
-This is documented and accepted, but `normalize.py` already creates new dicts via `dataclasses.replace(node, fields=normalized_fields)` rather than mutating in place, which is the correct pattern. Consider adding a `__post_init__` that wraps `fields` in `types.MappingProxyType` for a deeper immutability guarantee, or leave as-is if the documentation is considered sufficient.
-
-**Fix (optional):** No action required if the documented convention is enforced by code review. If desired:
-
-```python
-from types import MappingProxyType
-
-@dataclass(frozen=True)
-class ResourceNode:
+def children(
+    child_model: str, inverse_field: str, children_list: list[Any]
+) -> ChildrenWrapper:
+    child_model = child_model.replace("_", ".")  # mirror ResourceProxy sugar
     ...
-    def __post_init__(self) -> None:
-        # Wrap fields in a read-only proxy. Callers must use dataclasses.replace().
-        object.__setattr__(self, "fields", MappingProxyType(self.fields))
 ```
-
-Note: This would break `_ResourceBuilder.__init__` which holds a mutable reference to `node.fields` and writes to it via `self._fields[name] = value`. The builder pattern would need refactoring.
 
 ---
 
-### NI-02: test_eval_purity_no_odoo_calls patches a module that may not be installed
+### IN-03: `graph.py:91` — no comment explains why `list[str]` field values (post-flatten slug lists) are intentionally not traversed for edges
 
-**File:** `tests/unit/dsl/test_eval.py:221`
+**File:** `src/godoo_stateman/dsl/graph.py:91`
 
-**Issue:** `patch("godoo.client.client.OdooClient", side_effect=_fail_on_odoo)` will succeed even if `godoo-client` is not installed, because `unittest.mock.patch` creates the attribute path if needed. However, if `godoo-client` is not installed and `eval_config` never imports from it, the patch is a no-op that tests nothing. The test correctly verifies the result is correct, but the guard itself may be hollow in environments where `godoo-client` is not a dev dependency.
+**Issue:** After `_flatten()`, a parent's child-list field becomes `list[str]` of slug strings (e.g., `["order1.line1"]`). When `build_graph()` iterates `resource.fields.values()`, these lists are silently skipped: not a `Deferred`, `hasattr(list_val, "slug")` is `False`. This is correct — parent-to-child edges are covered by the `parent_slug` path (source A). However there is no comment explaining this design decision. A future maintainer adding a new reference type (e.g., a `FieldRef` object with a `.slug`, stored inside a list) might not realise that only *direct* field values are inspected, not items *within* iterable field values.
 
-**Fix:** Add an import guard to ensure the patch target exists:
-
+**Fix (documentation only):** Add a brief comment after the `elif hasattr(...)` block:
 ```python
-try:
-    import godoo.client.client  # noqa: F401
-    _GODOO_CLIENT_AVAILABLE = True
-except ImportError:
-    _GODOO_CLIENT_AVAILABLE = False
-
-# In the test:
-if _GODOO_CLIENT_AVAILABLE:
-    with patch("godoo.client.client.OdooClient", side_effect=_fail_on_odoo):
-        state = eval_config(path)
-else:
-    state = eval_config(path)  # still verifies purity via result check
+# NOTE: list[str] values (post-flatten parent→child slug lists) are NOT
+# traversed here. Parent→child edges are covered by source A (parent_slug).
+# Only direct field-value references produce edges in sources B and C.
 ```
 
 ---
 
-## Findings Summary Table
+### IN-04: `test_eval.py:246` — purity test uses a string-path patch that would silently succeed if `godoo.client.client` path changes
 
-| ID | Severity | File | Line | Issue |
-|----|----------|------|------|-------|
-| BL-01 | BLOCKER | `dsl/eval.py` | 50-84 | exec() sandbox escapable via getattr+__subclasses__; docstring claims are false |
-| BL-02 | BLOCKER | `cli/commands/plan.py` | 32 | Always exits with code 1, even on success |
-| MA-01 | MAJOR | `dsl/context.py` | 123, 158 | 3-segment Odoo models silently mis-translated (sale.order.line → sale.order_line) |
-| MA-02 | MAJOR | `dsl/normalize.py` | 48 | sorted() on m2x field crashes with TypeError on mixed-type lists |
-| MA-03 | MAJOR | `dsl/context.py` | 217-222 | children() silently drops unrecognized items — data loss, no diagnostic |
-| MA-04 | MAJOR | `dsl/eval.py` | 191 | 'or'-idiom in module extraction masks falsy values; exec_globals fallback is dead code |
-| MI-01 | MINOR | `tests/unit/dsl/test_eval.py` | 128 | Test comment says NameError; Python 3.14 raises ImportError for blocked import |
-| MI-02 | MINOR | `dsl/context.py` | 68 | _RESERVED does not guard dunder names in __setattr__ |
-| MI-03 | MINOR | `dsl/normalize.py` | 54-55 | Non-2-element many2one sequences pass through silently; cause spurious diff |
-| MI-04 | MINOR | `dsl/context.py` | 178 | config_parameters allows duplicate keys with no error |
-| NI-01 | NIT | `dsl/types/nodes.py` | 27, 41 | Mutable dicts inside frozen dataclasses — documented but not enforced |
-| NI-02 | NIT | `tests/unit/dsl/test_eval.py` | 221 | Purity guard patch may be hollow if godoo-client not installed |
+**File:** `tests/unit/dsl/test_eval.py:246`
+
+**Issue:** `patch("godoo.client.client.OdooClient", side_effect=_fail_on_odoo)` uses a string target path. If the `godoo-client` package restructures its import tree (e.g., `OdooClient` moves to `godoo.client._client`), the `patch()` call silently creates a new attribute at the old path rather than raising. The test continues to pass while providing no actual guard — `eval_config()` could import and call `OdooClient` at the new path undetected.
+
+**Fix:** Either import the target symbol first (ImportError = broken guard, caught immediately) or add `create=False` with an import assertion:
+```python
+import godoo.client.client as _godoo_client_mod  # ImportError here = guard is broken
+
+with patch.object(_godoo_client_mod, "OdooClient", side_effect=_fail_on_odoo):
+    state = eval_config(path)
+```
+`patch.object` targets the live module object, so it will raise `AttributeError` if `OdooClient` is absent — making any future refactor immediately visible.
 
 ---
 
-## What Is Correct
-
-The following areas were specifically scrutinized and found correct:
-
-- **Cycle detection** (`graph.py:108-117`): `nx.find_cycle()` is correctly wrapped in `try/except nx.NetworkXNoCycle`. The `None`-check pitfall documented in RESEARCH.md is not present.
-- **Boolean False preservation** (`normalize.py:57-61`): `ttype == "boolean"` is correctly exempted from the `False → None` scalar rule. The A1 decision is correctly implemented and tested.
-- **exec locals/globals split** (`eval.py:186-191`): The Pitfall 2 note is addressed — `exec_locals` is checked before `exec_globals` (see MA-04 for the `or`-idiom concern, which is correctness-adjacent, not a crash).
-- **`_flatten` dedup logic** (`eval.py:113-119`): `id(child)` tracking is correct within a single `eval_config()` call where no GC reclaim occurs. Prefixed child copies get fresh `ResourceNode` objects with different IDs, preventing false dedup.
-- **Purity invariant** (`eval.py:158-204`): No Odoo I/O in the entire DSL pipeline. All proxy objects are in-process with no async.
-- **NetworkX DAG topology** (`graph.py:85-103`): Three edge sources (parent_slug, Deferred.deps, direct .slug refs) are all correctly wired. The duplicate parent→child edge from `inverse_field` (a `ResourceNode` in child.fields that has a `.slug`) is benign since NetworkX deduplicates edges.
-- **`from __future__ import annotations`**: Present in all source files.
-- **Mypy strict + ruff**: Clean on all reviewed files.
-
----
-
-_Reviewed: 2026-05-26_
-_Reviewer: Claude (gsd-code-reviewer), depth=deep_
-_Commit range: 5faf39f..HEAD (23 commits)_
+_Reviewed: 2026-05-26T12:00:00Z_
+_Reviewer: Claude (gsd-code-reviewer)_
+_Depth: deep_
