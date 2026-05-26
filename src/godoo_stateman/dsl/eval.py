@@ -158,6 +158,19 @@ def _flatten(resources: list[ResourceNode]) -> list[ResourceNode]:
         # Rebuild the parent with the ChildrenWrapper-free fields dict.
         flat.append(dataclasses.replace(parent, fields=flat_fields))
         flat.extend(child_nodes)
+
+    # Post-condition: no ChildrenWrapper must survive into the flat list.
+    # Nested children() calls (children-of-children) are not yet supported —
+    # surface a clear error now rather than allowing silent corruption into
+    # DesiredState (see nodes.py invariant: DesiredState must never hold
+    # ChildrenWrapper values).
+    for node in flat:
+        for fname, fval in node.fields.items():
+            if isinstance(fval, ChildrenWrapper):
+                raise ValueError(
+                    f"ChildrenWrapper survived flattening in {node.slug!r}.{fname!r}. "
+                    "Nested children() calls (children of children) are not supported."
+                )
     return flat
 
 
@@ -199,11 +212,18 @@ def eval_config(path: Path) -> DesiredState:
     exec(code, exec_globals, exec_locals)
 
     # Extract module — check exec_locals first, then exec_globals (Pitfall 2).
-    module: object = exec_locals.get("module") or exec_globals.get("module")
-    if not isinstance(module, str) or not module:
+    # Use explicit None check (not truthiness) so falsy-but-wrong-typed values
+    # (e.g. module = 0 or module = False) produce a clear error instead of
+    # masking the actual value with the or-fallback.
+    module_raw: object = exec_locals.get("module")
+    if module_raw is None:
+        module_raw = exec_globals.get("module")
+    if not isinstance(module_raw, str) or not module_raw:
         raise MissingModuleError(
             f'Config file {path} must declare: module = "<name>"'
+            f" (got {type(module_raw).__name__}: {module_raw!r})"
         )
+    module: str = module_raw
 
     flat_resources = _flatten(collector.resources)
 

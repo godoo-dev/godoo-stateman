@@ -82,6 +82,12 @@ class _ResourceBuilder:
     def __setattr__(self, name: str, value: Any) -> None:
         if name in _ResourceBuilder._RESERVED:
             object.__setattr__(self, name, value)
+        elif name.startswith("_"):
+            raise AttributeError(
+                f"Cannot assign {name!r} on ResourceBuilder — "
+                "Odoo field names do not start with '_'. "
+                "Did you mean to write without the leading underscore?"
+            )
         else:
             self._fields[name] = value
 
@@ -213,11 +219,19 @@ def children(
     ``ResourceNode`` and is extracted by ``_flatten()`` in ``eval.py``.
 
     Args:
-        child_model: Odoo model name for the child records (dotted, e.g. "sale.order.line").
+        child_model: Odoo model name for the child records.  Accepts both dotted
+            (``"sale.order.line"``) and underscore (``"sale_order_line"``) forms —
+            underscores are replaced with dots to mirror the ``ResourceProxy`` sugar
+            (D-03).  The stored ``ChildrenWrapper.child_model`` is always dotted.
         inverse_field: Name of the Many2one field on the child pointing back to the parent.
         children_list: List of ``_ResourceBuilder`` instances (or ``ResourceNode`` objects)
             produced by resource proxy calls.
     """
+    # Mirror ResourceProxy sugar: replace all underscores with dots so
+    # children("sale_order_line", ...) and children("sale.order.line", ...)
+    # both produce child_model = "sale.order.line" (D-03 consistency).
+    child_model = child_model.replace("_", ".")
+
     # children_list entries are _ResourceBuilder instances; their _node is the ResourceNode.
     resolved: list[ResourceNode] = []
     for item in children_list:
@@ -225,7 +239,11 @@ def children(
             resolved.append(item._node)
         elif isinstance(item, ResourceNode):
             resolved.append(item)
-        # else: silently skip unrecognized items (defensive)
+        else:
+            raise TypeError(
+                f"children() list must contain resource builder or ResourceNode items, "
+                f"got {type(item).__name__!r}: {item!r}"
+            )
     return ChildrenWrapper(
         child_model=child_model,
         inverse_field=inverse_field,

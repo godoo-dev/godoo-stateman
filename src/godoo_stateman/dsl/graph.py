@@ -101,6 +101,9 @@ def build_graph(state: DesiredState) -> nx.DiGraph:
             ):
                 # C. Direct resource reference via .slug attribute
                 G.add_edge(field_val.slug, resource.slug)
+            # NOTE: list[str] values (post-flatten parent→child slug lists) are NOT
+            # traversed here. Parent→child edges are covered by source A (parent_slug).
+            # Only direct field-value references produce edges in sources B and C.
 
     # ------------------------------------------------------------------
     # Step 3 — Cycle detection (Pitfall 1: catch NetworkXNoCycle, NOT None-check)

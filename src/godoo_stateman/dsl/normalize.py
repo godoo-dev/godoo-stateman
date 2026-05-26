@@ -45,7 +45,14 @@ def _normalize_value(value: Any, ttype: str) -> Any:
             return []
         # CORE-08: many2many order-irrelevant — sort for canonical comparison
         # Integer IDs are directly sortable; sorted() produces a stable canonical order.
-        return sorted(list(value))
+        try:
+            return sorted(list(value))
+        except TypeError as exc:
+            raise ValueError(
+                f"Cannot sort {ttype!r} field value {value!r}: "
+                "list elements must be mutually comparable (e.g. all integers). "
+                f"Original error: {exc}"
+            ) from exc
     elif ttype == "many2one":
         # CORE-02: False/None → None (unset many2one)
         if value is False or value is None:

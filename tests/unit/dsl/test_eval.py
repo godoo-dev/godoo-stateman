@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-from godoo_stateman.dsl.eval import eval_config
+from godoo_stateman.dsl.eval import _flatten, eval_config
 from godoo_stateman.dsl.types.nodes import ChildrenWrapper, ResourceNode
 from godoo_stateman.errors import MissingModuleError
 
@@ -222,6 +222,71 @@ def test_three_segment_model_name(tmp_path: Path) -> None:
     )
 
 
+def test_nested_children_raises(tmp_path: Path) -> None:
+    """IN-01: nested children() calls (children-of-children) raise a clear ValueError.
+
+    DesiredState must never hold ChildrenWrapper values (nodes.py invariant).
+    _flatten() enforces a post-condition: if a child node itself carries a
+    ChildrenWrapper field (i.e. nested children()), it must raise ValueError
+    with a clear message rather than silently corrupting DesiredState.
+
+    We construct the scenario directly: a grandchild node whose fields contain
+    a ChildrenWrapper, wrapped as a child inside a parent ChildrenWrapper.
+    This bypasses DSL eval to produce exactly the unsupported structure.
+    """
+    # Grandchild: a node whose fields already contain a ChildrenWrapper.
+    great_grandchild = ResourceNode(model="a.b.c", slug="ggc1", fields={})
+    nested_wrapper = ChildrenWrapper(
+        child_model="a.b.c",
+        inverse_field="line_id",
+        children=(great_grandchild,),
+    )
+    grandchild = ResourceNode(
+        model="sale.order.line",
+        slug="line1",
+        fields={"details": nested_wrapper},  # <-- nested ChildrenWrapper
+    )
+    # Parent: wraps the grandchild in a ChildrenWrapper.
+    outer_wrapper = ChildrenWrapper(
+        child_model="sale.order.line",
+        inverse_field="order_id",
+        children=(grandchild,),
+    )
+    parent = ResourceNode(
+        model="sale.order",
+        slug="order1",
+        fields={"lines": outer_wrapper},
+    )
+
+    with pytest.raises(ValueError, match="ChildrenWrapper survived flattening"):
+        _flatten([parent])
+
+
+def test_children_underscore_model_normalization(tmp_path: Path) -> None:
+    """IN-02: children() applies underscore-to-dot normalization on child_model.
+
+    children("sale_order_line", ...) must store child_model = "sale.order.line",
+    consistent with the ResourceProxy sugar (D-03). Without normalization, the
+    child nodes would carry "sale_order_line" which does not match any Odoo schema.
+    """
+    path = _write_config(
+        tmp_path,
+        'module = "test_mod"\n'
+        'with resource.sale_order("order1") as o:\n'
+        '    o.name = "SO001"\n'
+        '    o.lines = children("sale_order_line", "order_id", [\n'
+        '        resource.sale_order_line("line1", product_id=1),\n'
+        '    ])\n',
+    )
+    state = eval_config(path)
+    # Child node must have model "sale.order.line", not "sale_order_line"
+    child = next(n for n in state.resources if n.slug == "order1.line1")
+    assert child.model == "sale.order.line", (
+        f"Expected 'sale.order.line', got {child.model!r} — "
+        "children() must normalize underscores to dots (IN-02)"
+    )
+
+
 def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:
     """CORE-01: eval_config() makes zero Odoo/network calls (purity invariant).
 
@@ -240,10 +305,16 @@ def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:
     # Patch OdooClient so any instantiation or call raises AssertionError.
     # This is the nuclear option: if eval_config() touches Odoo transport at all,
     # the test will fail with a clear message.
+    #
+    # Use patch.object on the live module rather than a string path so that a
+    # future package restructure causes an immediate AttributeError here (broken
+    # guard) rather than silently patching a non-existent path (IN-04).
     def _fail_on_odoo(*args: object, **kwargs: object) -> None:
         raise AssertionError("eval_config() must not access OdooClient — purity violation")
 
-    with patch("godoo.client.client.OdooClient", side_effect=_fail_on_odoo):
+    import godoo.client.client as _godoo_client_mod  # ImportError = guard is broken
+
+    with patch.object(_godoo_client_mod, "OdooClient", side_effect=_fail_on_odoo):
         state = eval_config(path)
 
     # Verify the result is correct (proves real eval ran to completion).
