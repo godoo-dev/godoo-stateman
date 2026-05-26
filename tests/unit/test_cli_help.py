@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from godoo_stateman.cli.app import app
@@ -26,10 +29,23 @@ def test_help_lists_all_five_commands() -> None:
 
 
 def test_plan_stub_exits_1() -> None:
-    """plan stub prints a Rich message and exits with code 1."""
-    result = runner.invoke(app, ["plan"])
-    assert result.exit_code == 1, f"Expected exit 1, got {result.exit_code}"
+    """plan stub prints Phase 3 note and exits with code 1 when given a valid config path."""
+    with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
+        f.write('module = "test_module"\n')
+        config_path = f.name
+    result = runner.invoke(app, ["plan", config_path])
+    assert result.exit_code == 1, f"Expected exit 1, got {result.exit_code}:\n{result.output}"
     assert "Phase 3" in result.output
+
+
+def test_plan_stub_shows_eval_summary() -> None:
+    """plan stub calls eval_config and prints module/resource count on success."""
+    with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
+        f.write('module = "my_module"\n')
+        config_path = f.name
+    result = runner.invoke(app, ["plan", config_path])
+    assert "my_module" in result.output, f"Expected module name in output:\n{result.output}"
+    assert "resources=0" in result.output
 
 
 def test_apply_stub_exits_1() -> None:
