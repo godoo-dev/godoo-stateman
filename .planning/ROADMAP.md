@@ -55,7 +55,12 @@ Plans:
   3. Inline One2many children declared under a parent resource appear as nodes in the dependency graph and participate in cycle detection.
   4. Introducing a circular dependency between two managed resources causes `build_graph()` to raise a `CycleError` with the cycle path in the error message before any Odoo call is attempted.
   5. The `resolve()` design spike is finalized: semantics (deferred computation firing at the read seam), interaction with the dependency DAG, and the `exec()` restricted-builtins approach are documented and passing unit tests.
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 02-01-PLAN.md — Foundation types: pyproject.toml networkx dep, errors.py extensions, dsl/types/ package (DesiredState, ResourceNode, DataSourceNode, Deferred), test_deferred.py
+- [ ] 02-02-PLAN.md — DSL eval: context.py proxy objects + eval.py exec() evaluator with flatten + test_eval.py covering RSRC-01..07
+- [ ] 02-03-PLAN.md — Normalize stage: normalize.py schema-driven canonicalization (CORE-02, CORE-08) + test_normalize.py
+- [ ] 02-04-PLAN.md — Graph + wire: graph.py build_graph() with CycleError + test_graph.py (REL-01/02/07) + plan stub wired to eval_config()
 
 ### Phase 3: Diff + Plan + Import CLI
 **Goal**: The `plan` command works end-to-end against real Odoo — fetching live state, diffing desired vs. live, resolving data-source read seam, and producing a human-readable reviewable plan — and `import` adopts existing records without silent adoption ever occurring.
@@ -115,7 +120,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
-| 2. DSL Eval + Pure Pipeline | 0/TBD | Not started | - |
+| 2. DSL Eval + Pure Pipeline | 0/4 | Not started | - |
 | 3. Diff + Plan + Import CLI | 0/TBD | Not started | - |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
