@@ -13,14 +13,12 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from godoo_stateman.diff import diff
 from godoo_stateman.dsl.types.desired import DesiredState
 from godoo_stateman.dsl.types.nodes import ResourceNode
 from godoo_stateman.identity import XmlIdRecord
 from godoo_stateman.live.livestate import LiveState
-from godoo_stateman.plan.types import FieldDiff, PlanAction, PlanStep
+from godoo_stateman.plan.types import PlanAction, PlanStep
 from godoo_stateman.schema.snapshot import VersionedSnapshot
 from godoo_stateman.schema.version import SCHEMA_FORMAT_VERSION
 from godoo_stateman.types.schema import VersionedFieldSchema, VersionedModelSchema
