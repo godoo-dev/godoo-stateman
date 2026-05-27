@@ -85,6 +85,10 @@ def render_plan(
 
     # D-08: emit in topological generation order, slugs sorted within each
     # generation for deterministic tie-breaking (SC-2).
+    # Only nodes in the graph (desired-state resources and data sources) are
+    # emitted here.  Delete/Archive/Reject steps (managed-but-absent records)
+    # have no graph node and are handled in the second loop below.
+    graph_slugs: set[str] = set(graph.nodes)
     for generation in nx.topological_generations(graph):
         for slug in sorted(generation):
             step = plan_steps_by_slug.get(slug)
@@ -116,6 +120,30 @@ def render_plan(
                     console.print(
                         f"      {fd.field_name}: {fd.old_value!r} → {fd.new_value!r}"
                     )
+
+    # Emit steps whose slug is NOT in the graph (Delete/Archive/Reject —
+    # managed-but-absent records).  These steps have no ordering constraints
+    # relative to desired-state resources; sort by slug for determinism (SC-2).
+    unordered_steps = sorted(
+        (s for s in plan_steps if s.slug not in graph_slugs),
+        key=lambda s: s.slug,
+    )
+    for step in unordered_steps:
+        if step.action == PlanAction.NOOP and not verbose:
+            continue
+        symbol = ACTION_SYMBOLS[step.action]
+        style = ACTION_STYLES[step.action]
+        header = Text()
+        header.append("  ")
+        header.append(symbol, style=style)
+        header.append(f" {step.slug}  [{step.model}]")
+        console.print(header)
+
+        if step.action == PlanAction.UPDATE:
+            for fd in step.field_diff:
+                console.print(
+                    f"      {fd.field_name}: {fd.old_value!r} → {fd.new_value!r}"
+                )
 
     # D-07: trailing summary line — always present when noop_count > 0.
     noop_count = sum(1 for s in plan_steps if s.action == PlanAction.NOOP)

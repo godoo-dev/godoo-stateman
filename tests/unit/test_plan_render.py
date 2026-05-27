@@ -345,3 +345,106 @@ def test_model_name_in_output() -> None:
     assert "res.partner" in output, (
         f"Model name 'res.partner' missing from output:\n{output}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Test 9: CR-01 regression — Delete/Archive/Reject steps not in graph are rendered
+# ---------------------------------------------------------------------------
+
+
+def test_delete_step_not_in_graph_is_rendered() -> None:
+    """A DELETE step whose slug is absent from the graph must appear in output (CR-01).
+
+    managed-but-absent records produce Delete steps but have no node in the
+    desired-state graph.  render_plan() must emit them after the topological loop.
+    """
+    # Graph only contains the desired-state resource, NOT the delete slug.
+    graph = _make_graph("desired_resource")
+    steps = [
+        _make_step("desired_resource", action=PlanAction.NOOP),
+        _make_step("deleted_record", action=PlanAction.DELETE),
+    ]
+    output = _capture(steps, graph, verbose=True)
+
+    assert "deleted_record" in output, (
+        f"DELETE step 'deleted_record' (not in graph) missing from output:\n{output}"
+    )
+    assert "-" in output, f"'-' symbol missing for DELETE step:\n{output}"
+
+
+def test_archive_step_not_in_graph_is_rendered() -> None:
+    """An ARCHIVE step whose slug is absent from the graph must appear in output (CR-01)."""
+    graph = _make_graph("desired_resource")
+    steps = [
+        _make_step("desired_resource", action=PlanAction.NOOP),
+        _make_step("archived_record", action=PlanAction.ARCHIVE),
+    ]
+    output = _capture(steps, graph, verbose=True)
+
+    assert "archived_record" in output, (
+        f"ARCHIVE step 'archived_record' (not in graph) missing from output:\n{output}"
+    )
+    assert "a" in output, f"'a' symbol missing for ARCHIVE step:\n{output}"
+
+
+def test_reject_step_not_in_graph_is_rendered() -> None:
+    """A REJECT step whose slug is absent from the graph must appear in output (CR-01)."""
+    graph = _make_graph("desired_resource")
+    steps = [
+        _make_step("desired_resource", action=PlanAction.CREATE),
+        _make_step("collision_slug", action=PlanAction.REJECT),
+    ]
+    output = _capture(steps, graph)
+
+    assert "collision_slug" in output, (
+        f"REJECT step 'collision_slug' (not in graph) missing from output:\n{output}"
+    )
+    assert "x" in output, f"'x' symbol missing for REJECT step:\n{output}"
+
+
+def test_mixed_steps_graph_and_off_graph_deterministic() -> None:
+    """render_plan() is byte-identical across two calls for a mixed step set (SC-2, CR-01).
+
+    Mix: CREATE (in graph), UPDATE (in graph), NOOP (in graph),
+         DELETE (off graph), ARCHIVE (off graph), REJECT (off graph).
+    """
+    graph = _make_graph("create_slug", "update_slug", "noop_slug")
+    fd = FieldDiff(field_name="name", old_value="Old", new_value="New")
+    steps = [
+        _make_step("create_slug", action=PlanAction.CREATE),
+        _make_step("update_slug", action=PlanAction.UPDATE, field_diff=(fd,)),
+        _make_step("noop_slug", action=PlanAction.NOOP),
+        _make_step("deleted_record", action=PlanAction.DELETE),
+        _make_step("archived_record", action=PlanAction.ARCHIVE),
+        _make_step("rejected_record", action=PlanAction.REJECT),
+    ]
+
+    out1 = _capture(steps, graph, verbose=True)
+    out2 = _capture(steps, graph, verbose=True)
+
+    assert out1 == out2, (
+        f"render_plan() produced non-identical outputs for mixed step set.\n"
+        f"First:\n{out1!r}\nSecond:\n{out2!r}"
+    )
+
+    # All six slugs must appear in the output.
+    for slug in ("create_slug", "update_slug", "noop_slug", "deleted_record", "archived_record", "rejected_record"):
+        assert slug in out1, f"Slug {slug!r} missing from mixed render output:\n{out1}"
+
+
+def test_off_graph_steps_appear_after_graph_steps() -> None:
+    """Off-graph steps (Delete/Archive/Reject) must appear after graph steps in output (CR-01)."""
+    graph = _make_graph("desired_first")
+    steps = [
+        _make_step("desired_first", action=PlanAction.CREATE),
+        _make_step("managed_absent", action=PlanAction.DELETE),
+    ]
+    output = _capture(steps, graph)
+
+    pos_desired = output.find("desired_first")
+    pos_absent = output.find("managed_absent")
+    assert pos_desired < pos_absent, (
+        f"Off-graph DELETE step must appear after graph CREATE step.\n"
+        f"desired_first pos={pos_desired}, managed_absent pos={pos_absent}\n"
+        f"Output:\n{output}"
+    )
