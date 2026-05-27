@@ -88,11 +88,32 @@ Plans:
 
   1. `godoo-stateman plan config.py` prints each resource's slug, model, and pending action (`Create | Update | NoOp | Delete | Archive | Reject`); Update actions include a per-field diff with old and new values; exit code is 0 (no changes) or 2 (changes pending).
   2. Running `plan` twice against an unchanged Odoo produces identical output both times (plan is deterministic across runs).
-  3. A resource in the DSL whose natural identity matches an existing unmanaged Odoo record (no xmlid) surfaces as `Reject` (adoption conflict) in the plan output — never as `Create` or `Update`.
+  3. A resource in the DSL whose `xmlid_prefix.slug` xmlid already exists in `ir.model.data` pointing to a record of a **different model** surfaces as `Reject` (xmlid-namespace collision) in the plan output — decided from `ir.model.data` alone. An unmanaged look-alike record with no managed xmlid results in `Create`. (Redefined per D-01/D-02.)
   4. A `data.<type>(**selector)` reference resolves its remote ID at plan time (read seam) and is available to dependent plan steps; a Many2many field pointing to a data-source record renders the correct resolved ID in the plan diff.
-  5. `godoo-stateman import --model project.project --id 42 --module stateman --name my_project` writes an xmlid to `ir.model.data`; subsequent `plan` treats that record as managed.
+  5. `godoo-stateman import --model res.partner --id 42 --module stateman --name my_partner` writes an xmlid to `ir.model.data`; subsequent `plan` treats that record as managed.
 
-**Plans**: TBD
+**Plans:** 5 plans
+Plans:
+
+**Wave 0**
+
+- [ ] 03-01-PLAN.md — DSL rename module→xmlid_prefix (D-05) + errors.py additions + ROADMAP/REQUIREMENTS doc correction (D-03)
+
+**Wave 1** *(blocked on Wave 0 completion)*
+
+- [ ] 03-02-PLAN.md — Plan types (PlanStep/PlanAction/FieldDiff) + LiveState fetch + read-seam resolution (live/ subpackage)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-03-PLAN.md — Diff engine (diff.py) + offline unit tests for diff and seam
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-04-PLAN.md — Plan render (plan/render.py) + full plan command wired end-to-end
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03-05-PLAN.md — Import command + SC-1/SC-2/SC-4/SC-5 acceptance tests against real Odoo 17 CE
 
 ### Phase 4: Apply (core actions) — VAL-01 gate
 
@@ -149,7 +170,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
 | 2. DSL Eval + Pure Pipeline | 4/4 | Complete    | 2026-05-26 |
-| 3. Diff + Plan + Import CLI | 0/TBD | Not started | - |
+| 3. Diff + Plan + Import CLI | 0/5 | Not started | - |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
 | 6. Release Packaging | 0/TBD | Not started | - |
