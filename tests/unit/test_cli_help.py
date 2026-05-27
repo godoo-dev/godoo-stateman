@@ -34,9 +34,7 @@ def test_plan_exits_1_when_env_missing() -> None:
         config_path = f.name
     # Invoke without Odoo env vars — must exit 1 with helpful message.
     result = runner.invoke(app, ["plan", config_path], env={})
-    assert result.exit_code == 1, (
-        f"Expected exit 1 for missing env vars, got {result.exit_code}:\n{result.output}"
-    )
+    assert result.exit_code == 1, f"Expected exit 1 for missing env vars, got {result.exit_code}:\n{result.output}"
     assert "GODOO_URL" in result.output or "GODOO" in result.output, (
         f"Expected missing-env-var message in output:\n{result.output}"
     )
@@ -74,9 +72,7 @@ def test_import_requires_options() -> None:
     """
     result = runner.invoke(app, ["import"])
     # Typer exits with 2 for missing required options (usage error).
-    assert result.exit_code != 0, (
-        f"Expected non-zero exit when required options are missing, got {result.exit_code}"
-    )
+    assert result.exit_code != 0, f"Expected non-zero exit when required options are missing, got {result.exit_code}"
 
 
 def test_snapshot_help_exits_0() -> None:

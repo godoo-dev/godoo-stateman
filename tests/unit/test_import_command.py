@@ -114,9 +114,7 @@ async def test_same_res_id_is_idempotent_returns_0() -> None:
     # Step 1: search_read confirms record exists; Step 2: find_by_xmlid returns existing
     client = _make_client(search_read_return=[{"id": 42}])
 
-    existing = XmlIdRecord(
-        module="mymod", name="myslug", model="res.partner", res_id=42, complete_name="mymod.myslug"
-    )
+    existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=42, complete_name="mymod.myslug")
 
     with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
         ctx = AsyncMock()
@@ -141,9 +139,7 @@ async def test_same_res_id_does_not_call_write_xmlid() -> None:
     }
     client = _make_client(search_read_return=[{"id": 42}])
 
-    existing = XmlIdRecord(
-        module="mymod", name="myslug", model="res.partner", res_id=42, complete_name="mymod.myslug"
-    )
+    existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=42, complete_name="mymod.myslug")
 
     with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
         ctx = AsyncMock()
@@ -175,9 +171,7 @@ async def test_different_res_id_no_force_returns_1() -> None:
     }
     client = _make_client(search_read_return=[{"id": 99}])
 
-    existing = XmlIdRecord(
-        module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug"
-    )
+    existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug")
 
     with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
         ctx = AsyncMock()
@@ -202,9 +196,7 @@ async def test_different_res_id_no_force_prints_error_message() -> None:
     }
     client = _make_client(search_read_return=[{"id": 99}])
 
-    existing = XmlIdRecord(
-        module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug"
-    )
+    existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug")
 
     printed_messages: list[str] = []
 
@@ -238,9 +230,7 @@ async def test_different_res_id_no_force_does_not_call_write_xmlid() -> None:
     }
     client = _make_client(search_read_return=[{"id": 99}])
 
-    existing = XmlIdRecord(
-        module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug"
-    )
+    existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug")
 
     with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
         ctx = AsyncMock()
@@ -272,9 +262,7 @@ async def test_different_res_id_force_calls_write_xmlid() -> None:
     }
     client = _make_client(search_read_return=[{"id": 99}])
 
-    existing = XmlIdRecord(
-        module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug"
-    )
+    existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug")
     new_record = XmlIdRecord(
         module="mymod", name="myslug", model="res.partner", res_id=99, complete_name="mymod.myslug"
     )
@@ -284,10 +272,13 @@ async def test_different_res_id_force_calls_write_xmlid() -> None:
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
         mock_cls.return_value = ctx
-        with patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing), patch(
-            "godoo_stateman.cli.commands.import_.write_xmlid",
-            return_value=new_record,
-        ) as mock_write:
+        with (
+            patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing),
+            patch(
+                "godoo_stateman.cli.commands.import_.write_xmlid",
+                return_value=new_record,
+            ) as mock_write,
+        ):
             result = await _import_impl("res.partner", 99, "mymod", "myslug", True)
 
     mock_write.assert_called_once()
@@ -319,10 +310,13 @@ async def test_new_xmlid_calls_write_xmlid_with_correct_args() -> None:
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
         mock_cls.return_value = ctx
-        with patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=None), patch(
-            "godoo_stateman.cli.commands.import_.write_xmlid",
-            return_value=new_record,
-        ) as mock_write:
+        with (
+            patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=None),
+            patch(
+                "godoo_stateman.cli.commands.import_.write_xmlid",
+                return_value=new_record,
+            ) as mock_write,
+        ):
             result = await _import_impl("res.partner", 42, "mymod", "myslug", False)
 
     mock_write.assert_called_once_with(client, "res.partner", 42, "mymod", "myslug")
@@ -340,9 +334,7 @@ async def test_new_xmlid_returns_0() -> None:
         "GODOO_PASSWORD": "admin",
     }
     client = _make_client(search_read_return=[{"id": 42}])
-    new_record = XmlIdRecord(
-        module="ns", name="slug", model="res.partner", res_id=42, complete_name="ns.slug"
-    )
+    new_record = XmlIdRecord(module="ns", name="slug", model="res.partner", res_id=42, complete_name="ns.slug")
 
     with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
         ctx = AsyncMock()

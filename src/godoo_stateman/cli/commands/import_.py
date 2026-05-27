@@ -68,15 +68,11 @@ async def _import_impl(
     if not password:
         missing.append("GODOO_PASSWORD")
     if missing:
-        console.print(
-            f"[red]Missing required environment variable(s): {', '.join(missing)}[/red]"
-        )
+        console.print(f"[red]Missing required environment variable(s): {', '.join(missing)}[/red]")
         return 1
 
     try:
-        async with OdooClient(
-            OdooClientConfig(url=url, database=db, username=user, password=password)
-        ) as client:
+        async with OdooClient(OdooClientConfig(url=url, database=db, username=user, password=password)) as client:
             # Step 1 (D-11 validate-before-write): confirm the record exists in Odoo.
             # Catches typos pre-mutation and satisfies IaC validate-before-write contract.
             # T-03-15: also confirms the record is in the declared model (not another model).
@@ -87,9 +83,7 @@ async def _import_impl(
                 limit=1,
             )
             if not records:
-                console.print(
-                    f"[red]Record {model}:{record_id} not found in Odoo[/red]"
-                )
+                console.print(f"[red]Record {model}:{record_id} not found in Odoo[/red]")
                 return 1
 
             # Step 2 (D-11 collision check): check for an existing xmlid binding.
@@ -97,9 +91,7 @@ async def _import_impl(
             if existing is not None:
                 if existing.res_id == record_id:
                     # Idempotent no-op: same binding already exists (IDENT-05).
-                    console.print(
-                        f"[dim]Already managed: {module}.{name} → {model}:{record_id}[/dim]"
-                    )
+                    console.print(f"[dim]Already managed: {module}.{name} → {model}:{record_id}[/dim]")
                     return 0
                 if not force:
                     # SAFE-03: no silent clobber — print actionable message before exit 1.
@@ -115,9 +107,7 @@ async def _import_impl(
 
             # Step 3 (D-11 write): create or update the xmlid binding.
             await write_xmlid(client, model, record_id, module, name)
-            console.print(
-                f"[green]+[/green] Imported: {module}.{name} → {model}:{record_id}"
-            )
+            console.print(f"[green]+[/green] Imported: {module}.{name} → {model}:{record_id}")
             return 0
 
     except StatemanError as exc:
