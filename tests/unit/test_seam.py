@@ -15,7 +15,7 @@ Import failures below are expected until Task 3 (GREEN).
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, call
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -73,7 +73,7 @@ async def test_fetch_groups_res_ids_per_model() -> None:
     client = _make_client(search_read_return=[imd_rows, live_rows])
 
     desired_fields_by_model = {"res.partner": {"email", "name"}}
-    state = await LiveState.fetch(client, "myprefix", desired_fields_by_model)
+    await LiveState.fetch(client, "myprefix", desired_fields_by_model)
 
     # The per-model call must use sorted res_ids [7, 42]
     assert client.search_read.call_count == 2

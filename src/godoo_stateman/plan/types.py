@@ -12,13 +12,13 @@ Conventions:
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
 
-class PlanAction(str, Enum):
+class PlanAction(StrEnum):
     """The action the executor will take for a given managed resource.
 
     ``str`` mixin makes the enum JSON-serialisable and Rich-printable with no

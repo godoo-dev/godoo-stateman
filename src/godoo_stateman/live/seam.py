@@ -28,6 +28,7 @@ from godoo_stateman.errors import LiveStateFetchError
 
 if TYPE_CHECKING:
     from godoo.client.client import OdooClient
+
     from godoo_stateman.dsl.types.nodes import DataSourceNode
 
 

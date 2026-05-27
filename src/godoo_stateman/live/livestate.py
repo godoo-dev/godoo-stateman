@@ -98,7 +98,7 @@ class LiveState:
             # Always include "id" in the projection so we can key live_fields by res_id.
             # Desired fields (from ResourceNode.fields) plus "id" — never omit fields=.
             extra_fields = sorted(desired_fields_by_model.get(model, set()))
-            fields_projection = ["id"] + extra_fields
+            fields_projection = ["id", *extra_fields]
 
             live_records = await client.search_read(
                 model,
