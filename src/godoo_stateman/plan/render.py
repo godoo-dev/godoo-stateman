@@ -22,12 +22,15 @@ Design notes:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import networkx as nx
-from rich.console import Console
 from rich.text import Text
 
 from godoo_stateman.plan.types import PlanAction, PlanStep
 
+if TYPE_CHECKING:
+    from rich.console import Console
 
 # ---------------------------------------------------------------------------
 # Action symbol and style mappings
