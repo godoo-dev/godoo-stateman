@@ -74,7 +74,7 @@ def _make_resource(model: str, slug: str, **fields: Any) -> ResourceNode:
 def _make_desired_state(resources: list[ResourceNode]) -> DesiredState:
     """Construct a DesiredState with the given resources and empty collections."""
     return DesiredState(
-        module="test_module",
+        xmlid_prefix="test_module",
         resources=tuple(resources),
         data_sources=(),
         config_parameters=(),

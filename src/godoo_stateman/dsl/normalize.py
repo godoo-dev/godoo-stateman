@@ -110,7 +110,7 @@ def normalize(state: DesiredState, snapshot: VersionedSnapshot | None) -> Desire
         normalized_resources.append(dataclasses.replace(resource, fields=normalized_fields))
 
     return DesiredState(
-        module=state.module,
+        xmlid_prefix=state.xmlid_prefix,
         resources=tuple(normalized_resources),
         data_sources=state.data_sources,
         config_parameters=state.config_parameters,

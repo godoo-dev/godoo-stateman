@@ -39,7 +39,7 @@ def _make_desired(
 ) -> DesiredState:
     """Construct a DesiredState with empty config_parameters."""
     return DesiredState(
-        module="test_module",
+        xmlid_prefix="test_module",
         resources=tuple(resources),
         data_sources=tuple(data_sources or []),
         config_parameters=(),

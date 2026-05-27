@@ -30,7 +30,7 @@ def test_help_lists_all_five_commands() -> None:
 def test_plan_stub_exits_0() -> None:
     """plan stub prints Phase 3 note and exits with code 0 on success (BL-02 fix)."""
     with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
-        f.write('module = "test_module"\n')
+        f.write('xmlid_prefix = "test_module"\n')
         config_path = f.name
     result = runner.invoke(app, ["plan", config_path])
     assert result.exit_code == 0, f"Expected exit 0, got {result.exit_code}:\n{result.output}"
@@ -40,7 +40,7 @@ def test_plan_stub_exits_0() -> None:
 def test_plan_stub_shows_eval_summary() -> None:
     """plan stub calls eval_config and prints module/resource count on success."""
     with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
-        f.write('module = "my_module"\n')
+        f.write('xmlid_prefix = "my_module"\n')
         config_path = f.name
     result = runner.invoke(app, ["plan", config_path])
     assert "my_module" in result.output, f"Expected module name in output:\n{result.output}"

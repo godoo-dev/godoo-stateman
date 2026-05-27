@@ -37,7 +37,7 @@ def test_resource_constructor(tmp_path: Path) -> None:
     """RSRC-01: resource.<model>(slug, **fields) creates a ResourceNode."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'resource.res_partner("p1", name="Acme")\n',
     )
     state = eval_config(path)
@@ -52,7 +52,7 @@ def test_data_source(tmp_path: Path) -> None:
     """RSRC-02: data.<model>(**selector) creates a DataSourceNode."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'data.res_users(login="admin")\n',
     )
     state = eval_config(path)
@@ -66,7 +66,7 @@ def test_with_block(tmp_path: Path) -> None:
     """RSRC-03: with block + attribute assignment populates resource fields."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'with resource.res_partner("p1") as r:\n'
         '    r.name = "Acme"\n'
         '    r.email = "acme@example.com"\n',
@@ -82,7 +82,7 @@ def test_mail_config(tmp_path: Path) -> None:
     """RSRC-04: mail.config["key"] = "val" appends a config_parameter entry."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'mail.config["web.base.url"] = "https://odoo.example.com"\n',
     )
     state = eval_config(path)
@@ -96,7 +96,7 @@ def test_walrus_operator(tmp_path: Path) -> None:
     """RSRC-05: walrus := inside expression context works and resource ref is captured."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         '_ = (p := resource.res_partner("p1"))\n'
         'resource.project_project("proj", partner_id=p)\n',
     )
@@ -121,7 +121,7 @@ def test_restricted_builtins_blocks_import(tmp_path: Path) -> None:
     """RSRC-07: import statement in config raises NameError — __import__ absent."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'import os\n',
     )
     # import statement uses __import__ under the hood; absent from _SAFE_BUILTINS
@@ -133,7 +133,7 @@ def test_restricted_builtins_blocks_open(tmp_path: Path) -> None:
     """RSRC-07: open() in config raises NameError — open absent from _SAFE_BUILTINS."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'open("/etc/passwd")\n',
     )
     with pytest.raises(NameError):
@@ -154,17 +154,17 @@ def test_module_declaration_extracted(tmp_path: Path) -> None:
     """D-02: module declaration in exec_locals is correctly extracted."""
     path = _write_config(
         tmp_path,
-        'module = "my_project"\n',
+        'xmlid_prefix = "my_project"\n',
     )
     state = eval_config(path)
-    assert state.module == "my_project"
+    assert state.xmlid_prefix == "my_project"
 
 
 def test_inline_children_flatten(tmp_path: Path) -> None:
     """D-09: children() wrapper is stripped; child node promoted to top-level with prefixed slug."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'with resource.sale_order("order1") as o:\n'
         '    o.name = "SO001"\n'
         '    o.lines = children("sale.order.line", "order_id", [\n'
@@ -205,7 +205,7 @@ def test_three_segment_model_name(tmp_path: Path) -> None:
     """
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'resource.sale_order_line("line1", product_id=1)\n'
         'data.account_move_line(move_id=42)\n',
     )
@@ -271,7 +271,7 @@ def test_children_underscore_model_normalization(tmp_path: Path) -> None:
     """
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'with resource.sale_order("order1") as o:\n'
         '    o.name = "SO001"\n'
         '    o.lines = children("sale_order_line", "order_id", [\n'
@@ -291,7 +291,7 @@ def test_resource_builder_rejects_underscore_prefix(tmp_path: Path) -> None:
     """WR-02/CR-01: assigning a _-prefixed attribute on the resource builder raises AttributeError."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'with resource.res_partner("p1") as r:\n'
         '    r._secret = "bad"\n',
     )
@@ -303,7 +303,7 @@ def test_duplicate_slug_top_level_raises(tmp_path: Path) -> None:
     """WR-02: two top-level resources with the same slug raise DslEvalError."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'resource.res_partner("p1", name="A")\n'
         'resource.res_partner("p1", name="B")\n',
     )
@@ -315,7 +315,7 @@ def test_duplicate_slug_children_raises(tmp_path: Path) -> None:
     """WR-02: two sibling children with the same slug raise DslEvalError (promoted slug collision)."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'with resource.sale_order("order1") as o:\n'
         '    o.name = "SO001"\n'
         '    o.lines = children("sale.order.line", "order_id", [\n'
@@ -331,7 +331,7 @@ def test_distinct_slugs_pass(tmp_path: Path) -> None:
     """WR-02: a config with distinct slugs (including children) evaluates without error."""
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'resource.res_partner("p1", name="A")\n'
         'resource.res_partner("p2", name="B")\n',
     )
@@ -349,7 +349,7 @@ def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:
     """
     path = _write_config(
         tmp_path,
-        'module = "test_mod"\n'
+        'xmlid_prefix = "test_mod"\n'
         'with resource.res_partner("p1") as r:\n'
         '    r.name = "Acme"\n'
         '_ = data.res_users(login="admin")\n'
@@ -372,7 +372,7 @@ def test_eval_purity_no_odoo_calls(tmp_path: Path) -> None:
         state = eval_config(path)
 
     # Verify the result is correct (proves real eval ran to completion).
-    assert state.module == "test_mod"
+    assert state.xmlid_prefix == "test_mod"
     assert len(state.resources) == 1
     assert len(state.data_sources) == 1
     assert len(state.config_parameters) == 1

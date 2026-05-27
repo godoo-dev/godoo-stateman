@@ -25,8 +25,8 @@ exec() locals/globals split (Pitfall 2)
 ----------------------------------------
 When both ``exec_globals`` and ``exec_locals`` are passed to ``exec()``,
 module-level assignments go to ``exec_locals``, not ``exec_globals``.  The
-``module = "..."`` extraction therefore checks ``exec_locals`` first, then
-falls back to ``exec_globals``.  Checking only one dict causes spurious
+``xmlid_prefix = "..."`` extraction therefore checks ``exec_locals`` first,
+then falls back to ``exec_globals``.  Checking only one dict causes spurious
 ``MissingModuleError`` for valid configs.
 """
 
@@ -191,14 +191,14 @@ def eval_config(path: Path) -> DesiredState:
     1. Read and compile the config source (uses ``compile()`` for proper tracebacks).
     2. Build a fresh ``_Collector`` and DSL namespace.
     3. Execute with restricted builtins.
-    4. Extract the required ``module = "..."`` declaration (exec_locals first).
+    4. Extract the required ``xmlid_prefix = "..."`` declaration (exec_locals first).
     5. Flatten inline children (strips ChildrenWrapper from parent fields).
     6. Construct and return a frozen ``DesiredState``.
 
     Raises
     ------
     MissingModuleError
-        When the config file does not declare a top-level ``module = "..."`` string.
+        When the config file does not declare a top-level ``xmlid_prefix = "..."`` string.
     Any exception raised by the config file itself
         Propagates unchanged (e.g. ``NameError`` for blocked builtins).
     """
@@ -215,16 +215,16 @@ def eval_config(path: Path) -> DesiredState:
 
     exec(code, exec_globals, exec_locals)
 
-    # Extract module — check exec_locals first, then exec_globals (Pitfall 2).
+    # Extract xmlid_prefix — check exec_locals first, then exec_globals (Pitfall 2).
     # Use explicit None check (not truthiness) so falsy-but-wrong-typed values
-    # (e.g. module = 0 or module = False) produce a clear error instead of
+    # (e.g. xmlid_prefix = 0 or xmlid_prefix = False) produce a clear error instead of
     # masking the actual value with the or-fallback.
-    module_raw: object = exec_locals.get("module")
+    module_raw: object = exec_locals.get("xmlid_prefix")
     if module_raw is None:
-        module_raw = exec_globals.get("module")
+        module_raw = exec_globals.get("xmlid_prefix")
     if not isinstance(module_raw, str) or not module_raw:
         raise MissingModuleError(
-            f'Config file {path} must declare: module = "<name>"'
+            f'Config file {path} must declare: xmlid_prefix = "<name>"'
             f" (got {type(module_raw).__name__}: {module_raw!r})"
         )
     module: str = module_raw
@@ -241,7 +241,7 @@ def eval_config(path: Path) -> DesiredState:
         seen_slugs.add(node.slug)
 
     return DesiredState(
-        module=module,
+        xmlid_prefix=module,
         resources=tuple(flat_resources),
         data_sources=tuple(collector.data_sources),
         config_parameters=tuple(collector.config_parameters),

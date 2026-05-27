@@ -24,7 +24,7 @@ def plan(
         raise typer.Exit(code=1) from exc
 
     console.print(
-        f"[green]Evaluated: module={state.module}, "
+        f"[green]Evaluated: xmlid_prefix={state.xmlid_prefix}, "
         f"resources={len(state.resources)}, "
         f"data_sources={len(state.data_sources)}[/green]"
     )

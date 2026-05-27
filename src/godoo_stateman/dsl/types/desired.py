@@ -22,7 +22,7 @@ class DesiredState(BaseModel):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    module: str
+    xmlid_prefix: str  # renamed from module (D-05)
     resources: tuple[ResourceNode, ...]
     data_sources: tuple[DataSourceNode, ...]
     config_parameters: tuple[dict[str, str], ...]
