@@ -64,7 +64,11 @@ created: 2026-05-27
 
 - [ ] D-05 rename (`module=` → `xmlid_prefix=`) lands first: update Phase-2 tests asserting `state.module` so they assert `state.xmlid_prefix` — the rest of the phase builds on the corrected surface.
 - [ ] `tests/conftest.py` — shared fixtures: fake/fixture `VersionedSnapshot` + fake LiveState for offline diff unit tests; `@pytest.mark.integration` Odoo 17 CE testcontainer fixture for SC-1..SC-5.
-- [ ] Verify `nx.topological_generations` exists in NetworkX 3.6.1 (`uv run python -c "import networkx as nx; nx.topological_generations"`) before relying on it for D-08 deterministic ordering.
+- [ ] Verify `nx.topological_generations` exists in NetworkX 3.6.1 (`uv run python -c "import networkx as nx; nx.topological_generations"`) before relying on it for D-08 deterministic ordering. (VERIFIED present during planning.)
+- [ ] `tests/unit/test_seam.py` — owned by Plan 03-02 (live layer: LiveState.fetch + seam); covers CORE-04, REL-03, REL-04.
+- [ ] `tests/unit/test_diff.py` — owned by Plan 03-03 (diff engine); covers CORE-03, SAFE-03, REL-03, REL-04.
+- [ ] `tests/unit/test_plan_render.py` — owned by Plan 03-04 (Rich render); covers UX-03, UX-05.
+- [ ] `tests/unit/test_plan_command.py` — owned by Plan 03-04 (plan command exit codes); covers UX-02.
 
 *Existing pytest + pytest-asyncio infrastructure (from Phases 1–2) covers the framework; no new install needed.*
 

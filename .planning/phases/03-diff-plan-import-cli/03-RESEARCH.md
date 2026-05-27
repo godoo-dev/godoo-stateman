@@ -546,6 +546,11 @@ async def _import_impl(
             console.print(f"[dim]Already managed: {module}.{name} → {model}:{record_id}[/dim]")
             return
         if not force:
+            # SAFE-03: no silent clobber -- print an actionable message before exiting.
+            console.print(
+                f"[red]xmlid {module}.{name} already bound to "
+                f"{existing.model}:{existing.res_id}. Use --force to overwrite.[/red]"
+            )
             raise typer.Exit(code=1)  # different record, no --force
         # --force: fall through to write_xmlid (overwrites)
 
