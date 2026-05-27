@@ -13,10 +13,12 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from typing import TYPE_CHECKING
 
-import pytest
 from typer.testing import CliRunner
+
+if TYPE_CHECKING:
+    import pytest
 
 from godoo_stateman.cli.app import app
 

@@ -313,8 +313,8 @@ def test_all_noop_shows_summary_only() -> None:
     # We check by ensuring no "=" immediately precedes the slug names
     for slug in ("alpha", "beta", "gamma"):
         # The slug itself should not appear as a line (NOOP suppressed)
-        output_lines = [l.strip() for l in output.splitlines()]
-        slug_lines = [l for l in output_lines if slug in l and "unchanged" not in l]
+        output_lines = [line.strip() for line in output.splitlines()]
+        slug_lines = [line for line in output_lines if slug in line and "unchanged" not in line]
         assert not slug_lines, (
             f"NOOP slug {slug!r} appeared as action line in default output:\n{output}"
         )
