@@ -37,3 +37,24 @@ class CycleError(StatemanError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class XmlidCollisionError(StatemanError):
+    """Raised when find_by_xmlid resolves to a record of a different model (D-02).
+
+    The xmlid namespace is already owned by a different Odoo model than the
+    config declares. This is a Reject action — operator must resolve manually.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class LiveStateFetchError(StatemanError):
+    """Raised when a live Odoo fetch fails or returns unexpected results.
+
+    Examples: DataSourceNode selector resolves 0 or >1 records (Pitfall 5).
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
