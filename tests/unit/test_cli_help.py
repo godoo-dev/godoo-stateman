@@ -27,24 +27,28 @@ def test_help_lists_all_five_commands() -> None:
         assert command in result.output, f"Command '{command}' not found in --help output:\n{result.output}"
 
 
-def test_plan_stub_exits_0() -> None:
-    """plan stub prints Phase 3 note and exits with code 0 on success (BL-02 fix)."""
+def test_plan_exits_1_when_env_missing() -> None:
+    """plan command exits 1 and reports missing env vars when credentials absent."""
     with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
         f.write('xmlid_prefix = "test_module"\n')
         config_path = f.name
-    result = runner.invoke(app, ["plan", config_path])
-    assert result.exit_code == 0, f"Expected exit 0, got {result.exit_code}:\n{result.output}"
-    assert "Phase 3" in result.output
+    # Invoke without Odoo env vars — must exit 1 with helpful message.
+    result = runner.invoke(app, ["plan", config_path], env={})
+    assert result.exit_code == 1, (
+        f"Expected exit 1 for missing env vars, got {result.exit_code}:\n{result.output}"
+    )
+    assert "GODOO_URL" in result.output or "GODOO" in result.output, (
+        f"Expected missing-env-var message in output:\n{result.output}"
+    )
 
 
-def test_plan_stub_shows_eval_summary() -> None:
-    """plan stub calls eval_config and prints module/resource count on success."""
-    with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
-        f.write('xmlid_prefix = "my_module"\n')
-        config_path = f.name
-    result = runner.invoke(app, ["plan", config_path])
-    assert "my_module" in result.output, f"Expected module name in output:\n{result.output}"
-    assert "resources=0" in result.output
+def test_plan_accepts_verbose_flag() -> None:
+    """plan command accepts --verbose flag without error (flag is registered)."""
+    result = runner.invoke(app, ["plan", "--help"])
+    assert result.exit_code == 0
+    assert "--verbose" in result.output or "-v" in result.output, (
+        f"'--verbose' / '-v' flag missing from plan --help:\n{result.output}"
+    )
 
 
 def test_apply_stub_exits_1() -> None:
