@@ -17,7 +17,7 @@ The seven-stage reconciliation pipeline: config → normalize → graph → diff
 
 - [x] **CORE-01**: The engine evaluates a Python `.py` config file and produces a desired-state resource tree with zero Odoo calls during evaluation.
 - [x] **CORE-02**: The normalize stage canonicalizes all Odoo field values into a stable internal representation before any comparison — including `False`-to-`None` conversion for scalars and `False`-to-`[]` for relation fields — so that two runs against an unchanged Odoo produce identical normalized state.
-- [ ] **CORE-03**: The diff stage computes a per-resource plan action (`Create | Update | NoOp | Delete | Archive | Reject`) for each resource in the desired-state tree.
+- [x] **CORE-03**: The diff stage computes a per-resource plan action (`Create | Update | NoOp | Delete | Archive | Reject`) for each resource in the desired-state tree.
 - [x] **CORE-04**: The plan stage resolves data-source reads against live Odoo (the "read seam") and serializes an ordered, reviewable set of plan steps without mutating Odoo.
 - [ ] **CORE-05**: The apply stage executes plan steps sequentially in dependency order over jsonrpc, stops on the first failure, and reports per-step status (`ok | error | skipped`) with a `[N/total]` progress counter.
 - [ ] **CORE-06**: A second apply of an unchanged config against an unchanged Odoo instance produces an all-NoOp plan (idempotency invariant).
@@ -202,7 +202,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 |-------------|-------|--------|
 | CORE-01 | Phase 2 | Complete |
 | CORE-02 | Phase 2 | Complete |
-| CORE-03 | Phase 3 | Pending |
+| CORE-03 | Phase 3 | Complete |
 | CORE-04 | Phase 3 | Complete |
 | CORE-05 | Phase 4 | Pending |
 | CORE-06 | Phase 4 | Pending |
