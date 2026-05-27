@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Bootstrap + Schema Registry** - Project scaffold, uv workspace, pyproject.toml, Pydantic types, versioned schema registry with `store` flag, write_xmlid/find_by_xmlid helpers (completed 2026-05-23)
 - [x] **Phase 2: DSL Eval + Pure Pipeline** - Python DSL surface (resource/data/with/mail.config/resolve()), normalize stage, dependency DAG — no Odoo calls (completed 2026-05-26)
-- [ ] **Phase 3: Diff + Plan + Import CLI** - First live Odoo calls: LiveState fetch, diff, plan (read seam), `plan` and `import` CLI commands, SAFE-03 no-silent-adoption
+- [x] **Phase 3: Diff + Plan + Import CLI** - First live Odoo calls: LiveState fetch, diff, plan (read seam), `plan` and `import` CLI commands, SAFE-03 no-silent-adoption (completed 2026-05-27)
 - [ ] **Phase 4: Apply (core actions) — VAL-01 gate** - Sequential apply executor with GlobalLiveState, m2m tuple protocol, delete_behavior, stop-on-first-failure, VAL-01 acceptance tests pass
 - [ ] **Phase 5: Module Ops + Verify + Snapshot — VAL-02 gate** - Module install/upgrade (cancellation-threaded), verify stage, translation diff/apply, snapshot export/restore, VAL-02 acceptance tests pass
 - [ ] **Phase 6: Release Packaging** - PyPI publish, LGPL-3.0 headers, public README quickstart
@@ -92,7 +92,7 @@ Plans:
   4. A `data.<type>(**selector)` reference resolves its remote ID at plan time (read seam) and is available to dependent plan steps; a Many2many field pointing to a data-source record renders the correct resolved ID in the plan diff.
   5. `godoo-stateman import --model res.partner --id 42 --module stateman --name my_partner` writes an xmlid to `ir.model.data`; subsequent `plan` treats that record as managed.
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 Plans:
 
 **Wave 0**
@@ -113,7 +113,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03-05-PLAN.md — Import command + SC-1/SC-2/SC-4/SC-5 acceptance tests against real Odoo 17 CE
+- [x] 03-05-PLAN.md — Import command + SC-1/SC-2/SC-4/SC-5 acceptance tests against real Odoo 17 CE
 
 ### Phase 4: Apply (core actions) — VAL-01 gate
 
@@ -170,7 +170,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
 | 2. DSL Eval + Pure Pipeline | 4/4 | Complete    | 2026-05-26 |
-| 3. Diff + Plan + Import CLI | 4/5 | In Progress|  |
+| 3. Diff + Plan + Import CLI | 5/5 | Complete   | 2026-05-27 |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
 | 6. Release Packaging | 0/TBD | Not started | - |

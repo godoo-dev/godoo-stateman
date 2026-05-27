@@ -46,8 +46,8 @@ The xmlid-based identity mechanism that replaces sidecar state files.
 - [x] **IDENT-01**: Every managed resource is identified by an xmlid stored in Odoo's `ir.model.data`; the engine has no local state file, no local database, and no external state backend.
 - [x] **IDENT-02**: Two separate machines applying the same config file against the same Odoo instance converge to identical managed state without any shared file or coordination channel.
 - [x] **IDENT-03**: The engine provides `write_xmlid(model, res_id, module, name)` and `find_by_xmlid(module, name)` helpers that operate against `ir.model.data` via jsonrpc; these are not delegated to godoo-py (which does not provide them).
-- [ ] **IDENT-04**: The `import` CLI command adopts an existing Odoo record into managed state by writing an xmlid to `ir.model.data` for a specified model and record ID or domain; adoption is always an explicit operator action.
-- [ ] **IDENT-05**: After `import` writes an xmlid, subsequent `plan` and `apply` runs treat the record as managed — no further adoption action is needed.
+- [x] **IDENT-04**: The `import` CLI command adopts an existing Odoo record into managed state by writing an xmlid to `ir.model.data` for a specified model and record ID or domain; adoption is always an explicit operator action.
+- [x] **IDENT-05**: After `import` writes an xmlid, subsequent `plan` and `apply` runs treat the record as managed — no further adoption action is needed.
 
 ---
 
@@ -217,8 +217,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | IDENT-01 | Phase 3 | Complete |
 | IDENT-02 | Phase 3 | Complete |
 | IDENT-03 | Phase 3 | Complete |
-| IDENT-04 | Phase 3 | Pending |
-| IDENT-05 | Phase 3 | Pending |
+| IDENT-04 | Phase 3 | Complete |
+| IDENT-05 | Phase 3 | Complete |
 | RSRC-01 | Phase 2 | Complete |
 | RSRC-02 | Phase 2 | Complete |
 | RSRC-03 | Phase 2 | Complete |
