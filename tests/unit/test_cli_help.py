@@ -65,11 +65,18 @@ def test_verify_stub_exits_1() -> None:
     assert "Phase 5" in result.output
 
 
-def test_import_stub_exits_1() -> None:
-    """import stub prints a Rich message and exits with code 1."""
+def test_import_requires_options() -> None:
+    """import command exits non-zero when required options are missing.
+
+    The stub (Phase 3 not-yet-implemented) is now replaced; the real command
+    requires --model, --id, --module, and --name. Invoking without them causes
+    Typer to display usage help and exit with a usage-error code.
+    """
     result = runner.invoke(app, ["import"])
-    assert result.exit_code == 1, f"Expected exit 1, got {result.exit_code}"
-    assert "Phase 3" in result.output
+    # Typer exits with 2 for missing required options (usage error).
+    assert result.exit_code != 0, (
+        f"Expected non-zero exit when required options are missing, got {result.exit_code}"
+    )
 
 
 def test_snapshot_help_exits_0() -> None:
