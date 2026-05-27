@@ -92,7 +92,7 @@ Plans:
   4. A `data.<type>(**selector)` reference resolves its remote ID at plan time (read seam) and is available to dependent plan steps; a Many2many field pointing to a data-source record renders the correct resolved ID in the plan diff.
   5. `godoo-stateman import --model res.partner --id 42 --module stateman --name my_partner` writes an xmlid to `ir.model.data`; subsequent `plan` treats that record as managed.
 
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 Plans:
 
 **Wave 0**
@@ -109,7 +109,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-04-PLAN.md — Plan render (plan/render.py) + full plan command wired end-to-end
+- [x] 03-04-PLAN.md — Plan render (plan/render.py) + full plan command wired end-to-end
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -170,7 +170,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
 | 2. DSL Eval + Pure Pipeline | 4/4 | Complete    | 2026-05-26 |
-| 3. Diff + Plan + Import CLI | 3/5 | In Progress|  |
+| 3. Diff + Plan + Import CLI | 4/5 | In Progress|  |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
 | 6. Release Packaging | 0/TBD | Not started | - |

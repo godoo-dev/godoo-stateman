@@ -97,11 +97,11 @@ Delete, archive, and reject behaviors, and the no-silent-adoption guarantee.
 
 The command-line interface, plan output format, exit codes, and progress reporting.
 
-- [ ] **UX-01**: The CLI exposes exactly five top-level commands: `plan`, `apply`, `verify`, `import`, `snapshot`.
-- [ ] **UX-02**: `plan` exits with code `0` when there are no pending changes, `2` when changes are pending, and `1` on error; this matches IaC CLI convention (Terraform precedent).
-- [ ] **UX-03**: `plan` output shows each resource's slug, Odoo model, pending action (`Create | Update | NoOp | Delete | Archive | Reject`), and — for `Update` — each changed field with old and new values.
+- [x] **UX-01**: The CLI exposes exactly five top-level commands: `plan`, `apply`, `verify`, `import`, `snapshot`.
+- [x] **UX-02**: `plan` exits with code `0` when there are no pending changes, `2` when changes are pending, and `1` on error; this matches IaC CLI convention (Terraform precedent).
+- [x] **UX-03**: `plan` output shows each resource's slug, Odoo model, pending action (`Create | Update | NoOp | Delete | Archive | Reject`), and — for `Update` — each changed field with old and new values.
 - [ ] **UX-04**: `apply` output shows a `[N/total]` progress counter and per-step status (`ok | error | skipped`) as steps execute; partial progress is reported even when apply halts on failure.
-- [ ] **UX-05**: All plan, apply, and verify output is rendered via Rich (tables, unified diffs, progress bars); plain-text fallback is available when stdout is not a TTY.
+- [x] **UX-05**: All plan, apply, and verify output is rendered via Rich (tables, unified diffs, progress bars); plain-text fallback is available when stdout is not a TTY.
 - [x] **UX-06**: The CLI is implemented with Typer; every async command function bridges via `asyncio.run()` (Typer 0.25.1 does not natively run async).
 
 ---
@@ -120,7 +120,7 @@ End-to-end acceptance tests against real Odoo 17 CE via testcontainers.
 
 Engine introspection and managed-state query surface.
 
-- [ ] **META-01**: The engine exposes a way to list all resources currently under management for a given config file (equivalent to `terraform state list`); implemented as output of `plan` showing all resources and their current action.
+- [x] **META-01**: The engine exposes a way to list all resources currently under management for a given config file (equivalent to `terraform state list`); implemented as output of `plan` showing all resources and their current action.
 - [ ] **META-02**: The schema registry provides a CLI subcommand or flag to dump the cached schema snapshot for a model, showing all field metadata including the `store` flag, for debugging and verification.
 - [ ] **META-03**: The `verify` command, when run standalone (not post-apply), checks all managed resources for out-of-band drift against the config and reports resources that differ from desired state.
 
@@ -240,16 +240,16 @@ Which phases cover which requirements. Populated during roadmap creation.
 | SAFE-03 | Phase 3 | Complete |
 | SAFE-04 | Phase 4 | Pending |
 | SAFE-05 | Phase 4 | Pending |
-| UX-01 | Phase 3 | Pending |
-| UX-02 | Phase 3 | Pending |
-| UX-03 | Phase 3 | Pending |
+| UX-01 | Phase 3 | Complete |
+| UX-02 | Phase 3 | Complete |
+| UX-03 | Phase 3 | Complete |
 | UX-04 | Phase 4 | Pending |
-| UX-05 | Phase 3 | Pending |
+| UX-05 | Phase 3 | Complete |
 | UX-06 | Phase 1 | Complete (01-01) |
 | VAL-01 | Phase 4 | Pending |
 | VAL-02 | Phase 5 | Pending |
 | VAL-03 | Phase 5 | Pending |
-| META-01 | Phase 3 | Pending |
+| META-01 | Phase 3 | Complete |
 | META-02 | Phase 5 | Pending |
 | META-03 | Phase 5 | Pending |
 | EXEC-01 | Phase 5 | Pending |
