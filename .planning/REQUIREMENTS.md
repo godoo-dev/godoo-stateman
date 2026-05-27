@@ -87,7 +87,7 @@ Delete, archive, and reject behaviors, and the no-silent-adoption guarantee.
 
 - [ ] **SAFE-01**: Each managed resource declares a `delete_behavior` property with one of three values: `delete` (hard delete via `unlink`), `archive` (set `active=False`), or `reject` (refuse to apply if removal is needed; halt with an actionable error).
 - [ ] **SAFE-02**: When `delete_behavior` is `archive`, the engine verifies the model's archivability from the schema snapshot before attempting to archive; if the model has no writable `active` field, the engine reports an error and halts.
-- [ ] **SAFE-03**: `plan` and `apply` never silently adopt an unmanaged Odoo record. If the `xmlid_prefix.slug` xmlid in `ir.model.data` already points to a record of a different model than the config declares, the plan action is `Reject` (xmlid-namespace collision), not `Create` or `Update`, until the operator resolves the collision manually. Unmanaged look-alike records with no managed xmlid are invisible to stateman and result in `Create`. (D-01/D-02)
+- [x] **SAFE-03**: `plan` and `apply` never silently adopt an unmanaged Odoo record. If the `xmlid_prefix.slug` xmlid in `ir.model.data` already points to a record of a different model than the config declares, the plan action is `Reject` (xmlid-namespace collision), not `Create` or `Update`, until the operator resolves the collision manually. Unmanaged look-alike records with no managed xmlid are invisible to stateman and result in `Create`. (D-01/D-02)
 - [ ] **SAFE-04**: The `apply` command shows the full plan and prompts "Apply these changes? [y/N]" before any Odoo mutation; the `--auto-approve` flag skips the prompt for CI use.
 - [ ] **SAFE-05**: Apply stops on the first failed step and reports which prior steps committed and which steps were skipped, so the operator has a clear recovery surface without needing to re-inspect Odoo manually.
 
@@ -237,7 +237,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | REL-08 | Phase 4 | Pending |
 | SAFE-01 | Phase 4 | Pending |
 | SAFE-02 | Phase 4 | Pending |
-| SAFE-03 | Phase 3 | Pending |
+| SAFE-03 | Phase 3 | Complete |
 | SAFE-04 | Phase 4 | Pending |
 | SAFE-05 | Phase 4 | Pending |
 | UX-01 | Phase 3 | Pending |
