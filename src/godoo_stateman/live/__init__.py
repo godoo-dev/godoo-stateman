@@ -1,0 +1,1 @@
+"""Live Odoo fetch layer."""
