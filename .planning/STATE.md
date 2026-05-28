@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-28T13:28:18.211Z"
+last_updated: "2026-05-28T13:39:32.975Z"
 last_activity: 2026-05-28
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
   percent: 43
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-23)
 ## Current Position
 
 Phase: 03.1 (multi-odoo-version-ci-test-matrix) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-05-28
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [████████░░] 83%
 | Phase 03.1 P01 | 5m 31s | 2 tasks | 1 files |
 | Phase 03.1 P02 | 3m | 2 tasks | 2 files |
 | Phase 03.1 P3 | 12 | 2 tasks | 2 files |
+| Phase 03.1 P4 | 3 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [03.1-01] postgres:15-alpine + odoo:19.0 testcontainer boot confirmed (3m 50s) — D-10 hold NOT triggered, no upstream godoo-testcontainers fix needed
 - [03.1-02] D-01: odoo_version fixture is session-scoped (matches odoo fixture scope); pytest.fail() for invalid ODOO_VERSION env (not typer.BadParameter — no Typer context in tests)
 - [03.1-02] D-04: OdooVersion(17, 0) hardcode removed from plan.py; inline 5-line parsing block from snapshot.py:61; typer.BadParameter error path (typer already imported in plan.py)
+- [Phase ?]: VAL-03 rewritten to multi-version CI matrix validation (17.0/18.0/19.0); VAL-04 added for LOC benchmark assigned to Phase 5
+- [Phase ?]: PROJECT.md and CLAUDE.md canonical Odoo version wording updated to 17.0, 18.0, and 19.0 — historical decision record preserved
 
 ### Pending Todos
 
@@ -145,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-28T13:28:18.205Z
-Stopped at: Completed 03.1-01-PLAN.md (Wave 0 pre-flight)
+Last session: 2026-05-28T13:39:32.956Z
+Stopped at: Completed 03.1-04-PLAN.md
 Resume file: None

@@ -129,7 +129,7 @@ Plans:
 
 **Reference**: godoo-py's matrix at `../godoo-py/.github/workflows/test.yml` (`strategy.matrix.odoo-version: ["17.0", "18.0", "19.0"]`) — `TestHarness`/`OdooTestContainer` already read `ODOO_VERSION` from env (default `17.0`), so our fixtures need no changes; this phase is mostly CI plumbing + fixing whatever shakes out on 18/19.
 
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 Plans:
 
 **Wave 1 — Pre-flight**
@@ -143,7 +143,7 @@ Plans:
 **Wave 3 — Test rewrites + doc updates** *(blocked on Wave 2 completion — parallel pair)*
 
 - [x] 03.1-03-PLAN.md — Test rewrites: _run_pipeline() + 7 callers in test_plan_import.py (D-02) + 3 hardcodes + assertions in test_snapshot.py (D-03)
-- [ ] 03.1-04-PLAN.md — Doc/requirements: ROADMAP SC-1/SC-2 (D-05/D-06) + REQUIREMENTS VAL-03 rewrite + VAL-04 add (D-07) + PROJECT.md + CLAUDE.md wording (D-11)
+- [x] 03.1-04-PLAN.md — Doc/requirements: ROADMAP SC-1/SC-2 (D-05/D-06) + REQUIREMENTS VAL-03 rewrite + VAL-04 add (D-07) + PROJECT.md + CLAUDE.md wording (D-11)
 
 **Wave 4 — Shake-out** *(blocked on Wave 3 completion)*
 
@@ -209,7 +209,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
 | 2. DSL Eval + Pure Pipeline | 4/4 | Complete    | 2026-05-26 |
 | 3. Diff + Plan + Import CLI | 5/5 | Complete   | 2026-05-27 |
-| 03.1. Multi-Odoo-version CI test matrix | 3/6 | In Progress|  |
+| 03.1. Multi-Odoo-version CI test matrix | 4/6 | In Progress|  |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
 | 6. Release Packaging | 0/TBD | Not started | - |
