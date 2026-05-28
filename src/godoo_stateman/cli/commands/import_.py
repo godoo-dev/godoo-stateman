@@ -92,7 +92,7 @@ async def _import_impl(
             if existing is not None:
                 if existing.res_id == record_id:
                     # Idempotent no-op: same binding already exists (IDENT-05).
-                    console.print(f"[dim]Already managed: {module}.{name} → {model}:{record_id}[/dim]")
+                    console.print(f"[dim]Already managed: {module}.{name} -> {model}:{record_id}[/dim]")
                     return 0
                 if not force:
                     # SAFE-03: no silent clobber — print actionable message before exit 1.
@@ -108,7 +108,7 @@ async def _import_impl(
 
             # Step 3 (D-11 write): create or update the xmlid binding.
             await write_xmlid(client, model, record_id, module, name)
-            console.print(f"[green]+[/green] Imported: {module}.{name} → {model}:{record_id}")
+            console.print(f"[green]+[/green] Imported: {module}.{name} -> {model}:{record_id}")
             return 0
 
     except (StatemanError, OdooValidationError) as exc:
