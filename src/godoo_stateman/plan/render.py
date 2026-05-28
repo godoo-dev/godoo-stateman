@@ -117,9 +117,7 @@ def render_plan(
             # D-06: per-field diff lines for UPDATE — plain "field: old → new".
             if step.action == PlanAction.UPDATE:
                 for fd in step.field_diff:
-                    console.print(
-                        f"      {fd.field_name}: {fd.old_value!r} → {fd.new_value!r}"
-                    )
+                    console.print(f"      {fd.field_name}: {fd.old_value!r} → {fd.new_value!r}")
 
     # Emit steps whose slug is NOT in the graph (Delete/Archive/Reject —
     # managed-but-absent records).  These steps have no ordering constraints
@@ -141,9 +139,7 @@ def render_plan(
 
         if step.action == PlanAction.UPDATE:
             for fd in step.field_diff:
-                console.print(
-                    f"      {fd.field_name}: {fd.old_value!r} → {fd.new_value!r}"
-                )
+                console.print(f"      {fd.field_name}: {fd.old_value!r} → {fd.new_value!r}")
 
     # D-07: trailing summary line — always present when noop_count > 0.
     noop_count = sum(1 for s in plan_steps if s.action == PlanAction.NOOP)

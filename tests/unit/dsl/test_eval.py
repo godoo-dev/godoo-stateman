@@ -37,8 +37,7 @@ def test_resource_constructor(tmp_path: Path) -> None:
     """RSRC-01: resource.<model>(slug, **fields) creates a ResourceNode."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'resource.res_partner("p1", name="Acme")\n',
+        'xmlid_prefix = "test_mod"\nresource.res_partner("p1", name="Acme")\n',
     )
     state = eval_config(path)
     assert len(state.resources) == 1
@@ -52,8 +51,7 @@ def test_data_source(tmp_path: Path) -> None:
     """RSRC-02: data.<model>(**selector) creates a DataSourceNode."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'data.res_users(login="admin")\n',
+        'xmlid_prefix = "test_mod"\ndata.res_users(login="admin")\n',
     )
     state = eval_config(path)
     assert len(state.data_sources) == 1
@@ -82,8 +80,7 @@ def test_mail_config(tmp_path: Path) -> None:
     """RSRC-04: mail.config["key"] = "val" appends a config_parameter entry."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'mail.config["web.base.url"] = "https://odoo.example.com"\n',
+        'xmlid_prefix = "test_mod"\nmail.config["web.base.url"] = "https://odoo.example.com"\n',
     )
     state = eval_config(path)
     assert len(state.config_parameters) == 1
@@ -121,8 +118,7 @@ def test_restricted_builtins_blocks_import(tmp_path: Path) -> None:
     """RSRC-07: import statement in config raises NameError — __import__ absent."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'import os\n',
+        'xmlid_prefix = "test_mod"\nimport os\n',
     )
     # import statement uses __import__ under the hood; absent from _SAFE_BUILTINS
     with pytest.raises((NameError, ImportError)):
@@ -133,8 +129,7 @@ def test_restricted_builtins_blocks_open(tmp_path: Path) -> None:
     """RSRC-07: open() in config raises NameError — open absent from _SAFE_BUILTINS."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'open("/etc/passwd")\n',
+        'xmlid_prefix = "test_mod"\nopen("/etc/passwd")\n',
     )
     with pytest.raises(NameError):
         eval_config(path)
@@ -169,7 +164,7 @@ def test_inline_children_flatten(tmp_path: Path) -> None:
         '    o.name = "SO001"\n'
         '    o.lines = children("sale.order.line", "order_id", [\n'
         '        resource.sale_order_line("line1", product_id=1),\n'
-        '    ])\n',
+        "    ])\n",
     )
     state = eval_config(path)
     # Should have 2 resources: parent + child
@@ -215,7 +210,7 @@ def test_three_segment_model_name(tmp_path: Path) -> None:
         tmp_path,
         'xmlid_prefix = "test_mod"\n'
         'resource.sale_order_line("line1", product_id=1)\n'
-        'data.account_move_line(move_id=42)\n',
+        "data.account_move_line(move_id=42)\n",
     )
     state = eval_config(path)
     assert len(state.resources) == 1
@@ -284,14 +279,13 @@ def test_children_underscore_model_normalization(tmp_path: Path) -> None:
         '    o.name = "SO001"\n'
         '    o.lines = children("sale_order_line", "order_id", [\n'
         '        resource.sale_order_line("line1", product_id=1),\n'
-        '    ])\n',
+        "    ])\n",
     )
     state = eval_config(path)
     # Child node must have model "sale.order.line", not "sale_order_line"
     child = next(n for n in state.resources if n.slug == "order1.line1")
     assert child.model == "sale.order.line", (
-        f"Expected 'sale.order.line', got {child.model!r} — "
-        "children() must normalize underscores to dots (IN-02)"
+        f"Expected 'sale.order.line', got {child.model!r} — children() must normalize underscores to dots (IN-02)"
     )
 
 
@@ -299,9 +293,7 @@ def test_resource_builder_rejects_underscore_prefix(tmp_path: Path) -> None:
     """WR-02/CR-01: assigning a _-prefixed attribute on the resource builder raises AttributeError."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'with resource.res_partner("p1") as r:\n'
-        '    r._secret = "bad"\n',
+        'xmlid_prefix = "test_mod"\nwith resource.res_partner("p1") as r:\n    r._secret = "bad"\n',
     )
     with pytest.raises((AttributeError, NameError)):
         eval_config(path)
@@ -311,9 +303,7 @@ def test_duplicate_slug_top_level_raises(tmp_path: Path) -> None:
     """WR-02: two top-level resources with the same slug raise DslEvalError."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'resource.res_partner("p1", name="A")\n'
-        'resource.res_partner("p1", name="B")\n',
+        'xmlid_prefix = "test_mod"\nresource.res_partner("p1", name="A")\nresource.res_partner("p1", name="B")\n',
     )
     with pytest.raises(DslEvalError, match="Duplicate resource slug 'p1'"):
         eval_config(path)
@@ -329,7 +319,7 @@ def test_duplicate_slug_children_raises(tmp_path: Path) -> None:
         '    o.lines = children("sale.order.line", "order_id", [\n'
         '        resource.sale_order_line("line1", product_id=1),\n'
         '        resource.sale_order_line("line1", product_id=2),\n'
-        '    ])\n',
+        "    ])\n",
     )
     with pytest.raises(DslEvalError, match=r"Duplicate resource slug 'order1\.line1'"):
         eval_config(path)
@@ -339,9 +329,7 @@ def test_distinct_slugs_pass(tmp_path: Path) -> None:
     """WR-02: a config with distinct slugs (including children) evaluates without error."""
     path = _write_config(
         tmp_path,
-        'xmlid_prefix = "test_mod"\n'
-        'resource.res_partner("p1", name="A")\n'
-        'resource.res_partner("p2", name="B")\n',
+        'xmlid_prefix = "test_mod"\nresource.res_partner("p1", name="A")\nresource.res_partner("p2", name="B")\n',
     )
     state = eval_config(path)
     assert len(state.resources) == 2

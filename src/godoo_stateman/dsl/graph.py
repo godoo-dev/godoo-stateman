@@ -94,11 +94,7 @@ def build_graph(state: DesiredState) -> nx.DiGraph:
                 for dep_slug in field_val.deps:
                     if G.has_node(dep_slug):
                         G.add_edge(dep_slug, resource.slug)
-            elif (
-                hasattr(field_val, "slug")
-                and isinstance(field_val.slug, str)
-                and G.has_node(field_val.slug)
-            ):
+            elif hasattr(field_val, "slug") and isinstance(field_val.slug, str) and G.has_node(field_val.slug):
                 # C. Direct resource reference via .slug attribute
                 G.add_edge(field_val.slug, resource.slug)
             # NOTE: list[str] values (post-flatten parent→child slug lists) are NOT

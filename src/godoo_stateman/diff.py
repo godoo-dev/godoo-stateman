@@ -76,9 +76,7 @@ def diff(
     steps: list[PlanStep] = []
     # Compute the complete xmlids for all desired resources so Pass 2 can find
     # managed-but-absent entries (now keyed by complete xmlid, not bare slug).
-    desired_xmlids: set[str] = {
-        f"{(r.xmlid_module or state.xmlid_prefix)}.{r.slug}" for r in state.resources
-    }
+    desired_xmlids: set[str] = {f"{(r.xmlid_module or state.xmlid_prefix)}.{r.slug}" for r in state.resources}
 
     # -----------------------------------------------------------------------
     # Pass 1: classify each desired resource
@@ -176,9 +174,7 @@ def diff(
     # live_state.managed is now keyed by complete xmlid ("{module}.{slug}").
     # Sort by complete xmlid for determinism (SC-2).
     absent_xmlids = sorted(
-        complete_xmlid
-        for complete_xmlid in live_state.managed
-        if complete_xmlid not in desired_xmlids
+        complete_xmlid for complete_xmlid in live_state.managed if complete_xmlid not in desired_xmlids
     )
 
     for complete_xmlid in absent_xmlids:

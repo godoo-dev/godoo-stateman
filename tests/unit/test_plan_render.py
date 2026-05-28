@@ -73,9 +73,7 @@ def test_non_tty_output_has_no_ansi() -> None:
     steps = [_make_step("alpha", action=PlanAction.CREATE)]
     graph = _make_graph("alpha")
     output = _capture(steps, graph)
-    assert "\x1b[" not in output, (
-        f"ANSI escape sequence found in non-TTY output:\n{output!r}"
-    )
+    assert "\x1b[" not in output, f"ANSI escape sequence found in non-TTY output:\n{output!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -93,16 +91,12 @@ def test_noop_hidden_by_default() -> None:
     output = _capture(steps, graph)
 
     # NOOP slug must not appear as an action line
-    assert "= alpha" not in output, (
-        f"NOOP slug 'alpha' appeared in default output:\n{output}"
-    )
+    assert "= alpha" not in output, f"NOOP slug 'alpha' appeared in default output:\n{output}"
     # CREATE slug must appear
     assert "beta" in output, f"CREATE slug 'beta' missing from output:\n{output}"
 
     # Trailing summary must be present
-    assert "1 resource unchanged" in output, (
-        f"NoOp summary line missing from output:\n{output}"
-    )
+    assert "1 resource unchanged" in output, f"NoOp summary line missing from output:\n{output}"
 
 
 def test_noop_summary_uses_plural_for_multiple() -> None:
@@ -113,9 +107,7 @@ def test_noop_summary_uses_plural_for_multiple() -> None:
     ]
     graph = _make_graph("alpha", "beta")
     output = _capture(steps, graph)
-    assert "2 resources unchanged" in output, (
-        f"Expected '2 resources unchanged' in output:\n{output}"
-    )
+    assert "2 resources unchanged" in output, f"Expected '2 resources unchanged' in output:\n{output}"
 
 
 # ---------------------------------------------------------------------------
@@ -130,9 +122,7 @@ def test_noop_shown_with_verbose() -> None:
     output = _capture(steps, graph, verbose=True)
 
     # With verbose, the NOOP line should appear (using "=" symbol)
-    assert "alpha" in output, (
-        f"NOOP slug 'alpha' missing from verbose output:\n{output}"
-    )
+    assert "alpha" in output, f"NOOP slug 'alpha' missing from verbose output:\n{output}"
     assert "=" in output, f"'=' symbol missing from verbose output:\n{output}"
 
 
@@ -155,9 +145,7 @@ def test_update_shows_field_diff_format() -> None:
 
     # Must NOT use unified diff syntax (no +/- prefix per diff line)
     # The field line should not start with "+" or "-"
-    field_lines = [
-        line for line in output.splitlines() if "name:" in line and "Old Name" in line
-    ]
+    field_lines = [line for line in output.splitlines() if "name:" in line and "Old Name" in line]
     assert field_lines, f"No field diff line found in:\n{output}"
     for line in field_lines:
         stripped = line.strip()
@@ -232,9 +220,9 @@ def test_deterministic_output_same_inputs() -> None:
     """Two calls to render_plan() with identical inputs must produce identical strings."""
     steps = [
         _make_step("charlie", action=PlanAction.CREATE),
-        _make_step("alpha", action=PlanAction.UPDATE, field_diff=(
-            FieldDiff(field_name="name", old_value="X", new_value="Y"),
-        )),
+        _make_step(
+            "alpha", action=PlanAction.UPDATE, field_diff=(FieldDiff(field_name="name", old_value="X", new_value="Y"),)
+        ),
         _make_step("beta", action=PlanAction.NOOP),
     ]
     graph = _make_graph("alpha", "beta", "charlie")
@@ -261,9 +249,7 @@ def test_deterministic_topological_order() -> None:
     output = _capture(steps, G)
     pos_a = output.find("dep_a")
     pos_b = output.find("dep_b")
-    assert pos_a < pos_b, (
-        f"Expected dep_a before dep_b (topological order), but got:\n{output}"
-    )
+    assert pos_a < pos_b, f"Expected dep_a before dep_b (topological order), but got:\n{output}"
 
 
 def test_deterministic_slug_sort_within_generation() -> None:
@@ -283,9 +269,7 @@ def test_deterministic_slug_sort_within_generation() -> None:
     pos_aaa = output.find("aaa_first")
     pos_mmm = output.find("mmm_middle")
     pos_zzz = output.find("zzz_last")
-    assert pos_aaa < pos_mmm < pos_zzz, (
-        f"Expected alphabetical slug order within generation, but got:\n{output}"
-    )
+    assert pos_aaa < pos_mmm < pos_zzz, f"Expected alphabetical slug order within generation, but got:\n{output}"
 
 
 # ---------------------------------------------------------------------------
@@ -305,9 +289,7 @@ def test_all_noop_shows_summary_only() -> None:
 
     # None of the slugs should appear as action lines (they're all NoOp)
     # Summary must appear
-    assert "3 resources unchanged" in output, (
-        f"Expected '3 resources unchanged' in all-NOOP output:\n{output}"
-    )
+    assert "3 resources unchanged" in output, f"Expected '3 resources unchanged' in all-NOOP output:\n{output}"
 
     # No action symbols for the individual slugs should appear (NOOP hidden)
     # We check by ensuring no "=" immediately precedes the slug names
@@ -315,9 +297,7 @@ def test_all_noop_shows_summary_only() -> None:
         # The slug itself should not appear as a line (NOOP suppressed)
         output_lines = [line.strip() for line in output.splitlines()]
         slug_lines = [line for line in output_lines if slug in line and "unchanged" not in line]
-        assert not slug_lines, (
-            f"NOOP slug {slug!r} appeared as action line in default output:\n{output}"
-        )
+        assert not slug_lines, f"NOOP slug {slug!r} appeared as action line in default output:\n{output}"
 
 
 def test_no_noop_no_summary_line() -> None:
@@ -327,9 +307,7 @@ def test_no_noop_no_summary_line() -> None:
     ]
     graph = _make_graph("alpha")
     output = _capture(steps, graph)
-    assert "unchanged" not in output, (
-        f"'unchanged' summary appeared despite 0 NoOp steps:\n{output}"
-    )
+    assert "unchanged" not in output, f"'unchanged' summary appeared despite 0 NoOp steps:\n{output}"
 
 
 # ---------------------------------------------------------------------------
@@ -342,9 +320,7 @@ def test_model_name_in_output() -> None:
     steps = [_make_step("alpha", action=PlanAction.CREATE, model="res.partner")]
     graph = _make_graph("alpha")
     output = _capture(steps, graph)
-    assert "res.partner" in output, (
-        f"Model name 'res.partner' missing from output:\n{output}"
-    )
+    assert "res.partner" in output, f"Model name 'res.partner' missing from output:\n{output}"
 
 
 # ---------------------------------------------------------------------------
@@ -366,9 +342,7 @@ def test_delete_step_not_in_graph_is_rendered() -> None:
     ]
     output = _capture(steps, graph, verbose=True)
 
-    assert "deleted_record" in output, (
-        f"DELETE step 'deleted_record' (not in graph) missing from output:\n{output}"
-    )
+    assert "deleted_record" in output, f"DELETE step 'deleted_record' (not in graph) missing from output:\n{output}"
     assert "-" in output, f"'-' symbol missing for DELETE step:\n{output}"
 
 
@@ -381,9 +355,7 @@ def test_archive_step_not_in_graph_is_rendered() -> None:
     ]
     output = _capture(steps, graph, verbose=True)
 
-    assert "archived_record" in output, (
-        f"ARCHIVE step 'archived_record' (not in graph) missing from output:\n{output}"
-    )
+    assert "archived_record" in output, f"ARCHIVE step 'archived_record' (not in graph) missing from output:\n{output}"
     assert "a" in output, f"'a' symbol missing for ARCHIVE step:\n{output}"
 
 
@@ -396,9 +368,7 @@ def test_reject_step_not_in_graph_is_rendered() -> None:
     ]
     output = _capture(steps, graph)
 
-    assert "collision_slug" in output, (
-        f"REJECT step 'collision_slug' (not in graph) missing from output:\n{output}"
-    )
+    assert "collision_slug" in output, f"REJECT step 'collision_slug' (not in graph) missing from output:\n{output}"
     assert "x" in output, f"'x' symbol missing for REJECT step:\n{output}"
 
 
@@ -423,8 +393,7 @@ def test_mixed_steps_graph_and_off_graph_deterministic() -> None:
     out2 = _capture(steps, graph, verbose=True)
 
     assert out1 == out2, (
-        f"render_plan() produced non-identical outputs for mixed step set.\n"
-        f"First:\n{out1!r}\nSecond:\n{out2!r}"
+        f"render_plan() produced non-identical outputs for mixed step set.\nFirst:\n{out1!r}\nSecond:\n{out2!r}"
     )
 
     # All six slugs must appear in the output.

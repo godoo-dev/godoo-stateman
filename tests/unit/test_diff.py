@@ -122,8 +122,7 @@ def _make_live_state(
     not by bare slug.  This helper constructs the complete-xmlid keys automatically.
     """
     managed_dict: dict[str, XmlIdRecord] = {
-        f"{module}.{slug}": _make_xmlid_record(slug, model, res_id, module)
-        for slug, (model, res_id) in managed.items()
+        f"{module}.{slug}": _make_xmlid_record(slug, model, res_id, module) for slug, (model, res_id) in managed.items()
     }
     return LiveState(managed=managed_dict, live_fields=live_fields)
 
@@ -291,9 +290,7 @@ def test_m2o_no_false_positive() -> None:
     normalized to int. Both sides must be normalized before comparison.
     live [1, "Admin"] vs desired 1 → NOOP (Pitfall 1).
     """
-    snapshot = _make_snapshot(
-        {"res.partner": (True, {"country_id": ("many2one", True, False)})}
-    )
+    snapshot = _make_snapshot({"res.partner": (True, {"country_id": ("many2one", True, False)})})
     # Live value is the raw Odoo [id, name] format
     live_state = _make_live_state(
         managed={"my_partner": ("res.partner", 42)},
@@ -325,17 +322,13 @@ def test_m2m_datasource_resolved() -> None:
     diff() is called. Here the desired field already holds [1, 2, 3] (resolved).
     Live Odoo returns [3, 1, 2] (unordered). Both normalize to [1, 2, 3] → NOOP.
     """
-    snapshot = _make_snapshot(
-        {"res.partner": (True, {"category_ids": ("many2many", True, False)})}
-    )
+    snapshot = _make_snapshot({"res.partner": (True, {"category_ids": ("many2many", True, False)})})
     live_state = _make_live_state(
         managed={"my_partner": ("res.partner", 42)},
         live_fields={42: {"id": 42, "category_ids": [3, 1, 2]}},
     )
     # Desired: resolved IDs from the seam, already in canonical form
-    state = _make_desired(
-        "test_prefix", [("res.partner", "my_partner", {"category_ids": [1, 2, 3]})]
-    )
+    state = _make_desired("test_prefix", [("res.partner", "my_partner", {"category_ids": [1, 2, 3]})])
 
     steps = diff(state, live_state, snapshot)
 
@@ -388,9 +381,7 @@ def test_non_store_field_excluded() -> None:
     # display_name is store=False — must not be in field_diff
     assert step.action == PlanAction.NOOP
     for fd in step.field_diff:
-        assert fd.field_name != "display_name", (
-            "display_name (store=False) must not appear in field_diff"
-        )
+        assert fd.field_name != "display_name", "display_name (store=False) must not appear in field_diff"
 
 
 # ---------------------------------------------------------------------------
@@ -410,9 +401,7 @@ def test_xmlid_collision_produces_reject() -> None:
         managed={"partner_slug": ("project.project", 7)},
         live_fields={7: {"name": "Some Project"}},
     )
-    state = _make_desired(
-        "test_prefix", [("res.partner", "partner_slug", {"name": "Alice"})]
-    )
+    state = _make_desired("test_prefix", [("res.partner", "partner_slug", {"name": "Alice"})])
 
     steps = diff(state, live_state, snapshot)
 
@@ -548,8 +537,7 @@ def test_diff_is_pure_no_client_calls() -> None:
 
     # diff() must NOT have a 'client' parameter — that would allow I/O
     assert "client" not in param_names, (
-        f"diff() must have no 'client' parameter (pure function, D-01). "
-        f"Got parameters: {param_names}"
+        f"diff() must have no 'client' parameter (pure function, D-01). Got parameters: {param_names}"
     )
 
     # Confirm it runs without error against an empty state

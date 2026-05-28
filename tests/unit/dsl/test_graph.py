@@ -106,9 +106,7 @@ def test_deferred_deps_edge() -> None:
 def test_deferred_data_source_edge() -> None:
     """Resource A with Deferred deps referencing a DataSourceNode.node_key → edge (node_key, A.slug)."""
     ds = _make_data_source("res.users", "data.res_users[login='admin']", login="admin")
-    deferred_field = Deferred(
-        fn=lambda x: x, deps=frozenset({"data.res_users[login='admin']"})
-    )
+    deferred_field = Deferred(fn=lambda x: x, deps=frozenset({"data.res_users[login='admin']"}))
     r_a = _make_resource("res.partner", "partner_a", name="A", user_ref=deferred_field)
     state = _make_desired([r_a], data_sources=[ds])
 
@@ -137,9 +135,7 @@ def test_parent_child_edge() -> None:
 
     G = build_graph(state)
 
-    assert G.has_edge("order_01", "order_01.line_1"), (
-        "Expected parent→child edge from parent_slug"
-    )
+    assert G.has_edge("order_01", "order_01.line_1"), "Expected parent→child edge from parent_slug"
 
 
 # ---------------------------------------------------------------------------

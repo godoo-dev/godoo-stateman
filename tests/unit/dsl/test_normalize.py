@@ -42,9 +42,7 @@ def _make_versioned_field(
     )
 
 
-def _make_snapshot_with_field(
-    model: str, field_name: str, ttype: str
-) -> VersionedSnapshot:
+def _make_snapshot_with_field(model: str, field_name: str, ttype: str) -> VersionedSnapshot:
     """Build a VersionedSnapshot containing a single model with a single field.
 
     Follows the _make_minimal_snapshot() pattern from test_schema_registry.py.
@@ -370,9 +368,9 @@ def test_normalize_idempotent() -> None:
     assert once_fields["category_ids"] == twice_fields["category_ids"]
 
     # Verify the normalized values are correct
-    assert once_fields["name"] is None          # False → None (char)
-    assert once_fields["active"] is False       # False preserved (boolean)
-    assert once_fields["parent_id"] == 42       # (42, "Acme Corp") → 42
+    assert once_fields["name"] is None  # False → None (char)
+    assert once_fields["active"] is False  # False preserved (boolean)
+    assert once_fields["parent_id"] == 42  # (42, "Acme Corp") → 42
     assert once_fields["category_ids"] == [1, 2, 3]  # [3,1,2] → sorted
 
 

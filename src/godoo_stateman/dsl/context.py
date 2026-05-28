@@ -204,9 +204,7 @@ class OdooModuleProxy:
 # ---------------------------------------------------------------------------
 
 
-def children(
-    child_model: str, inverse_field: str, children_list: list[Any]
-) -> ChildrenWrapper:
+def children(child_model: str, inverse_field: str, children_list: list[Any]) -> ChildrenWrapper:
     """DSL callable — wraps inline One2many children.
 
     The returned ``ChildrenWrapper`` is stored as a field value on the parent

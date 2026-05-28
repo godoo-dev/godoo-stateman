@@ -42,7 +42,6 @@ def resolve(fn: Any, *refs: Any) -> Deferred:
             deps.append(r.node_key)
         else:
             raise TypeError(
-                f"resolve() ref must be a ResourceNode, DataSourceNode, or resource builder; "
-                f"got {type(r).__name__!r}"
+                f"resolve() ref must be a ResourceNode, DataSourceNode, or resource builder; got {type(r).__name__!r}"
             )
     return Deferred(fn=fn, deps=frozenset(deps))

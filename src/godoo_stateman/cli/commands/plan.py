@@ -77,16 +77,11 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
     if not password:
         missing.append("GODOO_PASSWORD")
     if missing:
-        console.print(
-            f"[red]Missing required environment variable(s): "
-            f"{', '.join(missing)}[/red]"
-        )
+        console.print(f"[red]Missing required environment variable(s): {', '.join(missing)}[/red]")
         return 1
 
     try:
-        async with OdooClient(
-            OdooClientConfig(url=url, database=db, username=user, password=password)
-        ) as client:
+        async with OdooClient(OdooClientConfig(url=url, database=db, username=user, password=password)) as client:
             # Step 3: Create the schema registry.
             # T-03.1-02: validate ODOO_VERSION before int conversion (ASVS L1 V5).
             # Inline duplicate of snapshot.py:61 — extraction deferred per D-04.
@@ -100,9 +95,7 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
             # Step 4: Build the initial snapshot from desired-state models.
             # Concrete call — no None fallback. Passing None would skip schema-
             # driven normalization and cause false-positive diffs (CORE-03).
-            desired_models: list[str] = sorted(
-                {r.model for r in state.resources}
-            )
+            desired_models: list[str] = sorted({r.model for r in state.resources})
             snapshot = await registry.build_snapshot(desired_models)
 
             # Step 5: Normalize desired state with the schema snapshot.
@@ -117,17 +110,13 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
             # Each model needs the union of fields declared in its ResourceNodes.
             desired_fields_by_model: dict[str, set[str]] = {}
             for resource in state.resources:
-                desired_fields_by_model.setdefault(resource.model, set()).update(
-                    resource.fields.keys()
-                )
+                desired_fields_by_model.setdefault(resource.model, set()).update(resource.fields.keys())
 
             # Step 8: Fetch live state from Odoo (READ-ONLY).
             # Compute extra prefixes from per-resource xmlid_module overrides (CR-02).
-            extra_prefixes: set[str] = {
-                r.xmlid_module
-                for r in state.resources
-                if r.xmlid_module
-            } - {state.xmlid_prefix}
+            extra_prefixes: set[str] = {r.xmlid_module for r in state.resources if r.xmlid_module} - {
+                state.xmlid_prefix
+            }
             live_state = await LiveState.fetch(
                 client, state.xmlid_prefix, desired_fields_by_model, extra_prefixes or None
             )
@@ -137,9 +126,7 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
             # can classify Delete vs Archive for managed-but-absent resources
             # (needs archivable flag from the schema).
             managed_models = {r.model for r in live_state.managed.values()}
-            all_model_names = sorted(
-                {r.model for r in state.resources} | managed_models
-            )
+            all_model_names = sorted({r.model for r in state.resources} | managed_models)
             if set(all_model_names) != set(snapshot.models.keys()):
                 # build_snapshot uses the in-memory cache for already-fetched models
                 # so the additional fetch is cheap.
@@ -150,9 +137,7 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
 
             # Step 11: Fire Deferred field values using seam results (REL-04).
             # Produces new ResourceNode instances (no in-place mutation — Pitfall 7).
-            resolved_resources = [
-                resolve_deferred(r, seam_result) for r in state.resources
-            ]
+            resolved_resources = [resolve_deferred(r, seam_result) for r in state.resources]
             state = DesiredState(
                 xmlid_prefix=state.xmlid_prefix,
                 resources=tuple(resolved_resources),
