@@ -112,7 +112,7 @@ End-to-end acceptance tests against real Odoo 17.0, 18.0, and 19.0 CE via testco
 
 - [ ] **VAL-01**: The projects-and-stages lifecycle scenario passes: all four fixture files are ported (`01-initial.py`, `02-mid-lifecycle.py`, plus the corresponding apply sequences), all 5 subtests pass (initial apply, idempotent re-apply, mid-lifecycle update, delete/archive/reject paths, verify post-apply), against real Odoo 17 CE + PostgreSQL 16 via testcontainers. Target: ~95s wall clock.
 - [ ] **VAL-02**: The module-install, namespaced-config, and server-action scenario passes: all four fixture files are ported, 3 subtests pass and 1 is correctly-SKIP (module already installed branch), against real Odoo 17 CE + PostgreSQL 16 via testcontainers. Target: ~58s wall clock.
-- [ ] **VAL-03**: The acceptance suite passes on Odoo 17.0, 18.0, and 19.0 in the CI matrix. All `@pytest.mark.integration` tests run and pass green on all three matrix entries against vanilla Odoo CE images via testcontainers, with no per-test `skipif`/`xfail` introduced.
+- [x] **VAL-03**: The acceptance suite passes on Odoo 17.0, 18.0, and 19.0 in the CI matrix. All `@pytest.mark.integration` tests run and pass green on all three matrix entries against vanilla Odoo CE images via testcontainers, with no per-test `skipif`/`xfail` introduced.
 - [ ] **VAL-04**: The test suite meets or exceeds the TS `odoo-state-manager` benchmark of 29 test files / 4,564 LOC across unit, integration, and acceptance tests combined.
 
 ---
@@ -249,7 +249,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | UX-06 | Phase 1 | Complete (01-01) |
 | VAL-01 | Phase 4 | Pending |
 | VAL-02 | Phase 5 | Pending |
-| VAL-03 | Phase 03.1 | Pending |
+| VAL-03 | Phase 03.1 | Complete |
 | VAL-04 | Phase 5 | Pending |
 | META-01 | Phase 3 | Complete |
 | META-02 | Phase 5 | Pending |
