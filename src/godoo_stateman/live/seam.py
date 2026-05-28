@@ -110,7 +110,15 @@ def resolve_deferred(
     for fname, fval in resource.fields.items():
         if isinstance(fval, Deferred):
             # Sort deps for deterministic argument order (SC-2).
-            resolved_args = [seam_result[dep] for dep in sorted(fval.deps)]
+            resolved_args: list[int] = []
+            for dep in sorted(fval.deps):
+                if dep not in seam_result:
+                    raise LiveStateFetchError(
+                        f"Resource {resource.slug!r} field {fname!r}: Deferred references "
+                        f"data-source key {dep!r} which was not resolved. "
+                        "Check that the DataSourceNode is declared in the config."
+                    )
+                resolved_args.append(seam_result[dep])
             resolved[fname] = fval.fn(*resolved_args)
         else:
             resolved[fname] = fval

@@ -308,3 +308,33 @@ def test_non_deferred_field_passthrough() -> None:
     assert resolved.fields["name"] == "Static Name"
     assert resolved.fields["email"] == "test@example.com"
     assert resolved.fields["deferred_field"] == 42
+
+
+def test_resolve_deferred_unregistered_dep_raises_livestatefetcherror() -> None:
+    """CR-03 regression: Deferred referencing an unregistered dep raises LiveStateFetchError.
+
+    Before CR-03 fix, a missing dep raised a bare KeyError which surfaced as an
+    opaque "Unexpected error: <key>" in the plan command.  After fix, a clear
+    LiveStateFetchError names the resource, field, and missing data-source key.
+    """
+    resource = ResourceNode(
+        model="res.partner",
+        slug="broken_resource",
+        fields={
+            "country_id": Deferred(
+                fn=lambda x: x,
+                deps=frozenset({"data.res_country[code=ZZ]"}),
+            ),
+        },
+    )
+    # seam_result does NOT contain the dep key — simulates a DataSourceNode that
+    # was declared in the Deferred but not registered in the config's data_sources.
+    seam_result: dict[str, int] = {}
+
+    with pytest.raises(LiveStateFetchError) as exc_info:
+        resolve_deferred(resource, seam_result)
+
+    error_msg = str(exc_info.value)
+    assert "broken_resource" in error_msg
+    assert "country_id" in error_msg
+    assert "data.res_country[code=ZZ]" in error_msg
