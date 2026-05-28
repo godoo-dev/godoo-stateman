@@ -129,7 +129,7 @@ Plans:
 
 **Reference**: godoo-py's matrix at `../godoo-py/.github/workflows/test.yml` (`strategy.matrix.odoo-version: ["17.0", "18.0", "19.0"]`) — `TestHarness`/`OdooTestContainer` already read `ODOO_VERSION` from env (default `17.0`), so our fixtures need no changes; this phase is mostly CI plumbing + fixing whatever shakes out on 18/19.
 
-**Plans:** 1/6 plans executed
+**Plans:** 2/6 plans executed
 Plans:
 
 **Wave 1 — Pre-flight**
@@ -138,7 +138,7 @@ Plans:
 
 **Wave 2 — Version propagation** *(blocked on Wave 1 completion)*
 
-- [ ] 03.1-02-PLAN.md — Version propagation: add odoo_version session fixture in conftest.py (D-01) + fix plan.py:90 hardcode (D-04)
+- [x] 03.1-02-PLAN.md — Version propagation: add odoo_version session fixture in conftest.py (D-01) + fix plan.py:90 hardcode (D-04)
 
 **Wave 3 — Test rewrites + doc updates** *(blocked on Wave 2 completion — parallel pair)*
 
@@ -209,7 +209,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
 | 2. DSL Eval + Pure Pipeline | 4/4 | Complete    | 2026-05-26 |
 | 3. Diff + Plan + Import CLI | 5/5 | Complete   | 2026-05-27 |
-| 03.1. Multi-Odoo-version CI test matrix | 1/6 | In Progress|  |
+| 03.1. Multi-Odoo-version CI test matrix | 2/6 | In Progress|  |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
 | 6. Release Packaging | 0/TBD | Not started | - |

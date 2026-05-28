@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-28T13:14:55.214Z"
+last_updated: "2026-05-28T13:21:46.556Z"
 last_activity: 2026-05-28
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 18
-  completed_plans: 13
+  completed_plans: 14
   percent: 43
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-23)
 ## Current Position
 
 Phase: 03.1 (multi-odoo-version-ci-test-matrix) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-05-28
 
-Progress: [███████░░░] 72%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [███████░░░] 72%
 | Phase 03 P04 | 9m | 2 tasks | 5 files |
 | Phase 03 P03-05 | 25m | 2 tasks | 5 files |
 | Phase 03.1 P01 | 5m 31s | 2 tasks | 1 files |
+| Phase 03.1 P02 | 3m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [03-05] acceptance import tests mirror TestHarness url/db/admin into GODOO_* so _import_impl's own OdooClient targets the same container
 - [Phase ?]: [03.1-01] odoo:19.0 exists on Docker Hub — manifest inspect exit 0, schemaVersion 2
 - [Phase ?]: [03.1-01] postgres:15-alpine + odoo:19.0 testcontainer boot confirmed (3m 50s) — D-10 hold NOT triggered, no upstream godoo-testcontainers fix needed
+- [03.1-02] D-01: odoo_version fixture is session-scoped (matches odoo fixture scope); pytest.fail() for invalid ODOO_VERSION env (not typer.BadParameter — no Typer context in tests)
+- [03.1-02] D-04: OdooVersion(17, 0) hardcode removed from plan.py; inline 5-line parsing block from snapshot.py:61; typer.BadParameter error path (typer already imported in plan.py)
 
 ### Pending Todos
 
@@ -141,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-28T13:14:55.207Z
+Last session: 2026-05-28T13:21:46.536Z
 Stopped at: Completed 03.1-01-PLAN.md (Wave 0 pre-flight)
 Resume file: None
