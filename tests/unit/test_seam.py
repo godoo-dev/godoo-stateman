@@ -63,8 +63,8 @@ async def test_fetch_groups_res_ids_per_model() -> None:
     The per-model search_read must be called with [("id","in",[7,42])] (sorted).
     """
     imd_rows = [
-        {"name": "partner_a", "model": "res.partner", "res_id": 42},
-        {"name": "partner_b", "model": "res.partner", "res_id": 7},
+        {"name": "partner_a", "model": "res.partner", "res_id": 42, "module": "myprefix"},
+        {"name": "partner_b", "model": "res.partner", "res_id": 7, "module": "myprefix"},
     ]
     live_rows = [
         {"id": 7, "email": "b@example.com", "name": "B"},
@@ -75,8 +75,13 @@ async def test_fetch_groups_res_ids_per_model() -> None:
     desired_fields_by_model = {"res.partner": {"email", "name"}}
     await LiveState.fetch(client, "myprefix", desired_fields_by_model)
 
-    # The per-model call must use sorted res_ids [7, 42]
+    # The ir.model.data call must use ("module", "in", ["myprefix"]) domain (CR-02).
     assert client.search_read.call_count == 2
+    imd_call = client.search_read.call_args_list[0]
+    imd_domain = imd_call[0][1]
+    assert imd_domain == [("module", "in", ["myprefix"])]
+
+    # The per-model call must use sorted res_ids [7, 42]
     partner_call = client.search_read.call_args_list[1]
     domain_arg = partner_call[0][1]
     assert domain_arg == [("id", "in", [7, 42])]
@@ -89,8 +94,8 @@ async def test_fetch_separate_query_per_model() -> None:
     (batch per model, not one combined query).
     """
     imd_rows = [
-        {"name": "partner_x", "model": "res.partner", "res_id": 10},
-        {"name": "country_y", "model": "res.country", "res_id": 20},
+        {"name": "partner_x", "model": "res.partner", "res_id": 10, "module": "myprefix"},
+        {"name": "country_y", "model": "res.country", "res_id": 20, "module": "myprefix"},
     ]
     partner_rows = [{"id": 10, "name": "X"}]
     country_rows = [{"id": 20, "name": "Y"}]
@@ -109,21 +114,25 @@ async def test_fetch_separate_query_per_model() -> None:
     assert first_call[0][0] == "ir.model.data"
 
 
-async def test_fetch_managed_keyed_by_slug() -> None:
-    """LiveState.managed is a dict keyed by slug (ir.model.data "name" column).
+async def test_fetch_managed_keyed_by_complete_xmlid() -> None:
+    """LiveState.managed is a dict keyed by complete xmlid ("{module}.{name}").
 
     Each value must be an XmlIdRecord for the corresponding managed row.
+    The key format is "testprefix.my_slug" — NOT the bare slug "my_slug".
+    (CR-02 fix: complete-xmlid keying enables per-resource xmlid_module overrides.)
     """
     imd_rows = [
-        {"name": "my_slug", "model": "res.partner", "res_id": 99},
+        {"name": "my_slug", "model": "res.partner", "res_id": 99, "module": "testprefix"},
     ]
     live_rows = [{"id": 99, "name": "Test Partner"}]
     client = _make_client(search_read_return=[imd_rows, live_rows])
 
     state = await LiveState.fetch(client, "testprefix", {"res.partner": {"name"}})
 
-    assert "my_slug" in state.managed
-    record = state.managed["my_slug"]
+    # Key is the complete xmlid, not the bare slug.
+    assert "testprefix.my_slug" in state.managed
+    assert "my_slug" not in state.managed
+    record = state.managed["testprefix.my_slug"]
     assert record.module == "testprefix"
     assert record.name == "my_slug"
     assert record.model == "res.partner"
@@ -138,7 +147,7 @@ async def test_fetch_uses_explicit_fields_and_order() -> None:
     no non-deterministic query ordering.
     """
     imd_rows = [
-        {"name": "slug1", "model": "res.partner", "res_id": 5},
+        {"name": "slug1", "model": "res.partner", "res_id": 5, "module": "pfx"},
     ]
     live_rows = [{"id": 5, "email": "x@x.com"}]
     client = _make_client(search_read_return=[imd_rows, live_rows])

@@ -117,9 +117,12 @@ def _make_live_state(
         managed:     slug → (model, res_id)
         live_fields: res_id → {field_name: live_value}
         module:      xmlid module/prefix (default "test_prefix")
+
+    Note: ``LiveState.managed`` is keyed by complete xmlid (``"{module}.{slug}"``),
+    not by bare slug.  This helper constructs the complete-xmlid keys automatically.
     """
     managed_dict: dict[str, XmlIdRecord] = {
-        slug: _make_xmlid_record(slug, model, res_id, module)
+        f"{module}.{slug}": _make_xmlid_record(slug, model, res_id, module)
         for slug, (model, res_id) in managed.items()
     }
     return LiveState(managed=managed_dict, live_fields=live_fields)
@@ -615,3 +618,51 @@ def test_multiple_resources_mixed_actions() -> None:
     archive_step = _step(steps, "partner_managed_absent")
     assert archive_step.action == PlanAction.ARCHIVE
     assert archive_step.res_id == 12
+
+
+# ---------------------------------------------------------------------------
+# CR-02 regression: xmlid_module override — record known under overridden prefix
+# ---------------------------------------------------------------------------
+
+
+def test_xmlid_module_override_classifies_noop_not_create() -> None:
+    """CR-02 regression: a resource with xmlid_module override is NoOp when the
+    record exists in Odoo under that module — NOT Create.
+
+    Before CR-02 fix, LiveState.managed was keyed by bare slug and only scanned
+    the top-level xmlid_prefix.  A resource declaring xmlid_module="other_prefix"
+    would never find its record in managed and always classified as CREATE.
+
+    After fix, LiveState.managed is keyed by complete xmlid ("{module}.{slug}"),
+    and diff() looks up the complete xmlid.  The record is found → NoOp.
+    """
+    snapshot = _make_snapshot({"res.partner": (True, {"name": ("char", True, False)})})
+
+    # Record already exists in Odoo under "other_prefix" module (not "main_prefix").
+    # _make_live_state with module="other_prefix" produces key "other_prefix.override_slug".
+    live_state = _make_live_state(
+        managed={"override_slug": ("res.partner", 88)},
+        live_fields={88: {"id": 88, "name": "Override Partner"}},
+        module="other_prefix",
+    )
+
+    # Config uses top-level xmlid_prefix="main_prefix" but this resource overrides
+    # to xmlid_module="other_prefix" — effective xmlid is "other_prefix.override_slug".
+    state = _make_desired(
+        "main_prefix",
+        [("res.partner", "override_slug", {"name": "Override Partner"})],
+        xmlid_module_overrides={"override_slug": "other_prefix"},
+    )
+
+    steps = diff(state, live_state, snapshot)
+
+    assert len(steps) == 1
+    step = steps[0]
+    # Must be NoOp — the record is found under the overridden module, fields match.
+    assert step.action == PlanAction.NOOP, (
+        f"CR-02 regression: resource with xmlid_module override must classify as "
+        f"NoOp (record exists), got {step.action}. "
+        "Check that LiveState.managed is keyed by complete xmlid and diff() uses effective_prefix."
+    )
+    assert step.xmlid == "other_prefix.override_slug"
+    assert step.res_id == 88

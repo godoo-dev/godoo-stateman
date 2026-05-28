@@ -74,7 +74,11 @@ def diff(
         Ordered flat list of ``PlanStep`` objects — one per resource.
     """
     steps: list[PlanStep] = []
-    desired_slugs: set[str] = {r.slug for r in state.resources}
+    # Compute the complete xmlids for all desired resources so Pass 2 can find
+    # managed-but-absent entries (now keyed by complete xmlid, not bare slug).
+    desired_xmlids: set[str] = {
+        f"{(r.xmlid_module or state.xmlid_prefix)}.{r.slug}" for r in state.resources
+    }
 
     # -----------------------------------------------------------------------
     # Pass 1: classify each desired resource
@@ -84,7 +88,10 @@ def diff(
         effective_prefix = resource.xmlid_module or state.xmlid_prefix
         xmlid = f"{effective_prefix}.{resource.slug}"
 
-        record = live_state.managed.get(resource.slug)
+        # Look up by complete xmlid ("{effective_prefix}.{slug}") — the managed
+        # dict is now keyed by complete xmlid to support per-resource xmlid_module
+        # overrides (CR-02 fix).
+        record = live_state.managed.get(xmlid)
 
         if record is None:
             # D-01: No natural-identity probing. Absent slug → CREATE.
@@ -164,14 +171,18 @@ def diff(
         )
 
     # -----------------------------------------------------------------------
-    # Pass 2: managed slugs absent from desired → Delete or Archive (D-04)
+    # Pass 2: managed xmlids absent from desired → Delete or Archive (D-04)
     # -----------------------------------------------------------------------
-    absent_slugs = sorted(
-        slug for slug in live_state.managed if slug not in desired_slugs
+    # live_state.managed is now keyed by complete xmlid ("{module}.{slug}").
+    # Sort by complete xmlid for determinism (SC-2).
+    absent_xmlids = sorted(
+        complete_xmlid
+        for complete_xmlid in live_state.managed
+        if complete_xmlid not in desired_xmlids
     )
 
-    for slug in absent_slugs:
-        record = live_state.managed[slug]
+    for complete_xmlid in absent_xmlids:
+        record = live_state.managed[complete_xmlid]
         model_schema = snapshot.models.get(record.model)
 
         action = PlanAction.ARCHIVE if model_schema is not None and model_schema.archivable else PlanAction.DELETE
@@ -179,9 +190,9 @@ def diff(
         steps.append(
             PlanStep(
                 action=action,
-                slug=slug,
+                slug=record.name,
                 model=record.model,
-                xmlid=f"{record.module}.{slug}",
+                xmlid=complete_xmlid,
                 res_id=record.res_id,
                 field_diff=(),
             )

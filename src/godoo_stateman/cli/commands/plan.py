@@ -114,8 +114,14 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
                 )
 
             # Step 8: Fetch live state from Odoo (READ-ONLY).
+            # Compute extra prefixes from per-resource xmlid_module overrides (CR-02).
+            extra_prefixes: set[str] = {
+                r.xmlid_module
+                for r in state.resources
+                if r.xmlid_module
+            } - {state.xmlid_prefix}
             live_state = await LiveState.fetch(
-                client, state.xmlid_prefix, desired_fields_by_model
+                client, state.xmlid_prefix, desired_fields_by_model, extra_prefixes or None
             )
 
             # Step 9a: Extend snapshot to include models from the managed set that

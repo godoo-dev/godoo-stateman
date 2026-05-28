@@ -2,8 +2,9 @@
 
 Performs two rounds of ``search_read`` against the live Odoo instance:
 
-1. Scan ``ir.model.data`` for all rows whose ``module`` equals the config's
-   ``xmlid_prefix`` — this defines the *managed universe* (D-04).
+1. Scan ``ir.model.data`` for all rows whose ``module`` is in the full set of
+   effective prefixes (the config's ``xmlid_prefix`` plus any per-resource
+   ``xmlid_module`` overrides) — this defines the *managed universe* (D-04).
 2. For each model found in that universe, issue one ``search_read`` against
    the model table to fetch the live field values for all managed records of
    that model (batch-fetch, not N+1 queries).
@@ -32,8 +33,10 @@ class LiveState:
     """Read-only snapshot of all managed resources and their live field values.
 
     Attributes:
-        managed:     slug → XmlIdRecord for every ``ir.model.data`` row whose
-                     ``module`` equals the config's ``xmlid_prefix``.
+        managed:     complete xmlid (``"{module}.{name}"``) → XmlIdRecord for every
+                     ``ir.model.data`` row whose ``module`` is in the effective prefix
+                     set (the config's ``xmlid_prefix`` plus any per-resource
+                     ``xmlid_module`` overrides).
         live_fields: res_id → {field_name: live_value} for every managed record,
                      populated by the per-model ``search_read`` calls.
     """
@@ -47,41 +50,53 @@ class LiveState:
         client: OdooClient,
         xmlid_prefix: str,
         desired_fields_by_model: dict[str, set[str]],
+        extra_prefixes: set[str] | None = None,
     ) -> LiveState:
         """Fetch all managed state from the live Odoo instance.
 
         Args:
             client:                  Authenticated ``OdooClient`` (read-only — no writes).
             xmlid_prefix:            The ``xmlid_prefix`` declared in the DSL config.
-                                     Only ``ir.model.data`` rows with ``module=xmlid_prefix``
-                                     are fetched (D-04 managed-universe definition).
+                                     Always included in the managed-universe scan (D-04).
             desired_fields_by_model: Mapping of model name → set of field names declared in
                                      the corresponding ``ResourceNode.fields`` dicts.  Used
                                      to build the ``fields=`` projection for each per-model
                                      ``search_read`` call.
+            extra_prefixes:          Additional ``xmlid_module`` prefixes used by per-resource
+                                     overrides.  All prefixes (``xmlid_prefix`` plus
+                                     ``extra_prefixes``) are scanned together in a single
+                                     ``ir.model.data`` query using ``("module", "in", ...)``.
+                                     ``None`` is treated as an empty set.
 
         Returns:
-            A frozen ``LiveState`` with the ``managed`` dict and ``live_fields`` dict
-            populated from live Odoo data.
+            A frozen ``LiveState`` with the ``managed`` dict (keyed by complete xmlid
+            ``"{module}.{name}"``) and ``live_fields`` dict populated from live Odoo data.
         """
+        # Build the full prefix set: primary prefix + any per-resource overrides.
+        # Sorted for deterministic domain ordering (SC-2).
+        all_prefixes: list[str] = sorted({xmlid_prefix} | (extra_prefixes or set()))
+
         # Step 1: scan the managed universe from ir.model.data (D-04).
         # Minimal fields= projection — avoids binary/compute fields (T-03-03).
+        # Include "module" so we can key managed by complete xmlid "{module}.{name}".
         # order="name" ensures deterministic slug ordering (SC-2).
         managed_rows = await client.search_read(
             "ir.model.data",
-            [("module", "=", xmlid_prefix)],
-            fields=["name", "model", "res_id"],
+            [("module", "in", all_prefixes)],
+            fields=["name", "model", "res_id", "module"],
             order="name",
         )
 
-        # Build the managed dict: slug (ir.model.data "name") → XmlIdRecord
+        # Build the managed dict: complete xmlid ("{module}.{name}") → XmlIdRecord.
+        # Keying by complete xmlid (not bare slug) supports per-resource xmlid_module
+        # overrides: two resources with different modules but the same slug are distinct.
         managed: dict[str, XmlIdRecord] = {
-            str(r["name"]): XmlIdRecord(
-                module=xmlid_prefix,
+            f"{r['module']!s}.{r['name']!s}": XmlIdRecord(
+                module=str(r["module"]),
                 name=str(r["name"]),
                 model=str(r["model"]),
                 res_id=int(r["res_id"]),
-                complete_name=f"{xmlid_prefix}.{r['name']}",
+                complete_name=f"{r['module']!s}.{r['name']!s}",
             )
             for r in managed_rows
         }
