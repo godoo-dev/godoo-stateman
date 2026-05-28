@@ -122,14 +122,36 @@ Plans:
 **Requirements**: VAL-03 (multi-version validation)
 **Success Criteria** (what must be TRUE):
 
-  1. `.github/workflows/ci.yml` defines a job whose `strategy.matrix.odoo-version` is exactly `["17.0", "18.0", "19.0"]` with `fail-fast: false`, injects `ODOO_VERSION` as an env var, and runs the integration suite (`uv run pytest -m integration -q`) in each matrix entry.
-  2. All three matrix entries pass green on a sample PR — the 18 `@pytest.mark.integration` tests succeed against vanilla Odoo 17.0, 18.0, and 19.0 CE images (`odoo:17.0`, `odoo:18.0`, `odoo:19.0`) via testcontainers, with no per-test `skipif`/`xfail` introduced.
+  1. `.github/workflows/test.yml` defines an `integration` job whose `strategy.matrix.odoo_version` is exactly `["17.0", "18.0", "19.0"]` with `fail-fast: false`, injects `ODOO_VERSION` as an env var, and runs the integration suite (`uv run --no-sources pytest tests/acceptance -v -s -m integration --log-cli-level=ERROR`) in each matrix entry.
+  2. All three matrix entries pass green on a sample PR — all `@pytest.mark.integration` tests succeed against vanilla Odoo 17.0, 18.0, and 19.0 CE images (`odoo:17.0`, `odoo:18.0`, `odoo:19.0`) via testcontainers, with no per-test `skipif`/`xfail` introduced.
   3. The same workflow runs a separate fast unit-test job (`uv run pytest -m "not integration" -q`) and the lint+typecheck job (`uv run ruff check . && uv run mypy src/godoo_stateman`) — single source of CI truth for the repo.
   4. `PROJECT.md` and `CLAUDE.md` are updated to state the project is tested against Odoo 17.0, 18.0, and 19.0 (replacing the unverified "Odoo 17+" wording).
 
 **Reference**: godoo-py's matrix at `../godoo-py/.github/workflows/test.yml` (`strategy.matrix.odoo-version: ["17.0", "18.0", "19.0"]`) — `TestHarness`/`OdooTestContainer` already read `ODOO_VERSION` from env (default `17.0`), so our fixtures need no changes; this phase is mostly CI plumbing + fixing whatever shakes out on 18/19.
 
-**Plans**: TBD
+**Plans:** 6 plans
+Plans:
+
+**Wave 1 — Pre-flight**
+
+- [ ] 03.1-01-PLAN.md — Pre-flight: verify odoo:19.0 Docker image exists + 19.0 testcontainer startup smoke against postgres:15-alpine
+
+**Wave 2 — Version propagation** *(blocked on Wave 1 completion)*
+
+- [ ] 03.1-02-PLAN.md — Version propagation: add odoo_version session fixture in conftest.py (D-01) + fix plan.py:90 hardcode (D-04)
+
+**Wave 3 — Test rewrites + doc updates** *(blocked on Wave 2 completion — parallel pair)*
+
+- [ ] 03.1-03-PLAN.md — Test rewrites: _run_pipeline() + 7 callers in test_plan_import.py (D-02) + 3 hardcodes + assertions in test_snapshot.py (D-03)
+- [ ] 03.1-04-PLAN.md — Doc/requirements: ROADMAP SC-1/SC-2 (D-05/D-06) + REQUIREMENTS VAL-03 rewrite + VAL-04 add (D-07) + PROJECT.md + CLAUDE.md wording (D-11)
+
+**Wave 4 — Shake-out** *(blocked on Wave 3 completion)*
+
+- [ ] 03.1-05-PLAN.md — Shake-out: run matrix locally on 17.0/18.0/19.0, fix any genuine test failures (no skipif/xfail per D-08); halt + upstream PR if godoo-py bug hit (D-09)
+
+**Wave 5 — Sample-PR verification** *(blocked on Wave 4 completion)*
+
+- [ ] 03.1-06-PLAN.md — Sample-PR verification: push branch, open draft PR, confirm all 3 matrix entries green on GitHub Actions with non-zero test counts
 
 ### Phase 4: Apply (core actions) — VAL-01 gate
 
@@ -152,14 +174,14 @@ Plans:
 **Goal**: Module install/upgrade runs as the highest-risk step class with cancellation threading, the verify stage re-fetches live state from Odoo (never cached), snapshot exports/restores managed state, translation diffs apply, and VAL-02 passes with 3 PASS + 1 correctly-SKIP.
 **Mode:** mvp
 **Depends on**: Phase 4
-**Requirements**: CORE-07, CORE-09, RSRC-08, EXEC-01, EXEC-03, META-02, META-03, VAL-02, VAL-03
+**Requirements**: CORE-07, CORE-09, RSRC-08, EXEC-01, EXEC-03, META-02, META-03, VAL-02, VAL-04
 **Success Criteria** (what must be TRUE):
 
   1. VAL-02 passes: 3 subtests PASS (module install, namespaced config write, server action create) and 1 is correctly-SKIP (module-already-installed branch) against real Odoo 17 CE + PostgreSQL 16 via testcontainers in under 80 seconds.
   2. `godoo-stateman verify config.py` run standalone (not post-apply) re-fetches live state from Odoo, diffs all managed resources against desired state, and reports any out-of-band drift — without performing any Odoo mutation.
   3. A SIGINT (Ctrl-C) during a module install step causes apply to report partial progress (committed steps listed, current step marked interrupted) without leaving the CLI in an ambiguous state.
   4. `godoo-stateman snapshot export config.py --out state.json` produces a versioned JSON artifact with a version field, export timestamp, and model-keyed record data; `snapshot restore state.json` imports the artifact with configurable conflict handling (`skip | error`).
-  5. The test suite reaches or exceeds 29 test files and 4,564 LOC across unit, integration, and acceptance tests combined (VAL-03 benchmark).
+  5. The test suite reaches or exceeds 29 test files and 4,564 LOC across unit, integration, and acceptance tests combined (VAL-04 benchmark).
 
 **Plans**: TBD
 
@@ -187,6 +209,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Bootstrap + Schema Registry | 3/3 | Complete   | 2026-05-23 |
 | 2. DSL Eval + Pure Pipeline | 4/4 | Complete    | 2026-05-26 |
 | 3. Diff + Plan + Import CLI | 5/5 | Complete   | 2026-05-27 |
+| 03.1. Multi-Odoo-version CI test matrix | 0/6 | Not started | - |
 | 4. Apply (core actions) — VAL-01 gate | 0/TBD | Not started | - |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
 | 6. Release Packaging | 0/TBD | Not started | - |
