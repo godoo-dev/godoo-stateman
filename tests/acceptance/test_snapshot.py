@@ -34,7 +34,7 @@ from godoo_stateman.types.schema import VersionedModelSchema
 
 
 @pytest.mark.integration
-async def test_schema_registry_get(odoo: object) -> None:
+async def test_schema_registry_get(odoo: object, odoo_version: OdooVersion) -> None:
     """SchemaRegistry.get() returns VersionedModelSchema with store: bool for every field.
 
     Covers SCHEM-02: all fields have store populated as a bool.
@@ -42,11 +42,11 @@ async def test_schema_registry_get(odoo: object) -> None:
 
     Uses res.partner (guaranteed present in vanilla Odoo 17 CE base install).
     """
-    registry = SchemaRegistry(odoo.client, OdooVersion(17, 0))  # type: ignore[attr-defined]
+    registry = SchemaRegistry(odoo.client, odoo_version)  # type: ignore[attr-defined]
     schema = await registry.get("res.partner")
 
     assert isinstance(schema, VersionedModelSchema)
-    assert schema.odoo_version == "17.0"
+    assert schema.odoo_version == str(odoo_version)
     assert schema.name == "res.partner"
     assert len(schema.fields) > 0
     # res.partner has both name (stored) and display_name (computed/not stored)
@@ -58,13 +58,13 @@ async def test_schema_registry_get(odoo: object) -> None:
 
 
 @pytest.mark.integration
-async def test_store_flag_regression(odoo: object) -> None:
+async def test_store_flag_regression(odoo: object, odoo_version: OdooVersion) -> None:
     """res.partner.display_name.store is False — SCHEM-05 regression gate (D-09).
 
     display_name is a computed, non-stored field on res.partner in Odoo 17.
     If this test fails, the Introspector's store-flag population is broken.
     """
-    registry = SchemaRegistry(odoo.client, OdooVersion(17, 0))  # type: ignore[attr-defined]
+    registry = SchemaRegistry(odoo.client, odoo_version)  # type: ignore[attr-defined]
     schema = await registry.get("res.partner")
 
     assert "display_name" in schema.fields, "res.partner must have display_name field"
@@ -74,7 +74,7 @@ async def test_store_flag_regression(odoo: object) -> None:
 
 
 @pytest.mark.integration
-async def test_snapshot_round_trip(odoo: object, tmp_path: Path) -> None:
+async def test_snapshot_round_trip(odoo: object, tmp_path: Path, odoo_version: OdooVersion) -> None:
     """Build → save → load round-trip produces identical data.
 
     Covers SCHEM-04: snapshot JSON includes odoo_version, schema_format_version,
@@ -82,16 +82,16 @@ async def test_snapshot_round_trip(odoo: object, tmp_path: Path) -> None:
 
     Uses res.partner (guaranteed present in vanilla Odoo 17 CE base install).
     """
-    registry = SchemaRegistry(odoo.client, OdooVersion(17, 0))  # type: ignore[attr-defined]
+    registry = SchemaRegistry(odoo.client, odoo_version)  # type: ignore[attr-defined]
     snapshot_obj = await registry.build_snapshot(["res.partner"])
 
     path = tmp_path / "snap.json"
     snapshot_obj.save(path)
     assert path.exists()
 
-    loaded = VersionedSnapshot.load(path, "17.0")
+    loaded = VersionedSnapshot.load(path, str(odoo_version))
 
-    assert loaded.odoo_version == "17.0"
+    assert loaded.odoo_version == str(odoo_version)
     assert loaded.schema_format_version == SCHEMA_FORMAT_VERSION
     assert loaded.schema_format_version == 1
     assert "res.partner" in loaded.models
