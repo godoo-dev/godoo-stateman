@@ -6,7 +6,7 @@ A standalone Python CLI — "Terraform for Odoo" — that reconciles Odoo instan
 remotely over jsonrpc. It evaluates a Python DSL describing desired Odoo state, diffs
 it against live Odoo, and executes a plan of creates/updates/deletes/archives in
 dependency order. Designed for community use, released under LGPL-3.0, targeting the
-Odoo 17+ ecosystem via `godoo-py` for transport and introspection.
+Odoo 17.0, 18.0, and 19.0 ecosystem via `godoo-py` for transport and introspection.
 
 ## Core Value
 
@@ -160,8 +160,8 @@ VAL-01/VAL-02 passing, Go v1 formally superseded. Full format: `../godoo-hq/.pla
 - **Tech stack**: Python CLI; jsonrpc-only Odoo interface via `godoo-py`. No Go, no TypeScript, no server-side Odoo component.
 - **Python version**: Target the version required by `godoo-py` (verify before locking).
 - **State boundary**: State lives exclusively in Odoo's `ir.model.data`. No sidecar state file, no local DB.
-- **Odoo version**: Odoo 17 CE is the primary target. The schema-snapshot/registry layer must carry an explicit Odoo-version dimension from day one.
-- **Test harness**: Acceptance tests run against real Odoo 17 via testcontainers. Unit/integration split matches or exceeds TS benchmark (29 files / 4,564 LOC).
+- **Odoo version**: Tested against Odoo 17.0, 18.0, and 19.0 (CE). The schema-snapshot/registry layer carries an explicit Odoo-version dimension.
+- **Test harness**: Acceptance tests run against real Odoo 17.0, 18.0, and 19.0 via testcontainers. Unit/integration split matches or exceeds TS benchmark (29 files / 4,564 LOC).
 - **Packaging**: PyPI public release. Licensing: LGPL-3.0.
 - **Repo**: `godoo-dev/godoo-stateman` public GitHub repo (`gh repo create --public`).
 - **CLAUDE.md**: Must `@`-import `../godoo-hq/UMBRELLA_CLAUDE.md`. This is a hard wiring requirement, not optional.
