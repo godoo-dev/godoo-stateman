@@ -63,7 +63,7 @@ TEST_PREFIX = "test_stateman_phase3"
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 async def cleanup_xmlids(odoo: object) -> AsyncIterator[Any]:
     """Autouse-style cleanup: remove all ir.model.data rows under TEST_PREFIX.
 
