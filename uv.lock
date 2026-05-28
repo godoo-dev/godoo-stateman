@@ -282,7 +282,7 @@ wheels = [
 [[package]]
 name = "godoo-client"
 version = "0.2.0"
-source = { editable = "../godoo-py/packages/godoo" }
+source = { editable = "../godoo-py/packages/godoo-client" }
 dependencies = [
     { name = "httpx" },
 ]
@@ -299,7 +299,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "godoo-client", editable = "../godoo-py/packages/godoo" }]
+requires-dist = [{ name = "godoo-client", editable = "../godoo-py/packages/godoo-client" }]
 
 [[package]]
 name = "godoo-stateman"
@@ -330,7 +330,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "godoo-client", editable = "../godoo-py/packages/godoo" },
+    { name = "godoo-client", editable = "../godoo-py/packages/godoo-client" },
     { name = "godoo-introspection", editable = "../godoo-py/packages/godoo-introspection" },
     { name = "networkx", specifier = ">=3.6.1" },
     { name = "platformdirs", specifier = ">=4.9.6" },
@@ -363,7 +363,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "godoo-client", editable = "../godoo-py/packages/godoo" },
+    { name = "godoo-client", editable = "../godoo-py/packages/godoo-client" },
     { name = "testcontainers", extras = ["postgres"], specifier = ">=4" },
 ]
 

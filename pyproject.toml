@@ -35,7 +35,7 @@ sources = ["src"]
 only-include = ["src/godoo_stateman"]
 
 [tool.uv.sources]
-godoo-client = { path = "../godoo-py/packages/godoo", editable = true }
+godoo-client = { path = "../godoo-py/packages/godoo-client", editable = true }
 godoo-introspection = { path = "../godoo-py/packages/godoo-introspection", editable = true }
 godoo-testcontainers = { path = "../godoo-py/packages/godoo-testcontainers", editable = true }
 
