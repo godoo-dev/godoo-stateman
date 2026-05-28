@@ -377,3 +377,60 @@ async def test_step1_search_read_called_with_correct_args() -> None:
         fields=["id"],
         limit=1,
     )
+
+
+# ---------------------------------------------------------------------------
+# WR-02 regression: OdooValidationError caught and produces actionable message
+# ---------------------------------------------------------------------------
+
+
+async def test_odoo_validation_error_from_write_xmlid_is_caught() -> None:
+    """WR-02 regression: OdooValidationError raised by write_xmlid is caught and
+    produces a clean console message + non-zero exit code (not 'Unexpected error').
+
+    This error occurs when write_xmlid detects a model mismatch on an existing
+    ir.model.data row (e.g. the same xmlid was previously bound to a different
+    Odoo model).  It is a deterministic, operator-actionable condition and must
+    not surface as a generic 'Unexpected error'.
+    """
+    from godoo.client.errors import OdooValidationError
+
+    env = {
+        "GODOO_URL": "http://localhost:8069",
+        "GODOO_DB": "testdb",
+        "GODOO_USER": "admin",
+        "GODOO_PASSWORD": "admin",
+    }
+    client = _make_client(search_read_return=[{"id": 42}])
+
+    printed_messages: list[str] = []
+
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+        ctx = AsyncMock()
+        ctx.__aenter__ = AsyncMock(return_value=client)
+        ctx.__aexit__ = AsyncMock(return_value=False)
+        mock_cls.return_value = ctx
+        with (
+            patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=None),
+            patch(
+                "godoo_stateman.cli.commands.import_.write_xmlid",
+                side_effect=OdooValidationError(
+                    "xmlid 'mymod'.'myslug' model mismatch: points to 'res.users', expected 'res.partner'"
+                ),
+            ),
+            patch("godoo_stateman.cli.commands.import_.console") as mock_console,
+        ):
+            mock_console.print.side_effect = lambda msg: printed_messages.append(str(msg))
+            result = await _import_impl("res.partner", 42, "mymod", "myslug", False)
+
+    # Must return non-zero exit code.
+    assert result == 1, f"Expected exit code 1, got {result}"
+
+    # Must print a message (not 'Unexpected error').
+    assert len(printed_messages) >= 1, "Expected at least one console message for OdooValidationError"
+    combined = " ".join(printed_messages)
+    assert "Unexpected error" not in combined, (
+        "OdooValidationError must NOT produce 'Unexpected error' — it is an operator-actionable condition"
+    )
+    # The error message from OdooValidationError must appear (it names the mismatch).
+    assert "mismatch" in combined or "mymod" in combined or "myslug" in combined

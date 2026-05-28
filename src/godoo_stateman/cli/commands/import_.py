@@ -32,6 +32,7 @@ import os
 
 import typer
 from godoo.client.client import OdooClient, OdooClientConfig
+from godoo.client.errors import OdooValidationError
 from rich.console import Console
 
 from godoo_stateman.errors import StatemanError
@@ -110,7 +111,11 @@ async def _import_impl(
             console.print(f"[green]+[/green] Imported: {module}.{name} → {model}:{record_id}")
             return 0
 
-    except StatemanError as exc:
+    except (StatemanError, OdooValidationError) as exc:
+        # OdooValidationError is raised by write_xmlid when the existing ir.model.data
+        # row points to a different model than the one being imported (WR-02 fix).
+        # It is operator-actionable (model mismatch) so it deserves a clean message,
+        # not the generic "Unexpected error" label from the bare except-Exception branch.
         console.print(f"[red]{exc}[/red]")
         return 1
     except Exception as exc:
