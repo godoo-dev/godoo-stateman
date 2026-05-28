@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from pathlib import Path
 
 import typer
@@ -87,7 +88,14 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
             OdooClientConfig(url=url, database=db, username=user, password=password)
         ) as client:
             # Step 3: Create the schema registry.
-            registry = SchemaRegistry(client, OdooVersion(17, 0))
+            # T-03.1-02: validate ODOO_VERSION before int conversion (ASVS L1 V5).
+            # Inline duplicate of snapshot.py:61 — extraction deferred per D-04.
+            _odoo_version_str = os.environ.get("ODOO_VERSION", "17.0")
+            if not re.match(r"^\d+\.\d+$", _odoo_version_str):
+                raise typer.BadParameter("ODOO_VERSION must match N.N format (e.g. '17.0')")
+            _parts = _odoo_version_str.split(".")
+            _odoo_version = OdooVersion(major=int(_parts[0]), minor=int(_parts[1]))
+            registry = SchemaRegistry(client, _odoo_version)
 
             # Step 4: Build the initial snapshot from desired-state models.
             # Concrete call — no None fallback. Passing None would skip schema-
