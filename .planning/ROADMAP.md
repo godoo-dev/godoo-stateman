@@ -115,6 +115,22 @@ Plans:
 
 - [x] 03-05-PLAN.md — Import command + SC-1/SC-2/SC-4/SC-5 acceptance tests against real Odoo 17 CE
 
+### Phase 03.1: Multi-Odoo-version CI test matrix (INSERTED)
+
+**Goal**: The existing acceptance suite runs and passes against **Odoo 17.0, 18.0, and 19.0** in CI, mirroring `godoo-py`'s convention — making good on the project's "Odoo 17+" claim before v1.0 releases.
+**Depends on**: Phase 3
+**Requirements**: VAL-03 (multi-version validation)
+**Success Criteria** (what must be TRUE):
+
+  1. `.github/workflows/ci.yml` defines a job whose `strategy.matrix.odoo-version` is exactly `["17.0", "18.0", "19.0"]` with `fail-fast: false`, injects `ODOO_VERSION` as an env var, and runs the integration suite (`uv run pytest -m integration -q`) in each matrix entry.
+  2. All three matrix entries pass green on a sample PR — the 18 `@pytest.mark.integration` tests succeed against vanilla Odoo 17.0, 18.0, and 19.0 CE images (`odoo:17.0`, `odoo:18.0`, `odoo:19.0`) via testcontainers, with no per-test `skipif`/`xfail` introduced.
+  3. The same workflow runs a separate fast unit-test job (`uv run pytest -m "not integration" -q`) and the lint+typecheck job (`uv run ruff check . && uv run mypy src/godoo_stateman`) — single source of CI truth for the repo.
+  4. `PROJECT.md` and `CLAUDE.md` are updated to state the project is tested against Odoo 17.0, 18.0, and 19.0 (replacing the unverified "Odoo 17+" wording).
+
+**Reference**: godoo-py's matrix at `../godoo-py/.github/workflows/test.yml` (`strategy.matrix.odoo-version: ["17.0", "18.0", "19.0"]`) — `TestHarness`/`OdooTestContainer` already read `ODOO_VERSION` from env (default `17.0`), so our fixtures need no changes; this phase is mostly CI plumbing + fixing whatever shakes out on 18/19.
+
+**Plans**: TBD
+
 ### Phase 4: Apply (core actions) — VAL-01 gate
 
 **Goal**: The `apply` command executes the plan sequentially in dependency order, resolves cross-apply m2m IDs via `GlobalLiveState`, enforces delete_behavior, stops on first failure with partial progress, and passes all 5 VAL-01 subtests against real Odoo 17.

@@ -3,15 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-05-28T05:53:07.943Z"
+last_updated: "2026-05-28T06:13:34.895Z"
 last_activity: 2026-05-28 -- Phase 03 marked complete
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 3
   total_plans: 12
   completed_plans: 12
-  percent: 50
+  percent: 43
 ---
 
 # Project State
@@ -66,6 +65,10 @@ Progress: [██████████] 100%
 | Phase 03 P03-05 | 25m | 2 tasks | 5 files |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 03.1 inserted after Phase 3: Multi-Odoo-version CI test matrix — mirror godoo-py's 17.0/18.0/19.0 matrix to honor the 'Odoo 17+' project claim before v1.0 (URGENT)
 
 ### Decisions
 
