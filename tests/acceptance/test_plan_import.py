@@ -122,6 +122,7 @@ async def _find_partner_id(client: Any, name: str = "Administrator") -> int:
 async def _run_pipeline(
     client: Any,
     state: DesiredState,
+    odoo_version: OdooVersion,
 ) -> tuple[list[PlanStep], nx.DiGraph]:
     """Run the full plan pipeline (snapshot, normalize-skip, fetch, seam, diff).
 
@@ -132,7 +133,7 @@ async def _run_pipeline(
     field values (tests build canonical values directly), so normalize() is not
     re-run; the snapshot is still built for diff()'s schema-driven field skip.
     """
-    registry = SchemaRegistry(client, OdooVersion(17, 0))
+    registry = SchemaRegistry(client, odoo_version)
 
     desired_models = sorted({r.model for r in state.resources})
     snapshot = await registry.build_snapshot(desired_models)
@@ -182,7 +183,7 @@ def _step_for(plan_steps: list[PlanStep], slug: str) -> PlanStep | None:
 
 
 @pytest.mark.integration
-async def test_plan_shows_create_for_new_resource(cleanup_xmlids: Any) -> None:
+async def test_plan_shows_create_for_new_resource(cleanup_xmlids: Any, odoo_version: OdooVersion) -> None:
     """A res.partner resource with no xmlid binding is classified CREATE (SC-1, D-01)."""
     client = cleanup_xmlids
 
@@ -199,7 +200,7 @@ async def test_plan_shows_create_for_new_resource(cleanup_xmlids: Any) -> None:
         config_parameters=(),
     )
 
-    plan_steps, _graph = await _run_pipeline(client, state)
+    plan_steps, _graph = await _run_pipeline(client, state, odoo_version)
 
     step = _step_for(plan_steps, "brand_new_partner")
     assert step is not None
@@ -208,7 +209,7 @@ async def test_plan_shows_create_for_new_resource(cleanup_xmlids: Any) -> None:
 
 
 @pytest.mark.integration
-async def test_plan_shows_noop_after_create(cleanup_xmlids: Any) -> None:
+async def test_plan_shows_noop_after_create(cleanup_xmlids: Any, odoo_version: OdooVersion) -> None:
     """A managed res.partner with desired fields matching live → NoOp (SC-1)."""
     client = cleanup_xmlids
     partner_id = await _find_partner_id(client)
@@ -233,7 +234,7 @@ async def test_plan_shows_noop_after_create(cleanup_xmlids: Any) -> None:
         config_parameters=(),
     )
 
-    plan_steps, _graph = await _run_pipeline(client, state)
+    plan_steps, _graph = await _run_pipeline(client, state, odoo_version)
 
     step = _step_for(plan_steps, "managed_partner")
     assert step is not None
@@ -243,7 +244,7 @@ async def test_plan_shows_noop_after_create(cleanup_xmlids: Any) -> None:
 
 
 @pytest.mark.integration
-async def test_plan_shows_update_on_field_change(cleanup_xmlids: Any) -> None:
+async def test_plan_shows_update_on_field_change(cleanup_xmlids: Any, odoo_version: OdooVersion) -> None:
     """A managed res.partner with a changed name → Update with a FieldDiff (SC-1, UX-03)."""
     client = cleanup_xmlids
     partner_id = await _find_partner_id(client)
@@ -263,7 +264,7 @@ async def test_plan_shows_update_on_field_change(cleanup_xmlids: Any) -> None:
         config_parameters=(),
     )
 
-    plan_steps, _graph = await _run_pipeline(client, state)
+    plan_steps, _graph = await _run_pipeline(client, state, odoo_version)
 
     step = _step_for(plan_steps, "changing_partner")
     assert step is not None
@@ -278,7 +279,7 @@ async def test_plan_shows_update_on_field_change(cleanup_xmlids: Any) -> None:
 
 
 @pytest.mark.integration
-async def test_plan_is_deterministic(cleanup_xmlids: Any) -> None:
+async def test_plan_is_deterministic(cleanup_xmlids: Any, odoo_version: OdooVersion) -> None:
     """Rendering the same plan twice produces byte-identical output (SC-2, D-08)."""
     client = cleanup_xmlids
     partner_id = await _find_partner_id(client)
@@ -302,7 +303,7 @@ async def test_plan_is_deterministic(cleanup_xmlids: Any) -> None:
         config_parameters=(),
     )
 
-    plan_steps, graph = await _run_pipeline(client, state)
+    plan_steps, graph = await _run_pipeline(client, state, odoo_version)
 
     def _render() -> str:
         buf = io.StringIO()
@@ -321,7 +322,7 @@ async def test_plan_is_deterministic(cleanup_xmlids: Any) -> None:
 
 
 @pytest.mark.integration
-async def test_plan_reject_on_xmlid_collision(cleanup_xmlids: Any) -> None:
+async def test_plan_reject_on_xmlid_collision(cleanup_xmlids: Any, odoo_version: OdooVersion) -> None:
     """An xmlid bound to a different model than the config declares → Reject (SC-3, D-02)."""
     client = cleanup_xmlids
     partner_id = await _find_partner_id(client)
@@ -343,7 +344,7 @@ async def test_plan_reject_on_xmlid_collision(cleanup_xmlids: Any) -> None:
         config_parameters=(),
     )
 
-    plan_steps, _graph = await _run_pipeline(client, state)
+    plan_steps, _graph = await _run_pipeline(client, state, odoo_version)
 
     step = _step_for(plan_steps, "collision_slug")
     assert step is not None
@@ -496,7 +497,7 @@ async def test_import_collision_requires_force(
 
 @pytest.mark.integration
 async def test_import_then_plan_shows_managed(
-    odoo: object, cleanup_xmlids: Any, monkeypatch: pytest.MonkeyPatch
+    odoo: object, cleanup_xmlids: Any, monkeypatch: pytest.MonkeyPatch, odoo_version: OdooVersion
 ) -> None:
     """After import, a plan for the same resource shows NoOp/Update — not Create (SC-5, IDENT-05)."""
     client = cleanup_xmlids
@@ -520,7 +521,7 @@ async def test_import_then_plan_shows_managed(
         config_parameters=(),
     )
 
-    plan_steps, _graph = await _run_pipeline(client, state)
+    plan_steps, _graph = await _run_pipeline(client, state, odoo_version)
 
     step = _step_for(plan_steps, "roundtrip_partner")
     assert step is not None
@@ -536,7 +537,7 @@ async def test_import_then_plan_shows_managed(
 
 
 @pytest.mark.integration
-async def test_plan_lists_managed_set(cleanup_xmlids: Any) -> None:
+async def test_plan_lists_managed_set(cleanup_xmlids: Any, odoo_version: OdooVersion) -> None:
     """LiveState.fetch surfaces all managed slugs; diff produces a step per managed resource (META-01)."""
     client = cleanup_xmlids
     admin_id = await _find_partner_id(client, "Administrator")
@@ -564,7 +565,7 @@ async def test_plan_lists_managed_set(cleanup_xmlids: Any) -> None:
         config_parameters=(),
     )
 
-    plan_steps, _graph = await _run_pipeline(client, state)
+    plan_steps, _graph = await _run_pipeline(client, state, odoo_version)
 
     # Both managed slugs appear in the plan, neither as Create.
     slugs = {s.slug for s in plan_steps}
