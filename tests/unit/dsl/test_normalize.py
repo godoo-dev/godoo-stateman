@@ -374,3 +374,40 @@ def test_normalize_idempotent() -> None:
     assert once_fields["active"] is False       # False preserved (boolean)
     assert once_fields["parent_id"] == 42       # (42, "Acme Corp") → 42
     assert once_fields["category_ids"] == [1, 2, 3]  # [3,1,2] → sorted
+
+
+# ---------------------------------------------------------------------------
+# WR-03 regression: invalid many2one value raises clear ValueError
+# ---------------------------------------------------------------------------
+
+
+def test_m2o_invalid_type_raises_valueerror() -> None:
+    """WR-03 regression: an invalid many2one value (e.g. a string or ResourceNode)
+    raises ValueError with a clear message instead of silently passing through.
+
+    Before WR-03 fix, _normalize_value returned the value unchanged for any type
+    that didn't match the tuple/list/False/None branches, causing the diff stage
+    to compare a non-int against a live int ID → always-spurious UPDATE.
+    """
+    import pytest
+
+    from godoo_stateman.dsl.normalize import _normalize_value
+
+    # String — a DSL author error (e.g. country_id = "Belgium" instead of an int ID)
+    with pytest.raises(ValueError, match="many2one"):
+        _normalize_value("Belgium", "many2one")
+
+    # A float — not a valid Odoo many2one ID type
+    with pytest.raises(ValueError, match="many2one"):
+        _normalize_value(3.14, "many2one")
+
+
+def test_m2o_valid_types_do_not_raise() -> None:
+    """WR-03: valid many2one value types (int, tuple, list, False, None) do NOT raise."""
+    from godoo_stateman.dsl.normalize import _normalize_value
+
+    assert _normalize_value(42, "many2one") == 42
+    assert _normalize_value((42, "Acme"), "many2one") == 42
+    assert _normalize_value([42, "Acme"], "many2one") == 42
+    assert _normalize_value(False, "many2one") is None
+    assert _normalize_value(None, "many2one") is None

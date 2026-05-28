@@ -184,10 +184,18 @@ def test_inline_children_flatten(tmp_path: Path) -> None:
     assert not isinstance(parent.fields.get("lines"), ChildrenWrapper)
     assert parent.fields["lines"] == ["order1.line1"]
 
-    # Child should have parent_slug set and inverse_field pointing to parent
+    # Child should have parent_slug set and inverse_field holding the parent SLUG STRING
+    # (WR-01 fix: must be a str, not a ResourceNode, to prevent spurious diffs in diff()).
     child = next(n for n in state.resources if n.slug == "order1.line1")
     assert child.parent_slug == "order1"
     assert "order_id" in child.fields
+    assert child.fields["order_id"] == "order1", (
+        f"WR-01: inverse_field must hold the parent slug string 'order1', "
+        f"got {type(child.fields['order_id']).__name__!r}: {child.fields['order_id']!r}"
+    )
+    assert isinstance(child.fields["order_id"], str), (
+        "WR-01: inverse_field must be a slug string, not ResourceNode or other type"
+    )
 
     # No ChildrenWrapper anywhere in any resource fields
     for node in state.resources:

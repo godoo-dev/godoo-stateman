@@ -60,7 +60,16 @@ def _normalize_value(value: Any, ttype: str) -> Any:
         # CORE-08: (id, display_name) tuple or list → integer ID
         if isinstance(value, (list, tuple)) and len(value) == 2:
             return int(value[0])
-        return value
+        # Integer ID — already canonical (most common desired-state form).
+        if isinstance(value, int):
+            return value
+        # Any other type (str, ResourceNode, float, …) is a programming error —
+        # raise early rather than silently passing through a value that will always
+        # produce a false-positive diff against the live integer ID (WR-03 fix).
+        raise ValueError(
+            f"many2one field value must be an int ID, (id, name) tuple/list, False, or None; "
+            f"got {type(value).__name__!r}: {value!r}"
+        )
     elif ttype == "boolean":
         # A1 decision (RESOLVED): preserve False as False for boolean fields.
         # active=False means "archive this resource"; converting to None would

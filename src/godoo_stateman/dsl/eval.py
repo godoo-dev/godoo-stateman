@@ -141,12 +141,13 @@ def _flatten(resources: list[ResourceNode]) -> list[ResourceNode]:
                 for child in fval.children:
                     # D-09: auto-prefix slug with parent slug.
                     child_slug = f"{parent.slug}.{child.slug}"
-                    # Merge inverse_field into child fields, storing a reference to the ORIGINAL
-                    # (pre-rebuild) parent ResourceNode. Note: the rebuilt parent (with flat_fields
-                    # replacing ChildrenWrapper values) is a separate object produced below via
-                    # dataclasses.replace(). The apply stage (Phase 3) must handle
-                    # ResourceNode-valued inverse_fields by resolving them to IDs.
-                    child_fields = {**child.fields, fval.inverse_field: parent}
+                    # Store the parent's SLUG STRING (not the ResourceNode object) as
+                    # the inverse_field value (WR-01 fix).  Storing the ResourceNode
+                    # caused the diff stage to compare ResourceNode != int (live res_id)
+                    # → always-spurious UPDATE for every child resource.  The slug string
+                    # is a stable placeholder; the apply stage resolves slug → res_id
+                    # via the same node-key mechanism as other cross-resource references.
+                    child_fields = {**child.fields, fval.inverse_field: parent.slug}
                     child_nodes.append(
                         ResourceNode(
                             model=fval.child_model,
