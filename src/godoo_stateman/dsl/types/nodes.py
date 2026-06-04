@@ -2,8 +2,28 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict
+
+
+class ResourceOptions(BaseModel):
+    """Per-resource safety options (SAFE-01).
+
+    ``delete_behavior`` controls what happens when a managed resource is absent
+    from the desired state: ``"delete"`` removes the record, ``"archive"`` sets
+    ``active=False``, ``"reject"`` (the default) blocks any destructive action so
+    that destructive intent must be explicit.
+
+    Frozen for safe sharing across pipeline stages.  ``ResourceNode.options`` is
+    typed as this base class so future per-type subclasses (e.g.
+    ``ProjectResourceOptions``) are not precluded (R5).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    delete_behavior: Literal["delete", "archive", "reject"] = "reject"
 
 
 @dataclass(frozen=True)
@@ -27,6 +47,7 @@ class ResourceNode:
     fields: dict[str, Any]
     xmlid_module: str | None = None
     parent_slug: str | None = None
+    options: ResourceOptions = field(default_factory=ResourceOptions)  # NEW (R5, SAFE-01)
 
 
 @dataclass(frozen=True)
