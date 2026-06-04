@@ -49,11 +49,21 @@ def test_plan_accepts_verbose_flag() -> None:
     )
 
 
-def test_apply_stub_exits_1() -> None:
-    """apply stub prints a Rich message and exits with code 1."""
+def test_apply_requires_config_argument() -> None:
+    """apply now requires a config argument; invoking without it is a usage error.
+
+    The Phase-4 stub is replaced by the real command (Argument config + options).
+    """
     result = runner.invoke(app, ["apply"])
-    assert result.exit_code == 1, f"Expected exit 1, got {result.exit_code}"
-    assert "Phase 4" in result.output
+    assert result.exit_code != 0, f"Expected non-zero exit when config is missing, got {result.exit_code}"
+
+
+def test_apply_help_lists_flags() -> None:
+    """apply --help lists --auto-approve and --verbose."""
+    result = runner.invoke(app, ["apply", "--help"])
+    assert result.exit_code == 0
+    assert "--auto-approve" in result.output, f"--auto-approve missing:\n{result.output}"
+    assert "--verbose" in result.output or "-v" in result.output, f"--verbose missing:\n{result.output}"
 
 
 def test_verify_stub_exits_1() -> None:
