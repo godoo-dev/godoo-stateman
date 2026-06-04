@@ -28,13 +28,12 @@ CLI flags (D-10 / SC-5):
 from __future__ import annotations
 
 import asyncio
-import os
 
 import typer
-from godoo.client.client import OdooClient, OdooClientConfig
 from godoo.client.errors import OdooValidationError
 from rich.console import Console
 
+from godoo_stateman.cli._connection import open_client, read_connection
 from godoo_stateman.errors import StatemanError
 from godoo_stateman.identity import find_by_xmlid, write_xmlid
 
@@ -54,26 +53,19 @@ async def _import_impl(
         0 — success (new import or idempotent no-op)
         1 — error (record not found, collision without --force, or unexpected error)
     """
-    # Read Odoo credentials from environment variables (T-03-16).
-    missing: list[str] = []
-    url = os.environ.get("GODOO_URL", "")
-    db = os.environ.get("GODOO_DB", "")
-    user = os.environ.get("GODOO_USER", "")
-    password = os.environ.get("GODOO_PASSWORD", "")
-    if not url:
-        missing.append("GODOO_URL")
-    if not db:
-        missing.append("GODOO_DB")
-    if not user:
-        missing.append("GODOO_USER")
-    if not password:
-        missing.append("GODOO_PASSWORD")
-    if missing:
+    # Read Odoo credentials from environment variables (T-03-16, D-04).
+    # Shared cli/_connection.py helper — credentials env-only, never CLI args.
+    try:
+        connection, missing = read_connection()
+    except ValueError:
+        console.print("[red]ODOO_VERSION must match N.N format (e.g. '17.0')[/red]")
+        return 1
+    if connection is None:
         console.print(f"[red]Missing required environment variable(s): {', '.join(missing)}[/red]")
         return 1
 
     try:
-        async with OdooClient(OdooClientConfig(url=url, database=db, username=user, password=password)) as client:
+        async with open_client(connection) as client:
             # Step 1 (D-11 validate-before-write): confirm the record exists in Odoo.
             # Catches typos pre-mutation and satisfies IaC validate-before-write contract.
             # T-03-15: also confirms the record is in the declared model (not another model).
