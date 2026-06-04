@@ -74,8 +74,8 @@ The dependency DAG, cycle detection, and cross-resource relation resolution.
 - [x] **REL-02**: The engine detects cycles in the dependency graph across mixed node types (managed resources, inline children, data sources) and reports the cycle path before any Odoo mutation.
 - [x] **REL-03**: Data-source records resolve at the plan stage (read seam), not at DSL eval; their remote IDs are available to the diff and apply stages via `GlobalLiveState`.
 - [x] **REL-04**: Many2many fields may reference data-source records; m2m-to-data-source relations must resolve correctly — this was structurally blocked in Go v1 and must be fixed from the start.
-- [ ] **REL-05**: After each `Create` step in apply, the new record's remote integer ID is registered in `GlobalLiveState` before the next step executes, so that later steps referencing it via m2m or m2o resolve to the correct ID.
-- [ ] **REL-06**: Many2many writes use the `(6, 0, [ids])` tuple-command protocol required by Odoo's `write()` API; the apply layer never passes a flat ID list directly.
+- [x] **REL-05**: After each `Create` step in apply, the new record's remote integer ID is registered in `GlobalLiveState` before the next step executes, so that later steps referencing it via m2m or m2o resolve to the correct ID.
+- [x] **REL-06**: Many2many writes use the `(6, 0, [ids])` tuple-command protocol required by Odoo's `write()` API; the apply layer never passes a flat ID list directly.
 - [x] **REL-07**: Inline One2many children are declared under their parent resource and their identity is scoped to the parent context; they participate in cycle detection alongside top-level resources.
 - [ ] **REL-08**: Within a dependency level, the apply executor orders operations as: Creates before Updates before Deletes/Archives.
 
@@ -85,7 +85,7 @@ The dependency DAG, cycle detection, and cross-resource relation resolution.
 
 Delete, archive, and reject behaviors, and the no-silent-adoption guarantee.
 
-- [ ] **SAFE-01**: Each managed resource declares a `delete_behavior` property with one of three values: `delete` (hard delete via `unlink`), `archive` (set `active=False`), or `reject` (refuse to apply if removal is needed; halt with an actionable error).
+- [x] **SAFE-01**: Each managed resource declares a `delete_behavior` property with one of three values: `delete` (hard delete via `unlink`), `archive` (set `active=False`), or `reject` (refuse to apply if removal is needed; halt with an actionable error).
 - [ ] **SAFE-02**: When `delete_behavior` is `archive`, the engine verifies the model's archivability from the schema snapshot before attempting to archive; if the model has no writable `active` field, the engine reports an error and halts.
 - [x] **SAFE-03**: `plan` and `apply` never silently adopt an unmanaged Odoo record. If the `xmlid_prefix.slug` xmlid in `ir.model.data` already points to a record of a different model than the config declares, the plan action is `Reject` (xmlid-namespace collision), not `Create` or `Update`, until the operator resolves the collision manually. Unmanaged look-alike records with no managed xmlid are invisible to stateman and result in `Create`. (D-01/D-02)
 - [ ] **SAFE-04**: The `apply` command shows the full plan and prompts "Apply these changes? [y/N]" before any Odoo mutation; the `--auto-approve` flag skips the prompt for CI use.
@@ -232,11 +232,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | REL-02 | Phase 2 | Complete |
 | REL-03 | Phase 3 | Complete |
 | REL-04 | Phase 3 | Complete |
-| REL-05 | Phase 4 | Pending |
-| REL-06 | Phase 4 | Pending |
+| REL-05 | Phase 4 | Complete |
+| REL-06 | Phase 4 | Complete |
 | REL-07 | Phase 2 | Complete |
 | REL-08 | Phase 4 | Pending |
-| SAFE-01 | Phase 4 | Pending |
+| SAFE-01 | Phase 4 | Complete |
 | SAFE-02 | Phase 4 | Pending |
 | SAFE-03 | Phase 3 | Complete |
 | SAFE-04 | Phase 4 | Pending |
@@ -263,6 +263,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PKG-05 | Phase 1 | Complete (01-01) |
 
 **Coverage:**
+
 - v1 requirements: 59 total (note: original count of 57 was a miscalculation; the actual count is 59 as enumerated above)
 - Mapped to phases: 59
 - Unmapped: 0 ✓

@@ -167,13 +167,13 @@ Plans:
   4. Apply shows `[N/total]` progress and per-step status (`ok | error | skipped`) as steps execute; when a step fails, previously-committed steps are listed and subsequent steps are listed as `skipped`.
   5. A resource with `delete_behavior="archive"` on a model with no writable `active` field causes apply to halt with a schema-based error before any Odoo mutation for that step.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Foundations + contracts: errors.py ApplyError hierarchy, ResourceOptions/_options DSL surface, PlanStep extension (delete_behavior + desired_fields), apply/serialize.py (m2m (6,0,[ids])), apply/state.py GlobalLiveState, cli/_connection.py shared helper
+- [x] 04-01-PLAN.md — Foundations + contracts: errors.py ApplyError hierarchy, ResourceOptions/_options DSL surface, PlanStep extension (delete_behavior + desired_fields), apply/serialize.py (m2m (6,0,[ids])), apply/state.py GlobalLiveState, cli/_connection.py shared helper
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -224,6 +224,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. DSL Eval + Pure Pipeline | 4/4 | Complete    | 2026-05-26 |
 | 3. Diff + Plan + Import CLI | 5/5 | Complete   | 2026-05-27 |
 | 03.1. Multi-Odoo-version CI test matrix | 6/6 | Complete   | 2026-05-28 |
-| 4. Apply (core actions) — VAL-01 gate | 0/3 | Not started | - |
+| 4. Apply (core actions) — VAL-01 gate | 1/3 | In Progress|  |
 | 5. Module Ops + Verify + Snapshot — VAL-02 gate | 0/TBD | Not started | - |
 | 6. Release Packaging | 0/TBD | Not started | - |
