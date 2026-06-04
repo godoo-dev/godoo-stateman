@@ -13,7 +13,7 @@ Conventions:
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -74,3 +74,12 @@ class PlanStep(BaseModel):
     xmlid: str  # full xmlid e.g. "myprefix.my_slug"
     res_id: int | None  # None for CREATE (not yet exists)
     field_diff: tuple[FieldDiff, ...]  # empty for non-UPDATE actions
+    # NEW (D-03): carry the originating resource's delete_behavior so the executor
+    # needs no DesiredState back-reference. Default "reject" keeps existing
+    # construction sites and tests valid; Pass-2 (Delete/Archive) steps carry the
+    # default since their `action` is authoritative, not delete_behavior.
+    delete_behavior: Literal["delete", "archive", "reject"] = "reject"
+    # NEW (Open-Q1): CREATE needs the full normalized desired dict because
+    # field_diff only carries UPDATE deltas. UPDATE/DELETE/ARCHIVE leave this None.
+    # dict[str, Any] is safe on a frozen model — PlanStep is never used as a dict/set key.
+    desired_fields: dict[str, Any] | None = None

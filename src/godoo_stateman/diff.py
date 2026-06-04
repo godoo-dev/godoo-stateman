@@ -101,6 +101,9 @@ def diff(
                     xmlid=xmlid,
                     res_id=None,
                     field_diff=(),
+                    # CREATE needs the full normalized desired dict (Open-Q1).
+                    desired_fields=dict(resource.fields),
+                    delete_behavior=resource.options.delete_behavior,
                 )
             )
             continue
@@ -117,6 +120,8 @@ def diff(
                     xmlid=xmlid,
                     res_id=record.res_id,
                     field_diff=(),
+                    # Harmless on REJECT (issues no mutation) — carried for consistency.
+                    delete_behavior=resource.options.delete_behavior,
                 )
             )
             continue
@@ -165,6 +170,8 @@ def diff(
                 xmlid=xmlid,
                 res_id=record.res_id,
                 field_diff=tuple(field_diffs),
+                # UPDATE uses field_diff; desired_fields stays None. delete_behavior carried.
+                delete_behavior=resource.options.delete_behavior,
             )
         )
 
@@ -183,6 +190,10 @@ def diff(
 
         action = PlanAction.ARCHIVE if model_schema is not None and model_schema.archivable else PlanAction.DELETE
 
+        # Pass-2 steps carry the default delete_behavior ("reject"); their `action`
+        # (ARCHIVE vs DELETE, decided from the archivable flag above) is authoritative
+        # for the executor — the originating resource is absent from desired state, so
+        # there is no resource.options to read here.
         steps.append(
             PlanStep(
                 action=action,
