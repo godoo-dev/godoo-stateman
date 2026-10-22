@@ -89,7 +89,7 @@ function validate(value: unknown, bounds: FixtureBounds): StateFixture {
   const ids = new Set<string>();
   const resources = root.resources.map((value: unknown) => {
     const raw = object(value, 'resource');
-    keys(raw, ['externalId', 'model', 'values', 'ref', 'parentScope', 'dependsOn', 'onMissing'], 'resource');
+    keys(raw, ['externalId', 'model', 'values', 'ref', 'parentScope', 'options'], 'resource');
     const id = xmlid(raw.externalId, 'resource.externalId');
     if (!namespaces.some(ns => id.startsWith(`${ns}.`))) fail(`${id} is outside the declared namespaces`);
     if (ids.has(id)) fail(`duplicate identity ${id}`);
@@ -106,12 +106,16 @@ function validate(value: unknown, bounds: FixtureBounds): StateFixture {
       xmlid(scope.parentExternalId, `${id}.parentScope`);
       if (scope.inverseField !== undefined && (typeof scope.inverseField !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(scope.inverseField))) fail(`${id} has an invalid inverse field`);
     }
-    if (raw.dependsOn !== undefined && (!Array.isArray(raw.dependsOn) || raw.dependsOn.some((id: unknown) => typeof id !== 'string' || !qualified.test(id)))) fail(`${id} has invalid explicit dependencies`);
-    if (raw.onMissing !== undefined && raw.onMissing !== 'create' && raw.onMissing !== 'error') fail(`${id} has an invalid onMissing policy`);
+    if (raw.options !== undefined) {
+      const options = object(raw.options, `${id}.options`);
+      keys(options, ['dependsOn', 'onMissing'], `${id}.options`);
+      if (options.dependsOn !== undefined && (!Array.isArray(options.dependsOn) || options.dependsOn.some((id: unknown) => typeof id !== 'string' || !qualified.test(id)))) fail(`${id} has invalid explicit dependencies`);
+      if (options.onMissing !== undefined && options.onMissing !== 'create' && options.onMissing !== 'error') fail(`${id} has an invalid onMissing policy`);
+    }
     return clone(raw, bound.maxDepth, id) as InspectedResource;
   }).sort((a, b) => a.externalId.localeCompare(b.externalId, 'en'));
   for (const resource of resources) {
-    const dependencies = (resource as InspectedResource & { dependsOn?: string[] }).dependsOn ?? [];
+    const dependencies = (resource as InspectedResource & { options?: { dependsOn?: string[] } }).options?.dependsOn ?? [];
     for (const dependency of dependencies) if (!ids.has(dependency)) fail(`${resource.externalId} needs missing managed dependency ${dependency}`);
     if (resource.parentScope?.parentExternalId && !ids.has(resource.parentScope.parentExternalId)) fail(`${resource.externalId} needs its managed parent`);
   }

@@ -73,13 +73,13 @@ describe('portable desired-state fixtures', () => {
   });
   it('retains explicit managed dependency and parent closure, rejecting missing parents', () => {
     const source = input();
-    Object.assign(source.resources[0], { dependsOn: ['seed.tag'], onMissing: 'error' });
+    Object.assign(source.resources[0], { options: { dependsOn: ['seed.tag'], onMissing: 'error' } });
     const loaded = parseFixture(serializeFixture(createFixture(source, { namespaces: ['seed'] })));
-    expect(loaded.resources[0]).toMatchObject({ dependsOn: ['seed.tag'], onMissing: 'error' });
+    expect(loaded.resources[0]).toMatchObject({ options: { dependsOn: ['seed.tag'], onMissing: 'error' } });
     source.resources[0].parentScope = { parentExternalId: 'seed.missing', inverseField: 'parent_id' };
     expect(() => createFixture(source, { namespaces: ['seed'] })).toThrow('managed parent');
     delete source.resources[0].parentScope;
-    Object.assign(source.resources[0], { dependsOn: ['seed.missing'] });
+    Object.assign(source.resources[0], { options: { dependsOn: ['seed.missing'] } });
     expect(() => createFixture(source, { namespaces: ['seed'] })).toThrow('missing managed dependency');
   });
   it('does not turn legacy removal/translation policies into portable authorization', () => {
