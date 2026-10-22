@@ -1,7 +1,8 @@
 # godoo-stateman
 
 The TypeScript foundation for composing and inspecting desired Odoo configuration.
-The proposed local package is `@godoo-dev/stateman`, targeting Node 24+.
+Marc selected standalone TypeScript delivery on 2026-10-22, with bgbl-odoo as the
+first consumer. The proposed local package is `@godoo-dev/stateman`, targeting Node 24+.
 It loads trusted TS/ESM modules, exported arrays and nested resources offline.
 
 **This foundation does not reconcile Odoo.** `plan`, `apply` and `drift` throw;
@@ -131,7 +132,15 @@ See [NOTICE.md](NOTICE.md), [LICENSE](LICENSE) and [COPYING](COPYING) for source
 attribution and LGPL/GPL terms. Corresponding TS source ships in the local tarball.
 The predecessor's unsafe reconciliation engine is not included.
 
-Python source, tests and packaging remain in place as historical reference. They
-are not the active delivery entrypoint. Product targets and remaining acceptance
-belong to the private HQ README and its Stateman/roadmap pages; the agent entrypoint
-records the local HQ location without a sibling import.
+Python source, tests and packaging remain in place as an incomplete prior
+implementation. The [Python reference](docs/python-reference.md) preserves its
+source map, existing CLI behavior and design constraints; it is not a commitment
+to finish or publish a parallel Python product.
+
+See the [developer docs](docs/index.md) and [AGENTS.md](AGENTS.md) for repository
+navigation and work guidance. Product targets and remaining acceptance belong to
+the local private [HQ target contract](/home/marc/dev/godoo-dev/godoo-hq/docs/stateman.md)
+and [delivery sequence](/home/marc/dev/godoo-dev/godoo-hq/docs/roadmap.md#immediate-stateman-delivery).
+These local paths are for maintainers, not installation prerequisites. Local
+package installability does not establish registry publication or safe
+reconciliation acceptance.

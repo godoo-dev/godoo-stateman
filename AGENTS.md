@@ -1,26 +1,47 @@
 # Working in godoo-stateman
 
-Read README.md for the current standalone TypeScript foundation and supported
-commands. Node 24+ is the consumer baseline. Use `npm ci --ignore-scripts`,
-`npm run typecheck` (includes tests), `npm test`, `npm run build` and `npm pack`.
-Check installation and the public API/CLI from an isolated tarball consumer.
+Read [README.md](README.md) for the package boundary and developer documentation.
+Product intent is maintained in the local [godoo HQ README](/home/marc/dev/godoo-dev/godoo-hq/README.md)
+and its linked targets. This absolute local route also works from linked worktrees;
+it is not a prerequisite for users installing these libraries independently.
 
-Product direction is in the private HQ README at
-`/home/marc/dev/godoo-dev/godoo-hq/README.md`, with `docs/stateman.md`,
-`docs/roadmap.md` and `docs/libraries.md` there. This is a navigation path, not an
-import or a required sibling package. Respect the current task's write boundary;
-HQ/shared tracker changes require the owning thread's scope.
+Use the installed mafe-si procedures for scoped delivery and coordination. Work,
+open decisions and acceptance evidence belong in the locally bound
+`~~project tracker`. Resolve its command/root from local mafe-si guidance rather
+than hardcoding them in tracked docs. Read the tracker agent guidance before
+unfamiliar operations; use explicit `--root` and `--json` and inspect warnings.
+Do not create parallel planning journals here. Perficio is dormant. Historical
+GSD phase/adoption/report-back gates do not govern current work.
 
-Preserve predecessor attribution and LGPL obligations (NOTICE.md, LICENSE,
-COPYING). Python source/tests/pyproject/uv.lock and .planning are reference
-material; historical Python-only/GSD guidance does not control TS delivery.
+Keep useful API and engineering guidance in the existing developer docs. Inspect
+source before claiming an API is available, and distinguish source, tests,
+publication, runtime and consumer acceptance. For a changed user contract, consult
+HQ's docs procedure before implementation and reconcile the affected target after
+verification. Documentation alone grants no release or deployment authority.
 
-Plan/apply/drift remain fail-closed until resource-level scheduling, unambiguous
-identity/adoption, recursive references, bounded ownership/removal and partial
-failure recovery are implemented and verified. Passing offline checks does not
-establish Odoo or consumer acceptance. Never weaken client safety guards.
+Preserve unrelated edits. Check status, branch, worktree ownership and active users
+before changes; do not switch/reset the primary branch or alter another worker's
+checkout. Use owner-paths for notes and evidence outside source. For a new
+cross-project introduction or shared-resource contention, follow
+`/home/marc/dev/marc-hq/fleet/AGENTS.md` through coordinate-projects. Established
+exchanges and independent authorized work continue directly.
 
-Use the installed mafe-si delivery/documentation procedures and shared godoo
-tracker when authorized. Keep working evidence outside docs in the task's retained
-agent-work directory. Never read .env or other secrets without explicit authority.
-No publication, live business writes or deployment is implied by this guidance.
+The selected delivery is standalone TypeScript Stateman for bgbl-odoo. The local
+package currently supports offline authoring and inspection on Node 24+. The Python
+source is an incomplete prior implementation retained for reference; do not treat
+its old roadmap as a mandate to continue Python delivery. Preserve its source,
+tests and packaging alongside the TypeScript foundation. See the
+[Python reference](docs/python-reference.md)
+and the [target contract](/home/marc/dev/godoo-dev/godoo-hq/docs/stateman.md).
+
+For the TypeScript foundation, use `npm ci --ignore-scripts`, `npm run typecheck`
+(including tests), `npm test`, `npm run build` and `npm pack`. Verify the public
+API/CLI in an isolated tarball consumer without sibling imports. Preserve the
+predecessor notices and corresponding source in NOTICE.md, LICENSE and COPYING.
+The private local package carries inherited LGPL obligations; distribution and
+publication remain owner choices.
+
+Plan/apply/drift must remain fail-closed before module evaluation or client access
+until resource scheduling, identity/adoption, ownership/removal and recovery are
+implemented and verified. Offline checks establish no live Odoo or full consumer
+acceptance. Never weaken client safety guards or read secrets without authority.

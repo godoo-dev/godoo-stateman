@@ -72,5 +72,5 @@ def test_invalid_odoo_version_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     _set_full_env(monkeypatch)
     monkeypatch.setenv("ODOO_VERSION", "17")  # missing minor segment
 
-    with pytest.raises(ValueError, match="N.N format"):
+    with pytest.raises(ValueError, match=r"N\.N format"):
         read_connection()
