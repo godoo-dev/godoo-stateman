@@ -1,115 +1,32 @@
 # godoo-stateman
 
-[![PyPI version](https://img.shields.io/pypi/v/godoo-stateman)](https://pypi.org/project/godoo-stateman)
-[![Python 3.14+](https://img.shields.io/pypi/pyversions/godoo-stateman)](https://pypi.org/project/godoo-stateman)
-[![License: LGPL-3.0-or-later](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0.html)
+A standalone desired-state manager for Odoo: compose configuration, review a plan,
+apply explicitly and verify convergence. Marc selected TypeScript delivery on
+2026-10-22, with bgbl-odoo as the first consumer.
 
-**Terraform for Odoo** — declarative Odoo state reconciliation over JSON-RPC.
+The [target contract](/home/marc/dev/godoo-dev/godoo-hq/docs/stateman.md) and
+[delivery sequence](/home/marc/dev/godoo-dev/godoo-hq/docs/roadmap.md#immediate-stateman-delivery)
+live in local godoo HQ. They describe intended behavior, not installed packages or
+accepted runtime behavior. The proposed name is `@godoo-dev/stateman`; package
+name, license and publication channel still need delivery-owner confirmation.
+The first consumer fixture targets Node 24+.
 
-`godoo-stateman` evaluates a Python DSL describing desired Odoo state, diffs it against a live Odoo instance over JSON-RPC, and executes a plan of creates, updates, deletes, and archives in dependency order. State is stored exclusively in Odoo's built-in `ir.model.data` records — no sidecar file, no Odoo addon, and no agent required on the server side.
+## Repository orientation
 
-## Status — Early Development
+The primary checkout inspected for this guide contains an incomplete Python prior
+implementation under `src/godoo_stateman`, tests and Python build metadata. A
+TypeScript foundation is being built independently; do not infer that a TS package
+is already available from the chosen direction. Python source remains useful
+reference material and has not been removed or declared fully accepted.
 
-This is **Phase 1 of 6**. Only the `snapshot` command is functional today.
+- [Python reference](docs/python-reference.md): source map, existing CLI behavior,
+  setup and important design constraints.
+- [Developer docs](docs/index.md): navigation and target boundaries.
+- [AGENTS.md](AGENTS.md): current work and coordination guidance.
 
-The commands `plan`, `apply`, `verify`, and `import` are registered in the CLI but each prints "not yet implemented" and exits with code 1. The DSL parser, diff engine, and apply engine are planned for subsequent phases.
-
-| Command | Status |
-|---------|--------|
-| `snapshot` | Implemented — Phase 1 |
-| `plan` | Stub — not yet implemented |
-| `apply` | Stub — not yet implemented |
-| `verify` | Stub — not yet implemented |
-| `import` | Stub — not yet implemented |
-
-## Requirements
-
-- Python 3.14 or later (hard requirement from the JSON-RPC transport dependency)
-- Access to an Odoo 17.0+ instance over HTTP or HTTPS
-
-## Installation
-
-**Production:**
-
-```bash
-pip install godoo-stateman
-```
-
-**Development setup** (using `uv`, which matches the godoo-py toolchain):
-
-```bash
-git clone https://github.com/godoo-dev/godoo-stateman.git
-cd godoo-stateman
-uv sync --group dev
-```
-
-The development install uses local workspace paths for the godoo-py packages as configured in `pyproject.toml` via `uv.sources`.
-
-## Usage
-
-### `snapshot` — Capture schema from a live Odoo instance
-
-Connects to Odoo using credentials from environment variables, introspects a fixed set of models (Phase 1: `project.project`, `res.partner`), and writes a versioned schema snapshot to the local cache.
-
-```bash
-godoo-stateman snapshot <config>
-```
-
-`<config>` is the path to a stateman config `.py` file. In Phase 1 the config path is accepted but model enumeration from config content arrives in Phase 3.
-
-#### Environment variables
-
-Credentials are read exclusively from environment variables — never passed as CLI arguments or stored in the config file.
-
-| Variable | Aliases | Required | Default | Description |
-|----------|---------|----------|---------|-------------|
-| `ODOO_URL` | — | Yes | — | Full URL to the Odoo instance (e.g. `https://odoo.example.com`) |
-| `ODOO_DB` | `ODOO_DATABASE` | Yes | — | Database name |
-| `ODOO_USER` | `ODOO_USERNAME` | Yes | — | Odoo login username |
-| `ODOO_PASSWORD` | — | Yes | — | Odoo login password |
-| `ODOO_VERSION` | — | No | `17.0` | Odoo major.minor version (format: `N.N`, e.g. `17.0`) |
-
-Connecting over plain HTTP to a non-local host causes a warning; use HTTPS in production.
-
-**Example:**
-
-```bash
-export ODOO_URL=https://odoo.example.com
-export ODOO_DB=production
-export ODOO_USER=admin
-export ODOO_PASSWORD=...
-godoo-stateman snapshot my_config.py
-```
-
-### Planned commands (not yet implemented)
-
-The following commands are registered in the CLI but are not yet functional. Each prints "not yet implemented" and exits with code 1 until the relevant phase ships:
-
-- `plan`
-- `apply`
-- `verify`
-- `import`
-
-## Development
-
-**Run tests:**
-
-```bash
-uv run pytest                        # unit tests only
-uv run pytest -m integration         # requires Docker (pulls odoo:17.0 + postgres:15-alpine)
-```
-
-**Linting and type checking:**
-
-```bash
-uv run ruff check src tests
-uv run mypy src
-```
-
-## Repository
-
-https://github.com/godoo-dev/godoo-stateman
-
-## License
-
-LGPL-3.0-or-later. See the `LICENSE` file.
+Stateman owns resource identity, adoption, dependency ordering and reconciliation
+policy. The godoo libraries own generic RPC/client, introspection and disposable
+test environments. Reuse the
+[pinned predecessor TS implementation](https://github.com/marcfargas/odoo-toolbox/tree/01512004814df8887a457e5ed9d6c5769fe3b730/packages/odoo-state-manager)
+with source notices and repair its safety gaps before exposing reconciliation.
+Package extraction alone is not safe-apply acceptance.
