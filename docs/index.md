@@ -125,9 +125,9 @@ is requested. `stopOnError:false` allows independent work but skips failed
 execution dependencies and all activation following failures. An operation marked
 `partial` may have committed an earlier RPC; no rollback is promised.
 
-Managed crons are initially inactive. Existing running crons with an explicitly
-managed active flag pause before changes, including when the requested final state
-is disabled. Activation is final, after mutation success and a fresh plan
+Managed crons are initially inactive. Existing running managed crons pause before changes, including when the requested
+final state is disabled. Omitted `active` preserves the observed state on success;
+new crons without it remain inactive. Failures leave paused crons inactive. Activation is final, after mutation success and a fresh plan
 confirms dependency readiness. Server-action code is configuration only.
 
 ## Recovery journal

@@ -87,3 +87,18 @@ it('shares in-flight schema discovery for parallel lookups of another model', as
   await plan([resource('x', 'review.parent', { payload: [lookup('document.page.tag', { name: 'A' }), lookup('document.page.tag', { name: 'B' })] })], client.connection());
   expect(metadataReads).toBe(1);
 });
+
+
+it('pauses omitted-active crons during changes and restores their observed state only on success', async () => {
+  for (const reject of [false, true]) {
+    const client = new FakeClient();
+    const cron = client.seed('ir.cron', { active: true, name: 'Before' }, 'review.cron');
+    const definitions = [resource('ir.cron', 'review.cron', { name: 'After' })];
+    const reviewed = await plan(definitions, client.connection());
+    expect(reviewed.operations.map(op => op.type)).toEqual(['deactivate', 'update', 'activate']);
+    if (reject) client.failure = (_method, _model, values) => values?.name === 'After' ? new Error('refused') : undefined;
+    const result = await apply(reviewed, client.connection());
+    expect(result.ok).toBe(!reject);
+    expect(client.data['ir.cron'].find(row => row.id === cron)?.active).toBe(!reject);
+  }
+});

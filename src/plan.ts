@@ -110,6 +110,10 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   };
   for (const resource of resources) {
     const meta = await fields(resource.model);
+    if (resource.model === 'ir.cron') {
+      if (meta.active?.type !== 'boolean') fail('FIELD_UNAVAILABLE', `${resource.externalId}: cron active metadata is unavailable or restricted`);
+      if ('active' in resource.values && typeof resource.values.active !== 'boolean') fail('INVALID_CRON_POLICY', `${resource.externalId}: cron active must be an explicit boolean or omitted to preserve its observed state`);
+    }
     for (const name of Object.keys(resource.values)) {
       if (systemFields.has(name)) fail('SYSTEM_FIELD', `${resource.externalId}.${name} is not a managed field`);
       if (!meta[name]) fail('FIELD_UNAVAILABLE', `${resource.externalId}: field ${resource.model}.${name} is unavailable or restricted`);
@@ -194,7 +198,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       const claim = `${resource.model}:${resolved}`;
       if (claims.has(claim)) fail('IDENTITY_COLLISION', `${id} and ${claims.get(claim)} claim the same record ${claim}`);
       claims.set(claim, id);
-      const rows = await search(resource.model, [['id', '=', resolved]], Object.keys(desired.get(id)!));
+      const rows = await search(resource.model, [['id', '=', resolved]], [...Object.keys(desired.get(id)!), ...(resource.model === 'ir.cron' ? ['active'] : [])]);
       if (rows.length !== 1) fail('RECORD_UNAVAILABLE', `${id}: record ${resolved} is missing or inaccessible; refusing duplicate creation`);
       bindings[id] = resolved; actual.set(id, rows[0]);
     } else actual.set(id, {});
@@ -305,13 +309,15 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       id: request.id, values: request.action === 'archive' ? { active: false } : {}, context, dependsOn: [] });
   }
 
-  // Pause every explicitly managed running cron before any other mutation,
-  // including crons whose final desired state is disabled.
-  const managedCrons = resources.filter(r => r.model === 'ir.cron' && typeof desired.get(r.externalId)!.active === 'boolean');
-  const activeCrons = managedCrons.filter(r => desired.get(r.externalId)!.active === true);
+  // Pause managed running crons before other mutations, including final disabled
+  // crons. Omitted active preserves the observed state; new crons default inactive.
+  const managedCrons = resources.filter(r => r.model === 'ir.cron');
+  const cronActive = (r: InspectedResource): boolean => typeof desired.get(r.externalId)!.active === 'boolean'
+    ? desired.get(r.externalId)!.active as boolean : actual.get(r.externalId)!.active === true;
+  const activeCrons = managedCrons.filter(cronActive);
   const needsActivation = activeCrons.filter(r => actual.get(r.externalId)!.active !== true || operations.length > 0);
   const deactivate = managedCrons.filter(r => bindings[r.externalId] && actual.get(r.externalId)!.active === true
-    && (desired.get(r.externalId)!.active === false || operations.length > 0)).map(r => op(r, 'deactivate', { active: false }));
+    && (!cronActive(r) || operations.length > 0)).map(r => op(r, 'deactivate', { active: false }));
   operations.unshift(...deactivate);
   for (const resource of needsActivation) operations.push(op(resource, 'activate', { active: true }));
 
