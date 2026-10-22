@@ -6,10 +6,10 @@ and its linked targets. This absolute local route also works from linked worktre
 it is not a prerequisite for users installing these libraries independently.
 
 Use the installed mafe-si procedures for scoped delivery and coordination. Work,
-open decisions and acceptance evidence belong in `~~project tracker`: the shared
-`/home/marc/dev/godoo-dev/issues` tracker, operated with
-`/home/marc/dev/marc-hq/issuectl/target/debug/issuectl`. Read its agent guidance
-before unfamiliar operations; use explicit `--root` and `--json` and inspect warnings.
+open decisions and acceptance evidence belong in the locally bound
+`~~project tracker`. Resolve its command/root from local mafe-si guidance rather
+than hardcoding them in tracked docs. Read the tracker agent guidance before
+unfamiliar operations; use explicit `--root` and `--json` and inspect warnings.
 Do not create parallel planning journals here. Perficio is dormant. Historical
 GSD phase/adoption/report-back gates do not govern current work.
 
