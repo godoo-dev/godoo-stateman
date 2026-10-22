@@ -11,3 +11,10 @@ export { apply } from './apply.js';
 export * from './state-types.js';
 export { openRecoveryJournal, readRecoveryJournal } from './journal.js';
 export { createSchemaContext, createConnection } from './runtime.js';
+
+export { createFixture, serializeFixture, parseFixture } from './fixtures.js';
+export type { StateFixture, FixtureBounds, FixtureOptions } from './fixtures.js';
+export { seedFixture } from './seed.js';
+export type { SeedOptions, SeedResult } from './seed.js';
+export { planModules, applyModules } from './modules.js';
+export type { ModuleRequest, ModuleStageOptions, ModuleOutcome, ModulePrerequisites, ModuleStageConnection, ModulePlan, ModuleStageResult } from './modules.js';

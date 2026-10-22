@@ -185,3 +185,8 @@ packaging for the incomplete prior Python implementation remain unchanged; see
 source and source notices. Run the README checks, then verify the installed API/
 CLI independently of sibling imports. Full consumer/disposable Odoo evidence is
 separate from source typechecks and fake-CRUD acceptance.
+
+## Reusable state and addon stages
+
+See [portable fixtures and seeding](fixtures.md) and [explicit addon stages](modules.md).
+These compose the same planning/recovery engine with explicitly selected targets.

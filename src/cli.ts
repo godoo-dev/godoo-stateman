@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { register } from 'tsx/esm/api';
 import { randomUUID } from 'node:crypto';
 import { loadResources } from './inspect.js';
+import { parseFixture } from './fixtures.js';
 import { plan, drift } from './plan.js';
 import { apply } from './apply.js';
 import { openRecoveryJournal, readRecoveryJournal } from './journal.js';
@@ -12,8 +13,8 @@ import type { Plan, PlanOptions, StateConnection } from './state-types.js';
 import { StateError } from './state-types.js';
 import { equal } from './state-utils.js';
 
-const help = `Usage: stateman <load|inspect> <file-or-directory> [--content-root <directory>]
-       stateman <plan|drift> <file-or-directory> --connection <module> [--options <json>] [--journal <json>] [--out <json>]
+const help = `Usage: stateman <load|inspect> <file-or-directory> [--content-root <directory>] [--fixture]
+       stateman <plan|drift> <file-or-directory> --connection <module> [--options <json>] [--journal <json>] [--out <json>] [--fixture]
        stateman apply <reviewed-plan.json> --connection <module> --journal <json>
        stateman --help
 
@@ -23,6 +24,7 @@ or connection. That module owns credentials/authentication and retains client sa
 Plans serialize rendered input and observed target assumptions; apply revalidates them.
 Plan exits 0; drift exits 0 when converged, 2 for differences; errors/apply failure exit 1.
 Apply requires a durable journal for record creation; retain it across crashes and retries.
+--fixture reads bounded portable JSON instead of executing resource modules.
 No implicit action execution, addon changes, broad live export/import or snapshots.`;
 
 async function connectionFrom(path: string): Promise<StateConnection> {
@@ -38,14 +40,18 @@ async function connectionFrom(path: string): Promise<StateConnection> {
 export async function main(args = process.argv.slice(2)): Promise<number> {
   try {
     const { values, positionals } = parseArgs({ args, allowPositionals: true, options: {
-      help: { type: 'boolean', short: 'h' }, 'content-root': { type: 'string' }, connection: { type: 'string' },
+      help: { type: 'boolean', short: 'h' }, fixture: { type: 'boolean' }, 'content-root': { type: 'string' }, connection: { type: 'string' },
       options: { type: 'string' }, journal: { type: 'string' }, out: { type: 'string' },
     } });
     if (values.help) { console.log(help); return 0; }
     const [command, path] = positionals;
     if (!['load', 'inspect', 'plan', 'apply', 'drift'].includes(command ?? '') || !path || positionals.length !== 2) throw new StateError('USAGE', help);
+    if (command === 'apply' && values.fixture) throw new StateError('USAGE', 'Apply takes a reviewed plan, not a fixture');
+    const input = command === 'apply' ? undefined : values.fixture
+      ? parseFixture(await readFile(path, 'utf8'))
+      : await loadResources(path, { contentRoot: values['content-root'] });
     if (['load', 'inspect'].includes(command)) {
-      console.log(JSON.stringify(await loadResources(path, { contentRoot: values['content-root'] }), null, 2)); return 0;
+      console.log(JSON.stringify(input, null, 2)); return 0;
     }
     if (!values.connection) throw new StateError('CONNECTION_REQUIRED', 'Select an explicit --connection module');
     if (command === 'apply' && !values.journal) throw new StateError('RECOVERY_JOURNAL_REQUIRED', 'Apply requires an explicit --journal path');
@@ -64,9 +70,8 @@ export async function main(args = process.argv.slice(2)): Promise<number> {
       } finally { await journal.close(); }
     }
     if (values.journal) options.recovery = await readRecoveryJournal(values.journal);
-    const input = await loadResources(path, { contentRoot: values['content-root'] });
     const connection = await connectionFrom(values.connection);
-    const result = command === 'drift' ? await drift(input, connection, options) : await plan(input, connection, options);
+    const result = command === 'drift' ? await drift(input!, connection, options) : await plan(input!, connection, options);
     const output = JSON.stringify(result, null, 2) + '\n';
     if (values.out) await writeFile(values.out, output, { mode: 0o600 });
     console.log(output.trimEnd());

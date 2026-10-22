@@ -29,8 +29,7 @@
     "COPYING",
     "NOTICE.md",
     "README.md",
-    "docs/index.md",
-    "docs/python-reference.md"
+    "docs/*.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",

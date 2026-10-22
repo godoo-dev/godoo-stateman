@@ -8,7 +8,7 @@ Stateman planning still validates its schema, lookups, dependencies and target.
 The proposed public interface is:
 
 ```ts
-import { loadResources, createFixture, serializeFixture, parseFixture } from '@godoo-dev/stateman';
+import { loadResources, createFixture, serializeFixture, parseFixture, seedFixture } from '@godoo-dev/stateman';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const inspection = await loadResources('./test-resources');
@@ -41,9 +41,27 @@ remap numeric IDs from another database. Author portable relations with XML-ID
 references or explicit unambiguous lookups. Seeding returns the target bindings
 from the ordinary reconciliation result, rather than a numeric source `idMap`.
 
+For deliberately selected disposable environments, the proposed `seedFixture`
+convenience performs plan, apply and fresh verification using the same engine:
+
+```ts
+const seeded = await seedFixture(fixture, connection, { journal });
+if (!seeded.ok) throw new Error('Seed incomplete; inspect seeded.result');
+const projectId = seeded.bindings['seed.project'];
+```
+
+Supply a durable recovery journal and retain it across failures; feed its receipts
+through `plan.recovery` when retrying. `bindings` contains freshly observed target
+IDs and is empty if verification failed. `seeded.result` retains committed, failed,
+skipped and recovery details. This convenience writes immediately; use separate
+`plan` and `apply` calls when a human must review the plan first.
+
 Compose it after `startOdoo()` readiness in a TS test fixture. Testcontainers keeps
 its existing convenience data helpers and has no dependency on Stateman. Python
 callers can invoke the installed CLI as a checked subprocess with fixture/plan
 files; do not embed TS evaluation in Python or treat the retained Python reference
-as a second supported engine. CLI fixture integration and seed result details
-remain proposed until reconciliation is integrated and verified.
+as a second supported engine. Use `stateman load state.fixture.json --fixture` to validate offline, then
+`stateman plan state.fixture.json --fixture --connection ./connection.ts --journal ./journal.json --out ./plan.json`.
+Apply the reviewed plan normally; `--fixture` is not accepted for apply. Check
+every subprocess exit status and retain the journal. Installed-package and live
+helper acceptance remain pending.
