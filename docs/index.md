@@ -2,8 +2,8 @@
 
 The local TypeScript core on Node 24+ provides offline loading plus read-only
 planning, explicit apply and fresh drift. See the [README](../README.md) for install
-and CLI commands. Core fake-CRUD and installed tarball checks do not establish live
-Odoo or complete consumer acceptance. The supported default major is Odoo 17;
+and CLI commands. Sanitized disposable Odoo 17 and installed-package checks establish the tested
+supplier workflows; they do not establish complete consumer business acceptance. The supported default major is Odoo 17;
 `odooMajorVersions` is an explicit caller opt-in for other, unverified schemas.
 
 ## Entry points

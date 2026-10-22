@@ -1,8 +1,7 @@
 # Apply an explicit addon stage
 
 Addon installation and upgrade change the schema used by resource planning.
-Keep them separate from record reconciliation. These interfaces are proposed
-until their installed-package/disposable checks pass:
+Keep them separate from record reconciliation. The local interfaces are:
 
 ```ts
 const stageConnection = {
@@ -37,3 +36,7 @@ the stage unsuccessful and skips remaining requests. Results preserve the origin
 error. No whole-stage rollback, automatic removal or concurrent-writer lock is
 promised. Recover the actual addon state and produce fresh previews/plans after
 failure; do not reuse a previous resource plan.
+
+Installed-package checks on disposable Odoo 17 exercised dependency installation,
+schema invalidation and a fresh required-addon/field resource plan. Other versions,
+Tecnativa-managed addons and consumer staging remain unverified.

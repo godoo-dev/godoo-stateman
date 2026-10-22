@@ -5,9 +5,10 @@ apply it with explicit recovery storage, and check fresh drift. The private loca
 package `@godoo-dev/stateman` targets Node 24+ and Odoo 17. The local version still
 uses the foundation prerelease name; this work does not publish a release.
 
-The core API and CLI are verified with fake CRUD and a fresh tarball installation.
-Disposable Odoo and complete bgbl-odoo acceptance belong to the parent delivery;
-these checks alone establish neither live operation nor consumer acceptance.
+The API and CLI are verified with offline tests, fresh tarball installation and
+sanitized disposable Odoo 17. Actual bgbl-odoo resources also load/typecheck
+offline; no consumer payload or credentials were used in live tests. Consumer
+migration, custom-addon behavior, business tests and staging remain with its owner.
 
 ## Install and develop
 

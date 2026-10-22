@@ -5,7 +5,7 @@ staging records. A fixture contains rendered values, qualified XML IDs and symbo
 relations. It contains no source-file locations or executable TS modules. Ordinary
 Stateman planning still validates its schema, lookups, dependencies and target.
 
-The proposed public interface is:
+The public interface is:
 
 ```ts
 import { loadResources, createFixture, serializeFixture, parseFixture, seedFixture } from '@godoo-dev/stateman';
@@ -41,7 +41,7 @@ remap numeric IDs from another database. Author portable relations with XML-ID
 references or explicit unambiguous lookups. Seeding returns the target bindings
 from the ordinary reconciliation result, rather than a numeric source `idMap`.
 
-For deliberately selected disposable environments, the proposed `seedFixture`
+For deliberately selected disposable environments, `seedFixture`
 convenience performs plan, apply and fresh verification using the same engine:
 
 ```ts
@@ -63,8 +63,9 @@ files; do not embed TS evaluation in Python or treat the retained Python referen
 as a second supported engine. Use `stateman load state.fixture.json --fixture` to validate offline, then
 `stateman plan state.fixture.json --fixture --connection ./connection.ts --journal ./journal.json --out ./plan.json`.
 Apply the reviewed plan normally; `--fixture` is not accepted for apply. Check
-every subprocess exit status and retain the journal. Installed-package and live
-helper acceptance remain pending.
+every subprocess exit status and retain the journal. The installed package was exercised against sanitized disposable Odoo 17,
+including fixture round-trip, repeat seeding and the checked Python CLI lifecycle.
+This does not establish consumer business or staging acceptance.
 
 
 Python uses the installed executable and JSON files, with Node 24 available:
