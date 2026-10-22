@@ -132,12 +132,21 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     values[scope.inverseField] = field.type === 'many2one' ? { __type: 'resourceRef', externalId: parent.externalId } : [{ __type: 'resourceRef', externalId: parent.externalId }];
   }
 
-  const graph = new Map<string, Set<string>>();
+  const identityDependency = (dependentId: string, id: string): boolean => {
+    const dependent = all.get(dependentId);
+    return dependent?.parentScope?.parentExternalId === id && !dependent.options?.dependsOn?.includes(id);
+  };
+  // Creation omits parent-to-child relation edges. Full readiness retains every
+  // desired reference, with implicit child inverses requiring only identity.
+  const creationGraph = new Map<string, Set<string>>();
+  const readinessGraph = new Map<string, Set<string>>();
   for (const resource of resources) {
     const deps = new Set(resource.options?.dependsOn ?? []);
+    const readinessDeps = new Set(deps);
     for (const [name, value] of Object.entries(desired.get(resource.externalId)!)) {
       const meta = schema[resource.model][name];
       walkRefs(value, id => {
+        readinessDeps.add(id);
         const child = all.get(id);
         // Parent's declared x2many children are linked after creation. The inverse
         // edge orders child after parent without fabricating a resource cycle.
@@ -145,9 +154,10 @@ export async function plan(input: StateInput, connection: StateConnection, optio
         deps.add(id);
       });
     }
-    graph.set(resource.externalId, deps);
+    creationGraph.set(resource.externalId, deps);
+    readinessGraph.set(resource.externalId, readinessDeps);
   }
-  const order = sortGraph(graph);
+  const order = sortGraph(creationGraph);
   const bindings: Record<string, number> = {};
   const needsAdoption = new Set<string>();
   const claims = new Map<string, string>();
@@ -335,27 +345,24 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     const deps = new Set<string>();
     if (operation.type !== 'deactivate') {
       for (const previous of recordOps.get(operation.externalId) ?? []) if (seen.has(previous.key)) deps.add(previous.key);
-      const resource = all.get(operation.externalId);
       const visited = new Set<string>();
-      const prerequisite = (id: string, dependent = resource): void => {
+      const prerequisite = (id: string, dependentId = operation.externalId): void => {
         // A child's inverse needs its parent's identity; waiting for the parent's
         // child links here would fabricate a cycle. Explicit dependsOn still
         // requests full readiness and may correctly reject an impossible cycle.
-        const identityOnly = dependent?.parentScope?.parentExternalId === id && !dependent.options?.dependsOn?.includes(id);
-        let hasReadinessWork = false;
+        const identityOnly = identityDependency(dependentId, id);
+        if (!identityOnly && visited.has(id)) return;
+        if (!identityOnly) visited.add(id);
         for (const candidate of recordOps.get(id) ?? []) {
           if (candidate.type === 'activate' || candidate.type === 'deactivate') continue;
-          hasReadinessWork = true;
           if (!identityOnly || candidate.type === 'create' || candidate.type === 'adopt') deps.add(candidate.key);
         }
-        if (identityOnly || hasReadinessWork || visited.has(id)) return;
-        visited.add(id);
-        // Unchanged resources have no operation to carry their prerequisites.
-        // Follow each edge with its own dependent so child inverses remain
-        // identity-only, even when reached through a full-readiness dependency.
-        for (const dependency of graph.get(id) ?? []) prerequisite(dependency, all.get(id));
+        if (identityOnly) return;
+        // Own mutations do not necessarily carry all desired relation work:
+        // creation must precede children, and existing links may need no write.
+        for (const dependency of readinessGraph.get(id) ?? []) prerequisite(dependency, id);
       };
-      for (const dependency of graph.get(operation.externalId) ?? []) prerequisite(dependency);
+      for (const dependency of creationGraph.get(operation.externalId) ?? []) prerequisite(dependency);
       // Raw symbolic values survive in desired, even when existing target IDs
       // were resolved to numbers in the concrete mutation. Parent child links
       // wait for the child's full work, whose inverse only needs parent identity.

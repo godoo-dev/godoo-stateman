@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { apply, plan, drift, resource, ref, openRecoveryJournal, readRecoveryJournal } from '@godoo-dev/stateman';
+import { apply, children, plan, drift, resource, ref, openRecoveryJournal, readRecoveryJournal } from '@godoo-dev/stateman';
 import { FakeClient } from './fake-client.js';
 
 const root = import.meta.dirname;
@@ -54,3 +54,34 @@ assert.equal(dirty.status, 2); assert.equal(JSON.parse(dirty.stdout).converged, 
 const state = JSON.parse(readFileSync(resolve(root, 'db.json'), 'utf8'));
 assert.equal(state.data.x.length, 1); assert.equal(state.data.x[0].name, 'Second');
 console.log('PASS: installed package API and CLI plan/apply/drift, durable journal, create/no-op/update, drift exit 2, stale journal rejection, no duplicate create.');
+
+for (const parentChanges of [false, true]) for (const childWork of ['scalar', 'link']) for (const stopOnError of [true, false]) {
+  const store = new FakeClient();
+  const parent = store.seed('x', { name: 'Parent' }, 'readiness.b_parent');
+  const child = store.seed('x', { name: 'Child', parent_id: parent }, 'readiness.b_parent.child');
+  store.data.x.find(row => row.id === parent)!.items = [child];
+  const tag = store.seed('x', {});
+  const dependent = store.seed('x', { name: 'Before' }, 'readiness.a_dependent');
+  const desired = [
+    resource('x', 'readiness.b_parent', {
+      name: parentChanges ? 'Parent after' : 'Parent',
+      items: children('x', 'parent_id', [resource('x', 'child', childWork === 'scalar' ? { name: 'Refused' } : { name: 'Child', items: [tag] })]),
+    }),
+    resource('x', 'readiness.a_dependent', { name: 'After' }, { dependsOn: ['readiness.b_parent'] }),
+  ];
+  const reviewed = await plan(desired, store.connection());
+  assert.deepEqual(reviewed.operations.filter(op => op.externalId === 'readiness.b_parent').map(op => op.type), parentChanges ? ['update'] : []);
+  store.failure = (_method, _model, values) => values?.name === 'Refused' || values?.items ? new Error('child work refused') : undefined;
+  const failed = await apply(reviewed, store.connection(), { stopOnError });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.results.find(r => r.operation.externalId === 'readiness.b_parent.child')?.status, 'failed');
+  assert.equal(failed.results.find(r => r.operation.externalId === 'readiness.a_dependent')?.status, 'skipped');
+  assert.equal(store.data.x.find(row => row.id === dependent)?.name, 'Before');
+  store.failure = undefined;
+  const retry = await apply(await plan(desired, store.connection()), store.connection());
+  assert.equal(retry.ok, true);
+  const order = retry.results.map(r => r.operation.externalId);
+  assert.ok(order.indexOf('readiness.b_parent.child') < order.indexOf('readiness.a_dependent'));
+  assert.equal((await drift(desired, store.connection())).converged, true);
+}
+console.log('PASS: installed full parent readiness includes already-linked scalar/deferred child work, unchanged/scalar-changing parents, both stop modes, retry and fresh convergence.');
