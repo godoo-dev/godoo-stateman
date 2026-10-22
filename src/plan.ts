@@ -336,15 +336,24 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     if (operation.type !== 'deactivate') {
       for (const previous of recordOps.get(operation.externalId) ?? []) if (seen.has(previous.key)) deps.add(previous.key);
       const resource = all.get(operation.externalId);
-      const prerequisite = (id: string): void => {
+      const visited = new Set<string>();
+      const prerequisite = (id: string, dependent = resource): void => {
         // A child's inverse needs its parent's identity; waiting for the parent's
         // child links here would fabricate a cycle. Explicit dependsOn still
         // requests full readiness and may correctly reject an impossible cycle.
-        const identityOnly = resource?.parentScope?.parentExternalId === id && !resource.options?.dependsOn?.includes(id);
+        const identityOnly = dependent?.parentScope?.parentExternalId === id && !dependent.options?.dependsOn?.includes(id);
+        let hasReadinessWork = false;
         for (const candidate of recordOps.get(id) ?? []) {
           if (candidate.type === 'activate' || candidate.type === 'deactivate') continue;
+          hasReadinessWork = true;
           if (!identityOnly || candidate.type === 'create' || candidate.type === 'adopt') deps.add(candidate.key);
         }
+        if (identityOnly || hasReadinessWork || visited.has(id)) return;
+        visited.add(id);
+        // Unchanged resources have no operation to carry their prerequisites.
+        // Follow each edge with its own dependent so child inverses remain
+        // identity-only, even when reached through a full-readiness dependency.
+        for (const dependency of graph.get(id) ?? []) prerequisite(dependency, all.get(id));
       };
       for (const dependency of graph.get(operation.externalId) ?? []) prerequisite(dependency);
       // Raw symbolic values survive in desired, even when existing target IDs

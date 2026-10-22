@@ -66,8 +66,9 @@ parent scope. Missing closure reports the missing ID. Unsupported cycles report 
 resource path before writes. Same-model dependencies work when acyclic.
 
 The resource DAG orders creation, including required inverse M2O fields. Explicit
-dependencies wait for deferred relation, translation and unlink work too. Child
-inverses need parent identity; an explicit full-readiness cycle rejects before writes. Parent
+dependencies wait for deferred relation, translation and unlink work too, including
+through unchanged intermediate resources. Child inverses need parent identity;
+an explicit full-readiness cycle rejects before writes. Parent
 x2many/child inverse edges are staged as creation followed by links. `children`
 scopes adoption to the actual parent; if that parent is new, it never falls back
 to a global name lookup. JSON/list refs resolve recursively. X2many authoring uses
