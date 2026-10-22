@@ -43,3 +43,8 @@ Thumbs.db
 
 # testcontainers runtime state (Docker container snapshots and metadata)
 .odoo-testcontainers/
+
+# TypeScript foundation
+node_modules/
+*.tgz
+.serena/

@@ -1,115 +1,137 @@
 # godoo-stateman
 
-[![PyPI version](https://img.shields.io/pypi/v/godoo-stateman)](https://pypi.org/project/godoo-stateman)
-[![Python 3.14+](https://img.shields.io/pypi/pyversions/godoo-stateman)](https://pypi.org/project/godoo-stateman)
-[![License: LGPL-3.0-or-later](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0.html)
+The TypeScript foundation for composing and inspecting desired Odoo configuration.
+The proposed local package is `@godoo-dev/stateman`, targeting Node 24+.
+It loads trusted TS/ESM modules, exported arrays and nested resources offline.
 
-**Terraform for Odoo** — declarative Odoo state reconciliation over JSON-RPC.
+**This foundation does not reconcile Odoo.** `plan`, `apply` and `drift` throw;
+the CLI also rejects verify/snapshot/export/import. Lookup/adoption, schema and
+prerequisite validation, resource scheduling, ownership/removal and recovery are
+future work. Offline output is neither an apply order nor a reviewed plan.
 
-`godoo-stateman` evaluates a Python DSL describing desired Odoo state, diffs it against a live Odoo instance over JSON-RPC, and executes a plan of creates, updates, deletes, and archives in dependency order. State is stored exclusively in Odoo's built-in `ir.model.data` records — no sidecar file, no Odoo addon, and no agent required on the server side.
+## Develop and install locally
 
-## Status — Early Development
-
-This is **Phase 1 of 6**. Only the `snapshot` command is functional today.
-
-The commands `plan`, `apply`, `verify`, and `import` are registered in the CLI but each prints "not yet implemented" and exits with code 1. The DSL parser, diff engine, and apply engine are planned for subsequent phases.
-
-| Command | Status |
-|---------|--------|
-| `snapshot` | Implemented — Phase 1 |
-| `plan` | Stub — not yet implemented |
-| `apply` | Stub — not yet implemented |
-| `verify` | Stub — not yet implemented |
-| `import` | Stub — not yet implemented |
-
-## Requirements
-
-- Python 3.14 or later (hard requirement from the JSON-RPC transport dependency)
-- Access to an Odoo 17.0+ instance over HTTP or HTTPS
-
-## Installation
-
-**Production:**
-
-```bash
-pip install godoo-stateman
+```sh
+npm ci --ignore-scripts
+npm run typecheck
+npm test
+npm run build
+npm pack --pack-destination /absolute/path/to/artifacts
 ```
 
-**Development setup** (using `uv`, which matches the godoo-py toolchain):
+In a separate Node 24 ESM project, install the resulting artifact:
 
-```bash
-git clone https://github.com/godoo-dev/godoo-stateman.git
-cd godoo-stateman
-uv sync --group dev
+```sh
+npm install /absolute/path/to/artifacts/godoo-dev-stateman-0.1.0-foundation.0.tgz
 ```
 
-The development install uses local workspace paths for the godoo-py packages as configured in `pyproject.toml` via `uv.sources`.
+No sibling checkout is needed. Runtime dependencies are `@godoo-dev/client`
+0.6.1 and `@godoo-dev/introspection` 0.2.2; `@godoo-dev/testcontainers` 0.1.6 is
+development-only. Versions are pinned to available registry artifacts; the older
+local source manifest versions are not available from npm. The package is private
+to prevent accidental publication. Package naming, distribution and broader
+licensing decisions remain with the owner.
 
-## Usage
+## Author and inspect
 
-### `snapshot` — Capture schema from a live Odoo instance
+Modules execute with ordinary Node filesystem, process and network privileges.
+Only load trusted code. The loader does not call exported helper functions, but
+module initialization and imported helpers execute normally. It is not a sandbox.
 
-Connects to Odoo using credentials from environment variables, introspects a fixed set of models (Phase 1: `project.project`, `res.partner`), and writes a versioned schema snapshot to the local cache.
+Create `resources/project.ts`:
 
-```bash
-godoo-stateman snapshot <config>
+```ts
+import { resource, children } from '@godoo-dev/stateman';
+
+export const project = resource('project.project', 'example.project', {
+  name: 'Example project',
+  type_ids: children('project.task.type', 'project_ids', [
+    resource('project.task.type', 'ready', { name: 'Ready', sequence: 1 }),
+    resource('project.task.type', 'done', { name: 'Done', sequence: 2 }),
+  ]),
+});
 ```
 
-`<config>` is the path to a stateman config `.py` file. In Phase 1 the config path is accepted but model enumeration from config content arrives in Phase 3.
-
-#### Environment variables
-
-Credentials are read exclusively from environment variables — never passed as CLI arguments or stored in the config file.
-
-| Variable | Aliases | Required | Default | Description |
-|----------|---------|----------|---------|-------------|
-| `ODOO_URL` | — | Yes | — | Full URL to the Odoo instance (e.g. `https://odoo.example.com`) |
-| `ODOO_DB` | `ODOO_DATABASE` | Yes | — | Database name |
-| `ODOO_USER` | `ODOO_USERNAME` | Yes | — | Odoo login username |
-| `ODOO_PASSWORD` | — | Yes | — | Odoo login password |
-| `ODOO_VERSION` | — | No | `17.0` | Odoo major.minor version (format: `N.N`, e.g. `17.0`) |
-
-Connecting over plain HTTP to a non-local host causes a warning; use HTTPS in production.
-
-**Example:**
-
-```bash
-export ODOO_URL=https://odoo.example.com
-export ODOO_DB=production
-export ODOO_USER=admin
-export ODOO_PASSWORD=...
-godoo-stateman snapshot my_config.py
+```sh
+npx stateman inspect resources
+npx stateman load resources/project.ts
 ```
 
-### Planned commands (not yet implemented)
+Both commands print JSON with `kind: "offline-inspection"`, resources, policies,
+files and diagnostics. Errors return a nonzero exit status. The CLI itself never
+creates a client, reads credentials, connects to Odoo or executes Python.
 
-The following commands are registered in the CLI but are not yet functional. Each prints "not yet implemented" and exits with code 1 until the relevant phase ships:
+Programmatic use:
 
-- `plan`
-- `apply`
-- `verify`
-- `import`
-
-## Development
-
-**Run tests:**
-
-```bash
-uv run pytest                        # unit tests only
-uv run pytest -m integration         # requires Docker (pulls odoo:17.0 + postgres:15-alpine)
+```ts
+import { loadResources } from '@godoo-dev/stateman';
+const inspection = await loadResources('./resources');
+console.log(inspection.resources.map(resource => resource.externalId));
 ```
 
-**Linting and type checking:**
+`evaluate(path)` returns raw exported resources/policies and evaluated files.
+`normalizeResources(resources)` gives recursively flattened declarations with
+symbolic relation references. `loadResources(path, { contentRoot?, readFile? })`
+combines evaluation, normalization and content rendering. `createSchemaContext`
+accepts an existing godoo client and constructs an introspector without RPC calls;
+it does not validate a target or authenticate.
 
-```bash
-uv run ruff check src tests
-uv run mypy src
-```
+## Identity and composition
 
-## Repository
+Discovery supports ESM `.ts`, `.mts`, `.js` and `.mjs` files. Files and exports are
+visited in sorted order. Directory discovery skips hidden folders, symlinks,
+`node_modules`, `dist`, `build` and declaration files. Exported nested arrays are
+collected; plain objects/functions are helpers. Re-exporting the same definition
+object within a run is deduplicated. Each evaluation has its own module cache.
 
-https://github.com/godoo-dev/godoo-stateman
+Normalized roots require qualified IDs such as `bgbl.example_project`. Local
+child IDs become `bgbl.example_project.ready`; already qualified IDs stay intact.
+A child declared through `children()` keeps one canonical identity and inverse
+scope when the same definition object is reused in other relations or re-exported.
+Qualified global definitions also retain one identity. Distinct definitions claiming
+the same ID and conflicting ownership declarations fail. Without an explicit child
+declaration, a local inline resource must have one unambiguous parent.
+An unnamed scalar inline resource derives its ID from its field name. List
+members need explicit IDs, so reordering never changes their identity. Collisions,
+child-model mismatches and cyclic nested objects fail visibly. Resource arrays,
+objects, empty children and lookup arrays retain their symbolic relations.
+Output resources are sorted by identity, **not dependency or execution order**.
 
-## License
+`lookup()` and `_ref` remain declarations: no record is selected or adopted.
+`children()` retains inverse-field/parent scope for future schema-aware handling.
+Legacy `removeUnmanaged` and model policies are preserved for inspection only;
+they authorize no deletion. Ordinary resource reference markers are data, not
+proof that a target exists or that a dependency graph is valid.
 
-LGPL-3.0-or-later. See the `LICENSE` file.
+## Content
+
+`md`, `mdFile`, `html` and `withCss` retain the predecessor's Markdown/CSS behavior.
+`mdFile` strips leading YAML frontmatter by default; set `stripFrontmatter: false`
+to retain it. Relative Markdown/CSS paths use the input directory (or input file's
+directory); pass `--content-root <directory>` or the API's `contentRoot` to override.
+Use an absolute module-relative file path when content belongs to a nested module.
+Rendering is not HTML sanitization; `checkSanitization` supplies heuristics only.
+
+`translated` extracts direct-field language entries for inspection; it does not
+apply translations. Separate language resources work as ordinary resource arrays.
+Consumer helpers may assemble Python by reading a prelude and body and concatenating
+`prelude + '\n' + body`; this produces a string and never executes it.
+
+The sanitized corpus in `tests/fixtures/consumer/resources` covers project/stages,
+an inactive cron with nested action, category/tag/M2M references, language arrays,
+Markdown/frontmatter and Python assembly. It contains no consumer business code.
+It deliberately replaces live snapshot use for these offline checks; no consumer
+snapshot migration or full consumer acceptance is claimed.
+
+## Source and product direction
+
+The DSL, loader approach and content transforms are adapted from Marc Fargas's
+[odoo-state-manager](https://github.com/marcfargas/odoo-toolbox/tree/01512004814df8887a457e5ed9d6c5769fe3b730/packages/odoo-state-manager).
+See [NOTICE.md](NOTICE.md), [LICENSE](LICENSE) and [COPYING](COPYING) for source
+attribution and LGPL/GPL terms. Corresponding TS source ships in the local tarball.
+The predecessor's unsafe reconciliation engine is not included.
+
+Python source, tests and packaging remain in place as historical reference. They
+are not the active delivery entrypoint. Product targets and remaining acceptance
+belong to the private HQ README and its Stateman/roadmap pages; the agent entrypoint
+records the local HQ location without a sibling import.

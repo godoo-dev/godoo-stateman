@@ -1,0 +1,54 @@
+{
+  "name": "@godoo-dev/stateman",
+  "version": "0.1.0-foundation.0",
+  "private": true,
+  "description": "Offline TypeScript authoring and inspection foundation for Odoo desired state",
+  "type": "module",
+  "license": "LGPL-3.0-only",
+  "author": "Marc Fargas",
+  "engines": {
+    "node": ">=24"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "stateman": "./bin/stateman.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "src/**/*.ts",
+    "tsconfig.build.json",
+    "LICENSE",
+    "COPYING",
+    "NOTICE.md",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@godoo-dev/client": "0.6.1",
+    "@godoo-dev/introspection": "0.2.2",
+    "debug": "^4.4.3",
+    "juice": "^11.1.1",
+    "marked": "^17.0.5",
+    "tsx": "^4.21.0"
+  },
+  "devDependencies": {
+    "@godoo-dev/testcontainers": "0.1.6",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  }
+}
