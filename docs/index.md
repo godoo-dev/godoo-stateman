@@ -65,7 +65,9 @@ Python references are not inferred. `select` expands through all these edges and
 parent scope. Missing closure reports the missing ID. Unsupported cycles report a
 resource path before writes. Same-model dependencies work when acyclic.
 
-The resource DAG orders creation, including required inverse M2O fields. Parent
+The resource DAG orders creation, including required inverse M2O fields. Explicit
+dependencies wait for deferred relation, translation and unlink work too. Child
+inverses need parent identity; an explicit full-readiness cycle rejects before writes. Parent
 x2many/child inverse edges are staged as creation followed by links. `children`
 scopes adoption to the actual parent; if that parent is new, it never falls back
 to a global name lookup. JSON/list refs resolve recursively. X2many authoring uses
@@ -123,8 +125,9 @@ is requested. `stopOnError:false` allows independent work but skips failed
 execution dependencies and all activation following failures. An operation marked
 `partial` may have committed an earlier RPC; no rollback is promised.
 
-Managed crons are initially inactive. Existing desired-active crons pause when
-changes are planned. Activation is final, after mutation success and a fresh plan
+Managed crons are initially inactive. Existing running crons with an explicitly
+managed active flag pause before changes, including when the requested final state
+is disabled. Activation is final, after mutation success and a fresh plan
 confirms dependency readiness. Server-action code is configuration only.
 
 ## Recovery journal

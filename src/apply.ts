@@ -19,7 +19,10 @@ export async function apply(reviewed: Plan, connection: StateConnection, options
 
   async function save(receipt: RecoveryReceipt): Promise<void> {
     recovery.set(receipt.externalId, copy(receipt));
-    if (options.journal) await options.journal.save(copy(receipt));
+    if (options.journal) {
+      try { await options.journal.save(copy(receipt)); }
+      catch (error) { halted = true; throw error; }
+    }
   }
   async function register(operation: Mutation, id: number): Promise<void> {
     const { module, name } = xmlid(operation.externalId);

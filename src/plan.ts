@@ -72,8 +72,14 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   } else diagnostics.push('No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.');
 
   const schema: Schema = Object.create(null) as Schema;
+  const schemaReads = new Map<string, Promise<Record<string, FieldMetadata>>>();
   async function fields(model: string): Promise<Record<string, FieldMetadata>> {
     if (schema[model]) return schema[model];
+    let pending = schemaReads.get(model);
+    if (!pending) { pending = readFields(model); schemaReads.set(model, pending); }
+    return pending;
+  }
+  async function readFields(model: string): Promise<Record<string, FieldMetadata>> {
     let result: Record<string, FieldMetadata>;
     try {
       result = await connection.client.call(model, 'fields_get', [], { attributes: ['type', 'relation', 'relation_field', 'required', 'readonly'], context });
@@ -247,7 +253,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       } else if (!bindings[id] || !equal(normalized(value, field), normalized(actual.get(id)![name], field))) scalar[name] = value;
     }
     if (resource.model === 'ir.cron') {
-      if (desired.get(id)!.active === true) delete scalar.active;
+      if (typeof desired.get(id)!.active === 'boolean') delete scalar.active;
       if (!bindings[id]) scalar.active = false;
     }
     if (!bindings[id]) operations.push(op(resource, 'create', scalar, 'record'));
@@ -299,33 +305,62 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       id: request.id, values: request.action === 'archive' ? { active: false } : {}, context, dependsOn: [] });
   }
 
-  // Running managed crons pause while any change is applied, then activate only
-  // after *all* mutation outcomes and a fresh dependency plan have succeeded.
-  const activeCrons = resources.filter(r => r.model === 'ir.cron' && desired.get(r.externalId)!.active === true);
+  // Pause every explicitly managed running cron before any other mutation,
+  // including crons whose final desired state is disabled.
+  const managedCrons = resources.filter(r => r.model === 'ir.cron' && typeof desired.get(r.externalId)!.active === 'boolean');
+  const activeCrons = managedCrons.filter(r => desired.get(r.externalId)!.active === true);
   const needsActivation = activeCrons.filter(r => actual.get(r.externalId)!.active !== true || operations.length > 0);
-  const deactivate = needsActivation.filter(r => bindings[r.externalId] && actual.get(r.externalId)!.active === true).map(r => op(r, 'deactivate', { active: false }));
+  const deactivate = managedCrons.filter(r => bindings[r.externalId] && actual.get(r.externalId)!.active === true
+    && (desired.get(r.externalId)!.active === false || operations.length > 0)).map(r => op(r, 'deactivate', { active: false }));
   operations.unshift(...deactivate);
   for (const resource of needsActivation) operations.push(op(resource, 'activate', { active: true }));
 
-  const recordKeys = new Map<string, string[]>();
+  // Build the complete operation DAG before sorting. Resource readiness includes
+  // deferred relation/translation/unlink work, not just operations already seen.
+  const recordOps = new Map<string, Mutation[]>();
+  const operationByKey = new Map<string, Mutation>();
   for (const operation of operations) {
-    const keys = recordKeys.get(operation.externalId) ?? []; keys.push(operation.key); recordKeys.set(operation.externalId, keys);
+    if (operationByKey.has(operation.key)) fail('DUPLICATE_OPERATION', `Duplicate operation ${operation.key}`);
+    operationByKey.set(operation.key, operation);
+    const group = recordOps.get(operation.externalId) ?? []; group.push(operation); recordOps.set(operation.externalId, group);
   }
   const seen = new Set<string>();
   for (const operation of operations) {
-    if (seen.has(operation.key)) fail('DUPLICATE_OPERATION', `Duplicate operation ${operation.key}`);
     const deps = new Set<string>();
-    for (const previous of recordKeys.get(operation.externalId) ?? []) if (seen.has(previous)) deps.add(previous);
-    for (const dependency of graph.get(operation.externalId) ?? []) {
-      // Actual graph is acyclic; only prior operations are execution dependencies.
-      for (const previous of recordKeys.get(dependency) ?? []) if (seen.has(previous)) deps.add(previous);
+    if (operation.type !== 'deactivate') {
+      for (const previous of recordOps.get(operation.externalId) ?? []) if (seen.has(previous.key)) deps.add(previous.key);
+      const resource = all.get(operation.externalId);
+      const prerequisite = (id: string): void => {
+        // A child's inverse needs its parent's identity; waiting for the parent's
+        // child links here would fabricate a cycle. Explicit dependsOn still
+        // requests full readiness and may correctly reject an impossible cycle.
+        const identityOnly = resource?.parentScope?.parentExternalId === id && !resource.options?.dependsOn?.includes(id);
+        for (const candidate of recordOps.get(id) ?? []) {
+          if (candidate.type === 'activate' || candidate.type === 'deactivate') continue;
+          if (!identityOnly || candidate.type === 'create' || candidate.type === 'adopt') deps.add(candidate.key);
+        }
+      };
+      for (const dependency of graph.get(operation.externalId) ?? []) prerequisite(dependency);
+      // Raw symbolic values survive in desired, even when existing target IDs
+      // were resolved to numbers in the concrete mutation. Parent child links
+      // wait for the child's full work, whose inverse only needs parent identity.
+      for (const field of Object.keys(operation.values)) walkRefs(desired.get(operation.externalId)?.[field], prerequisite);
+      for (const pause of deactivate) deps.add(pause.key);
+      if (operation.type === 'activate') {
+        for (const candidate of operations) if (candidate.type !== 'activate') deps.add(candidate.key);
+        for (const previous of operations) if (previous.type === 'activate' && seen.has(previous.key)) deps.add(previous.key);
+      }
     }
-    // All links need the created IDs; a failed dependency cannot leak unresolved refs.
-    walkRefs(operation.values, id => { for (const key of recordKeys.get(id) ?? []) if (seen.has(key)) deps.add(key); });
-    if (operation.type !== 'deactivate') for (const pause of deactivate) deps.add(pause.key);
-    if (operation.type === 'activate') for (const key of seen) deps.add(key);
     operation.dependsOn = [...deps].sort(); seen.add(operation.key);
   }
+  const executionOrder = sortGraph(new Map(operations.map(operation => [operation.key, new Set(operation.dependsOn)])));
+  operations.splice(0, operations.length, ...executionOrder.map(key => operationByKey.get(key)!));
+  // Parallel lookup reads may finish in any order. Preserve each query/value
+  // observation while canonicalizing their order before hashing the plan.
+  observations.sort((a, b) => {
+    const left = `${a.kind}:${a.key}:${digest(a.value)}`, right = `${b.kind}:${b.key}:${digest(b.value)}`;
+    return left < right ? -1 : left > right ? 1 : 0;
+  });
   const result: Omit<Plan, 'digest'> = { kind: 'stateman-plan', version: 1, target, input: complete, options: stored, resources, order, bindings,
     schema, observations, operations, diagnostics: [...new Set(diagnostics)].sort() };
   return { ...copy(result), digest: digest(result) };

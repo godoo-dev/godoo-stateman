@@ -13,10 +13,16 @@ it('loads JSON without code execution and rejects malformed fixtures before impo
     await writeFile(path, JSON.stringify({ format: 'godoo-state-fixture', version: 1, namespaces: ['seed'], resources: [{ externalId: 'seed.root', model: 'x', values: { name: 'Test' } }] }));
     expect(await main(['load', path, '--fixture'])).toBe(0);
     expect(JSON.parse(log.mock.calls[0][0]).resources[0].externalId).toBe('seed.root');
+    const poison = join(area, 'poison.mts');
+    await writeFile(poison, "throw new Error('POISON_MODULE_EXECUTED');");
+    for (const command of ['plan', 'drift']) {
+      expect(await main([command, poison])).toBe(1);
+      expect(error.mock.calls.at(-1)?.[0]).toContain('CONNECTION_REQUIRED');
+    }
     await writeFile(path, '{"format":"unknown"}');
     expect(await main(['plan', path, '--fixture', '--connection', join(area, 'must-not-execute.ts')])).toBe(1);
     expect(error.mock.calls.at(-1)?.[0]).toContain('Invalid state fixture');
-    expect(await main(['apply', path, '--fixture'])).toBe(1);
+    expect(await main(['apply', path, '--fixture', '--connection', 'unused.ts'])).toBe(1);
     expect(error.mock.calls.at(-1)?.[0]).toContain('reviewed plan');
   } finally { log.mockRestore(); error.mockRestore(); await rm(area, { recursive: true, force: true }); }
 });
