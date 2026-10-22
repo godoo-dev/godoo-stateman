@@ -65,3 +65,22 @@ as a second supported engine. Use `stateman load state.fixture.json --fixture` t
 Apply the reviewed plan normally; `--fixture` is not accepted for apply. Check
 every subprocess exit status and retain the journal. Installed-package and live
 helper acceptance remain pending.
+
+
+Python uses the installed executable and JSON files, with Node 24 available:
+
+```python
+import subprocess
+
+subprocess.run([
+    "/absolute/consumer/node_modules/.bin/stateman", "plan", "state.fixture.json",
+    "--fixture", "--connection", "./connection.ts", "--journal", "./journal.json",
+    "--out", "./reviewed.json",
+], check=True)
+# Review reviewed.json before invoking apply with the same connection and journal.
+```
+
+A nonzero plan/apply exit is failure. For a separate drift subprocess, exit 2
+means a valid difference; exit 1 means error. Connection modules remain trusted
+Node code and own environment selection/authentication. Python does not gain a
+second reconciliation engine or automatically inherit credentials.

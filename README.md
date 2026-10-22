@@ -32,6 +32,23 @@ versions: supply its structural adapter from an explicitly installed local artif
 when requesting addon checks. No sibling-relative source import is required.
 The package remains private; distribution and licensing choices stay with the owner.
 
+For the complete local delivery, install the supplied client, introspection,
+Stateman and testcontainers tarballs as direct `file:` dependencies. Retain the
+provided package lock and verify `npm ls --all`. Until a release reconciles source
+versions, prevent Stateman's registry pins from introducing nested older clients:
+
+```json
+{
+  "overrides": {
+    "@godoo-dev/client": "$@godoo-dev/client",
+    "@godoo-dev/introspection": "$@godoo-dev/introspection"
+  }
+}
+```
+
+Use the delivery's exact artifact manifest and fresh-install recipe. Local staged
+prerelease versions identify source commits; they do not claim registry publication.
+
 ## Author and inspect offline
 
 Only load trusted modules: TS/ESM and imported helpers execute with ordinary Node
@@ -160,9 +177,18 @@ only after establishing that no record was created. Losing/omitting the journal
 forfeits this protection. A save failure stops further writes and returns the known
 receipt so it can be retained manually. Whole-run RPC rollback is not available.
 
-The selected replacement for legacy snapshot helpers is bounded rendered offline
-fixtures, integrated by the parent delivery. Broad live clone/export/import and addon
-mutation are separate workflows; this core does not supply them.
+The selected replacement for legacy snapshot helpers is [bounded rendered offline
+fixtures and explicit seeding](docs/fixtures.md). `createFixture`, `serializeFixture`
+and `parseFixture` preserve symbolic desired state; `seedFixture` uses the same
+plan/apply/recovery engine and returns fresh target bindings. The CLI's `--fixture`
+flag accepts bounded JSON for load/inspect/plan/drift. Broad live clone/export/import
+is outside this path.
+
+[Explicit addon stages](docs/modules.md) use `planModules`/`applyModules` with the
+new local client lifecycle API. Review the addon preview, apply only the selected
+install/upgrade requests, invalidate introspection and make a fresh resource plan.
+Record planning does not install addons. Testcontainers remains independent: call
+Stateman seeding after the chosen disposable environment is ready.
 
 ## Source and product direction
 
