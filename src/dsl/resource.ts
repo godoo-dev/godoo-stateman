@@ -1,6 +1,6 @@
 // Adapted from Marc Fargas, odoo-toolbox at 01512004814df8887a457e5ed9d6c5769fe3b730.
 // SPDX-License-Identifier: LGPL-3.0-only. See NOTICE.md.
-import type { LookupRef, RemoveUnmanagedMap, ResourceDefinition } from './types.js';
+import type { LookupRef, RemoveUnmanagedMap, ResourceDefinition, ResourceOptions, ResourceRef } from './types.js';
 
 /**
  * Create a resource definition.
@@ -16,12 +16,14 @@ export function resource(model: string, definition: Record<string, unknown>): Re
 export function resource(
   model: string,
   externalId: string,
-  definition: Record<string, unknown>
+  definition: Record<string, unknown>,
+  options?: ResourceOptions
 ): ResourceDefinition;
 export function resource(
   model: string,
   externalIdOrDefinition: string | Record<string, unknown>,
-  maybeDefinition?: Record<string, unknown>
+  maybeDefinition?: Record<string, unknown>,
+  options?: ResourceOptions
 ): ResourceDefinition {
   let externalId: string | undefined;
   let definition: Record<string, unknown>;
@@ -40,8 +42,14 @@ export function resource(
     ...(externalId !== undefined ? { externalId } : {}),
     ...(_ref !== undefined ? { ref: _ref as LookupRef } : {}),
     values: Object.freeze({ ...values }),
+    ...(options ? { options: Object.freeze({ ...options, ...(options.dependsOn ? { dependsOn: Object.freeze([...options.dependsOn]) } : {}) }) } : {}),
     ...(removeUnmanaged !== undefined
       ? { removeUnmanaged: removeUnmanaged as RemoveUnmanagedMap }
       : {}),
   });
+}
+
+/** A managed resource reference. Target must be in the supplied resource closure. */
+export function ref(externalId: string): ResourceRef {
+  return Object.freeze({ __type: 'resourceRef', externalId });
 }

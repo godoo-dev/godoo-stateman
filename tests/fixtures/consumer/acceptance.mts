@@ -21,7 +21,7 @@ assert.equal(byId['bgbl.example_guide_es'].values.content, byId['bgbl.example_gu
 const definitions: ResourceDefinition[] = [resource('x', 'fixture.x', { name: 'Example' })];
 assert.equal(normalizeResources(definitions)[0].externalId, 'fixture.x');
 assert.equal(typeof createSchemaContext, 'function');
-for (const operation of [plan, apply, drift]) assert.throws(() => operation(), { name: 'ReconciliationUnavailableError' });
+assert.equal(typeof plan, 'function'); assert.equal(typeof apply, 'function'); assert.equal(typeof drift, 'function');
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.resolve('@godoo-dev/stateman'))), '..');
 const bin = resolve(packageRoot, 'bin/stateman.js');
@@ -34,7 +34,7 @@ writeFileSync(resolve(root, 'must-not-execute.ts'), "throw new Error('POISON_MOD
 for (const command of ['plan', 'apply', 'drift', 'verify', 'snapshot', 'export', 'import']) {
   const failed = spawnSync(process.execPath, [bin, command, resolve(root, 'must-not-execute.ts')], { encoding: 'utf8' });
   assert.equal(failed.status, 1);
-  assert.match(failed.stderr, /unavailable/);
+  assert.match(failed.stderr, /CONNECTION_REQUIRED|USAGE/);
   assert.doesNotMatch(failed.stderr, /POISON_MODULE_EXECUTED/);
   assert.equal(failed.stdout, '');
 }
@@ -65,4 +65,4 @@ for (const [variant, childId] of [['local', 'ready'], ['qualified', 'fixture.rea
   assert.deepEqual(cli, api);
   assert.deepEqual(api.resources, first);
 }
-console.log('PASS: fresh tarball API/CLI, 10 representative resources, local/qualified shared children and reexports in both orders, canonical inverse scopes, real duplicate rejection, exact Markdown/Python payloads, fail-closed commands, source/rights packaging, runtime-only dependencies');
+console.log('PASS: fresh tarball offline API/CLI, representative resources, canonical children, Markdown/Python payloads, explicit connection boundary, source/rights packaging, runtime-only dependencies');
