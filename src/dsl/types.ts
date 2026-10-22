@@ -39,6 +39,14 @@ export interface ResourceDefinition {
   readonly removeUnmanaged?: RemoveUnmanagedMap;
   /** Set by flattenChildren when the resource was a child with an inverseField. */
   readonly parentScope?: ParentScope;
+  readonly options?: ResourceOptions;
+}
+
+export interface ResourceOptions {
+  /** Explicit dependencies, including env.ref() calls inside opaque Python strings. */
+  readonly dependsOn?: readonly string[];
+  /** _ref zero-match behavior; default is error. Field lookups always require one match. */
+  readonly onMissing?: 'create' | 'error';
 }
 
 export interface ModelPolicy {

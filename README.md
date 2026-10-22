@@ -1,16 +1,15 @@
 # godoo-stateman
 
-The TypeScript foundation for composing and inspecting desired Odoo configuration.
-Marc selected standalone TypeScript delivery on 2026-10-22, with bgbl-odoo as the
-first consumer. The proposed local package is `@godoo-dev/stateman`, targeting Node 24+.
-It loads trusted TS/ESM modules, exported arrays and nested resources offline.
+Compose desired Odoo configuration in TypeScript, review a deterministic plan,
+apply it with explicit recovery storage, and check fresh drift. The private local
+package `@godoo-dev/stateman` targets Node 24+ and Odoo 17. The local version still
+uses the foundation prerelease name; this work does not publish a release.
 
-**This foundation does not reconcile Odoo.** `plan`, `apply` and `drift` throw;
-the CLI also rejects verify/snapshot/export/import. Lookup/adoption, schema and
-prerequisite validation, resource scheduling, ownership/removal and recovery are
-future work. Offline output is neither an apply order nor a reviewed plan.
+The core API and CLI are verified with fake CRUD and a fresh tarball installation.
+Disposable Odoo and complete bgbl-odoo acceptance belong to the parent delivery;
+these checks alone establish neither live operation nor consumer acceptance.
 
-## Develop and install locally
+## Install and develop
 
 ```sh
 npm ci --ignore-scripts
@@ -20,32 +19,30 @@ npm run build
 npm pack --pack-destination /absolute/path/to/artifacts
 ```
 
-In a separate Node 24 ESM project, install the resulting artifact:
+Install that tarball in a separate Node 24 ESM project:
 
 ```sh
 npm install /absolute/path/to/artifacts/godoo-dev-stateman-0.1.0-foundation.0.tgz
 ```
 
-No sibling checkout is needed. Runtime dependencies are `@godoo-dev/client`
-0.6.1 and `@godoo-dev/introspection` 0.2.2; `@godoo-dev/testcontainers` 0.1.6 is
-development-only. Versions are pinned to available registry artifacts; the older
-local source manifest versions are not available from npm. The package is private
-to prevent accidental publication. Package naming, distribution and broader
-licensing decisions remain with the owner.
+Released runtime dependencies are `@godoo-dev/client` 0.6.1 and
+`@godoo-dev/introspection` 0.2.2. Testcontainers is development-only. The generic
+addon-inspection seam exists in newer local godoo-ts source, not those published
+versions: supply its structural adapter from an explicitly installed local artifact
+when requesting addon checks. No sibling-relative source import is required.
+The package remains private; distribution and licensing choices stay with the owner.
 
-## Author and inspect
+## Author and inspect offline
 
-Modules execute with ordinary Node filesystem, process and network privileges.
-Only load trusted code. The loader does not call exported helper functions, but
-module initialization and imported helpers execute normally. It is not a sandbox.
-
-Create `resources/project.ts`:
+Only load trusted modules: TS/ESM and imported helpers execute with ordinary Node
+filesystem, process and network privileges. The loader is not a sandbox. It collects
+exported resources and arrays without calling exported helper functions.
 
 ```ts
-import { resource, children } from '@godoo-dev/stateman';
+import { children, resource } from '@godoo-dev/stateman';
 
 export const project = resource('project.project', 'example.project', {
-  name: 'Example project',
+  name: 'Example',
   type_ids: children('project.task.type', 'project_ids', [
     resource('project.task.type', 'ready', { name: 'Ready', sequence: 1 }),
     resource('project.task.type', 'done', { name: 'Done', sequence: 2 }),
@@ -54,93 +51,131 @@ export const project = resource('project.project', 'example.project', {
 ```
 
 ```sh
-npx stateman inspect resources
 npx stateman load resources/project.ts
+npx stateman inspect resources
 ```
 
-Both commands print JSON with `kind: "offline-inspection"`, resources, policies,
-files and diagnostics. Errors return a nonzero exit status. The CLI itself never
-creates a client, reads credentials, connects to Odoo or executes Python.
+Both print offline inspection JSON without a connection. `loadResources(path)` is
+the API equivalent; `inspectResources(definitions)` renders in-memory definitions.
+Discovery supports `.ts`, `.mts`, `.js` and `.mjs`, skips hidden/build/vendor folders,
+and visits files and exports in sorted order. Re-exports of the same object are
+deduplicated within each evaluation. Separate definitions claiming the same XML ID
+fail. Local child IDs become `example.project.ready`; qualified IDs stay intact.
+Shared references to the same declared child retain that canonical identity.
 
-Programmatic use:
+`md`, `mdFile`, `html` and `withCss` retain the predecessor content behavior.
+`mdFile` strips leading YAML frontmatter unless `stripFrontmatter: false`. Relative
+content paths use the input directory or `--content-root`; use module-relative
+absolute paths for content in nested modules. Rendering is not HTML sanitization.
+`translated` supports scalar string fields through contextual writes and fresh
+language reads. Separate language records are ordinary resources. Python assembly
+is an ordinary helper producing a string; Stateman never executes that Python.
+
+## Plan, apply and inspect fresh drift
+
+A `StateConnection` deliberately binds a client to its current URL/database/user.
+It supplies `identity()` and read-only `serverInfo()`, plus `inspectAddons()` when
+addon requirements are requested. `createConnection` can wrap an already authenticated
+direct `OdooClient`; pass that client's URL explicitly. It never authenticates or
+changes safety settings. A connection module owns its own credential/authentication
+procedure; Stateman does not choose an environment or load credential files.
 
 ```ts
-import { loadResources } from '@godoo-dev/stateman';
-const inspection = await loadResources('./resources');
-console.log(inspection.resources.map(resource => resource.externalId));
+import {
+  apply, createConnection, drift, openRecoveryJournal, plan,
+} from '@godoo-dev/stateman';
+
+// client has already been explicitly selected and authenticated by your application.
+const connection = createConnection(client, { url: selectedUrl });
+const journal = await openRecoveryJournal('/absolute/private/path/recovery.json');
+try {
+  const reviewed = await plan('./resources', connection, { recovery: journal.receipts });
+  // Review or save this concrete plan before requesting writes.
+  const result = await apply(reviewed, connection, { journal });
+  if (!result.ok) throw new Error('Inspect result.results, result.recovery and result.drift');
+  const fresh = await drift('./resources', connection, { recovery: journal.receipts });
+  console.log(fresh.converged);
+} finally {
+  await journal.close();
+}
 ```
 
-`evaluate(path)` returns raw exported resources/policies and evaluated files.
-`normalizeResources(resources)` gives recursively flattened declarations with
-symbolic relation references. `loadResources(path, { contentRoot?, readFile? })`
-combines evaluation, normalization and content rendering. `createSchemaContext`
-accepts an existing godoo client and constructs an introspector without RPC calls;
-it does not validate a target or authenticate.
+The example assumes an existing private directory and an explicitly selected client;
+it is not a live deployment instruction. See the [API guide](docs/index.md) for
+adoption, prerequisites, ownership and recovery details.
 
-## Identity and composition
+The CLI consumes the same API. `connection.ts` must export a `StateConnection` as
+`default` or `connection`. Keep it outside a directory being scanned for resources.
+`options.json` contains `PlanOptions`, such as required addons and selected XML IDs.
 
-Discovery supports ESM `.ts`, `.mts`, `.js` and `.mjs` files. Files and exports are
-visited in sorted order. Directory discovery skips hidden folders, symlinks,
-`node_modules`, `dist`, `build` and declaration files. Exported nested arrays are
-collected; plain objects/functions are helpers. Re-exporting the same definition
-object within a run is deduplicated. Each evaluation has its own module cache.
+```sh
+npx stateman plan resources --connection connection.ts --journal recovery.json --options options.json --out reviewed.json
+npx stateman apply reviewed.json --connection connection.ts --journal recovery.json
+npx stateman drift resources --connection connection.ts --journal recovery.json
+```
 
-Normalized roots require qualified IDs such as `bgbl.example_project`. Local
-child IDs become `bgbl.example_project.ready`; already qualified IDs stay intact.
-A child declared through `children()` keeps one canonical identity and inverse
-scope when the same definition object is reused in other relations or re-exported.
-Qualified global definitions also retain one identity. Distinct definitions claiming
-the same ID and conflicting ownership declarations fail. Without an explicit child
-declaration, a local inline resource must have one unambiguous parent.
-An unnamed scalar inline resource derives its ID from its field name. List
-members need explicit IDs, so reordering never changes their identity. Collisions,
-child-model mismatches and cyclic nested objects fail visibly. Resource arrays,
-objects, empty children and lookup arrays retain their symbolic relations.
-Output resources are sorted by identity, **not dependency or execution order**.
+`plan` exits 0 when it produces a plan. `drift` exits 0 for convergence or 2 for
+changes. Errors and incomplete/failed apply exit 1. Apply reads the saved rendered
+input, not newly evaluated authoring files, and rejects changes to its digest,
+connection or observed state before writes. Changed source requires a new plan.
+Journal changes also require re-planning with `--journal`. Initial validation is not
+a transaction or a concurrent-writer lock. Keep an environment under one operator.
 
-`lookup()` and `_ref` remain declarations: no record is selected or adopted.
-`children()` retains inverse-field/parent scope for future schema-aware handling.
-Legacy `removeUnmanaged` and model policies are preserved for inspection only;
-they authorize no deletion. Ordinary resource reference markers are data, not
-proof that a target exists or that a dependency graph is valid.
+## Policies that affect writes
 
-## Content
+- `_ref: lookup(model, criteria)` explicitly permits adoption/configuration. Zero
+  matches default to an error; pass fourth-argument `{ onMissing: 'create' }` to
+  permit creation. Field lookups always require exactly one visible match.
+- `ref('example.other')` refers to another managed resource. A fourth-argument
+  `{ dependsOn: ['example.action'] }` declares opaque dependencies such as Python
+  `env.ref()` calls. Stateman does not infer Python dependencies. A selection includes
+  managed closure; missing definitions or unsupported cycles fail before writes.
+- Nested M2O, declared child/inverse, same-model, list and recursive JSON references
+  resolve to committed IDs. X2many links are additive. Unrelated stages, tags and
+  manual records stay linked unless specific M2M links are explicitly removed.
+- Legacy `removeUnmanaged` is ignored with a diagnostic; model-wide orphan policies
+  are rejected. Enumerate M2M unlink IDs, or record removals plus an exact ownership
+  allowlist. Other XML-ID aliases protect a record from archive/delete. Adoption
+  and relation membership do not grant destructive ownership.
+- Models and desired fields are checked read-only. Access-denied metadata is unknown,
+  not absent. Required addons need the generic inspection adapter and a complete
+  installed dependency report. Plans install nothing and call no server action.
+- Managed crons are created inactive. Relevant existing active crons pause during
+  changes, and activation follows successful mutations and a fresh readiness plan.
+- Apply returns committed/failed/skipped results and re-reads actual state even after
+  partial failure. `ok` requires a fresh empty plan. There is no whole-run rollback.
 
-`md`, `mdFile`, `html` and `withCss` retain the predecessor's Markdown/CSS behavior.
-`mdFile` strips leading YAML frontmatter by default; set `stripFrontmatter: false`
-to retain it. Relative Markdown/CSS paths use the input directory (or input file's
-directory); pass `--content-root <directory>` or the API's `contentRoot` to override.
-Use an absolute module-relative file path when content belongs to a nested module.
-Rendering is not HTML sanitization; `checkSanitization` supplies heuristics only.
+## Recovery and supported scope
 
-`translated` extracts direct-field language entries for inspection; it does not
-apply translations. Separate language resources work as ordinary resource arrays.
-Consumer helpers may assemble Python by reading a prelude and body and concatenating
-`prelude + '\n' + body`; this produces a string and never executes it.
+Retain the recovery journal across runs and crashes. Before create, apply saves a
+`pending` receipt; after the returned record ID, it saves `record-created` **before**
+writing the XML ID; after identity registration it saves `complete`. The file helper
+uses an exclusive lock, atomic replacement and filesystem synchronization. A stale
+lock needs investigation. Other stores must make `save` durable before resolving.
 
-The sanitized corpus in `tests/fixtures/consumer/resources` covers project/stages,
-an inactive cron with nested action, category/tag/M2M references, language arrays,
-Markdown/frontmatter and Python assembly. It contains no consumer business code.
-It deliberately replaces live snapshot use for these offline checks; no consumer
-snapshot migration or full consumer acceptance is claimed.
+Pass retained receipts into the next plan. A known created ID is adopted rather
+than created again. A pending receipt without an ID blocks automatic retry: inspect
+the uncertain RPC outcome, supply the verified ID or deliberately retire the receipt
+only after establishing that no record was created. Losing/omitting the journal
+forfeits this protection. A save failure stops further writes and returns the known
+receipt so it can be retained manually. Whole-run RPC rollback is not available.
+
+The selected replacement for legacy snapshot helpers is bounded rendered offline
+fixtures, integrated by the parent delivery. Broad live clone/export/import and addon
+mutation are separate workflows; this core does not supply them.
 
 ## Source and product direction
 
-The DSL, loader approach and content transforms are adapted from Marc Fargas's
-[odoo-state-manager](https://github.com/marcfargas/odoo-toolbox/tree/01512004814df8887a457e5ed9d6c5769fe3b730/packages/odoo-state-manager).
-See [NOTICE.md](NOTICE.md), [LICENSE](LICENSE) and [COPYING](COPYING) for source
-attribution and LGPL/GPL terms. Corresponding TS source ships in the local tarball.
-The predecessor's unsafe reconciliation engine is not included.
+The DSL, offline loader/content and useful engine ideas derive from Marc Fargas's
+[odoo-state-manager](https://github.com/marcfargas/odoo-toolbox/tree/01512004814df8887a457e5ed9d6c5769fe3b730).
+The resource scheduler, policies and recovery replace unsafe predecessor behavior.
+See [NOTICE.md](NOTICE.md), [LICENSE](LICENSE) and [COPYING](COPYING); corresponding
+TypeScript source ships in the tarball. Python source/tests/packaging are preserved
+as an incomplete prior implementation; see the [Python reference](docs/python-reference.md).
+This is not a commitment to maintain parallel implementations.
 
-Python source, tests and packaging remain in place as an incomplete prior
-implementation. The [Python reference](docs/python-reference.md) preserves its
-source map, existing CLI behavior and design constraints; it is not a commitment
-to finish or publish a parallel Python product.
-
-See the [developer docs](docs/index.md) and [AGENTS.md](AGENTS.md) for repository
-navigation and work guidance. Product targets and remaining acceptance belong to
-the local private [HQ target contract](/home/marc/dev/godoo-dev/godoo-hq/docs/stateman.md)
-and [delivery sequence](/home/marc/dev/godoo-dev/godoo-hq/docs/roadmap.md#immediate-stateman-delivery).
-These local paths are for maintainers, not installation prerequisites. Local
-package installability does not establish registry publication or safe
-reconciliation acceptance.
+The [developer API guide](docs/index.md) describes the local core. Maintainers can
+consult the private [HQ target](/home/marc/dev/godoo-dev/godoo-hq/docs/stateman.md) and
+[delivery roadmap](/home/marc/dev/godoo-dev/godoo-hq/docs/roadmap.md); these local links
+are not installation prerequisites. Source, offline tests, package publication,
+disposable Odoo verification and consumer acceptance are distinct evidence.

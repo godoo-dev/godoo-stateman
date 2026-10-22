@@ -18,6 +18,7 @@ export interface InspectedResource {
   removeUnmanaged?: ResourceDefinition['removeUnmanaged'];
   parentScope?: ParentScope;
   translations?: TranslationMeta;
+  options?: ResourceDefinition['options'];
 }
 export interface Inspection {
   kind: 'offline-inspection';
@@ -160,18 +161,20 @@ export function normalizeResources(resources: readonly ResourceDefinition[]): In
     ...identity(definition), model: definition.model,
     values: Object.fromEntries(Object.entries(definition.values).map(([key, value]) => [key, walk(value)])),
     ...(definition.ref ? { ref: definition.ref } : {}),
+    ...(definition.options ? { options: definition.options } : {}),
     ...(definition.removeUnmanaged ? { removeUnmanaged: definition.removeUnmanaged } : {}),
   })).sort((a, b) => a.externalId < b.externalId ? -1 : a.externalId > b.externalId ? 1 : 0);
 }
 
 export interface LoadOptions { contentRoot?: string; readFile?: FileReader; }
-/** Offline loading: content paths use the supplied contentRoot, or input directory/file's directory. */
-export async function loadResources(path: string, options: LoadOptions = {}): Promise<Inspection> {
-  const input = resolve(path);
-  const contentRoot = resolve(options.contentRoot ?? ((await stat(input)).isDirectory() ? input : dirname(input)));
-  const evaluation = await evaluate(input);
-  const resources = normalizeResources(evaluation.resources);
-  const readFile = options.readFile ?? defaultReadFile;
+/** Render in-memory definitions through the same offline pipeline as file loading. */
+export async function inspectResources(definitions: readonly ResourceDefinition[], options: LoadOptions = {}): Promise<Inspection> {
+  const resources = normalizeResources(definitions);
+  await renderResources(resources, resolve(options.contentRoot ?? '.'), options.readFile ?? defaultReadFile);
+  return { kind: 'offline-inspection', resources, policies: [], files: [], diagnostics: [] };
+}
+
+async function renderResources(resources: InspectedResource[], contentRoot: string, readFile: FileReader): Promise<void> {
   async function render(value: unknown): Promise<unknown> {
     if (isTranslatedMarker(value)) throw new Error('translated() must be a direct resource field');
     if (isContentMarker(value)) return renderMarkerValue(value, contentRoot, readFile);
@@ -184,11 +187,19 @@ export async function loadResources(path: string, options: LoadOptions = {}): Pr
     resource.values = await render(content.resolvedValues) as Record<string, unknown>;
     if (content.translations.entries.length) resource.translations = content.translations;
   }
+}
+/** Offline loading: content paths use the supplied contentRoot, or input directory/file's directory. */
+export async function loadResources(path: string, options: LoadOptions = {}): Promise<Inspection> {
+  const input = resolve(path);
+  const contentRoot = resolve(options.contentRoot ?? ((await stat(input)).isDirectory() ? input : dirname(input)));
+  const evaluation = await evaluate(input);
+  const resources = normalizeResources(evaluation.resources);
+  await renderResources(resources, contentRoot, options.readFile ?? defaultReadFile);
   return {
     kind: 'offline-inspection', resources, policies: evaluation.policies, files: evaluation.files,
     diagnostics: [
       'Offline inspection only: identities and relations are symbolic, not validated against Odoo.',
-      'Plan/apply/drift, adoption, dependency ordering, ownership/removal and snapshot operations are unavailable.',
+      'Use plan with an explicit connection for schema, identity, dependency and prerequisite validation.',
       ...(evaluation.policies.length || resources.some(r => r.removeUnmanaged) ? ['Legacy removal policies are preserved as declarations only and grant no deletion authority.'] : []),
     ],
   };

@@ -84,10 +84,10 @@ describe('deterministic nested identities', () => {
   });
 });
 
-describe('fail-closed reconciliation and library seam', () => {
-  it('never calls supplied clients from reconciliation stubs', () => {
+describe('invalid-plan boundary and library seam', () => {
+  it('rejects malformed reviewed plans before touching a client', async () => {
     const hostile = new Proxy({}, { get() { throw new Error('client touched'); } });
-    for (const fn of [plan, apply, drift]) expect(() => fn(hostile)).toThrow('unavailable');
+    await expect(apply({} as never, hostile as never)).rejects.toMatchObject({ code: 'INVALID_PLAN' });
   });
   it('constructs godoo introspection with no connection or credentials', () => {
     const client = new OdooClient({ url: 'http://127.0.0.1:1', database: 'offline', username: 'unused', password: 'unused' });

@@ -27,7 +27,8 @@ cross-project introduction or shared-resource contention, follow
 exchanges and independent authorized work continue directly.
 
 The selected delivery is standalone TypeScript Stateman for bgbl-odoo. The local
-package currently supports offline authoring and inspection on Node 24+. The Python
+package supports authoring, inspection and explicit plan/apply/drift on Node 24+.
+Fake CRUD and installed-package checks do not establish live or consumer acceptance. The Python
 source is an incomplete prior implementation retained for reference; do not treat
 its old roadmap as a mandate to continue Python delivery. Preserve its source,
 tests and packaging alongside the TypeScript foundation. See the
@@ -41,7 +42,8 @@ predecessor notices and corresponding source in NOTICE.md, LICENSE and COPYING.
 The private local package carries inherited LGPL obligations; distribution and
 publication remain owner choices.
 
-Plan/apply/drift must remain fail-closed before module evaluation or client access
-until resource scheduling, identity/adoption, ownership/removal and recovery are
-implemented and verified. Offline checks establish no live Odoo or full consumer
-acceptance. Never weaken client safety guards or read secrets without authority.
+Plan/apply/drift require an explicitly supplied connection. Retain fail-closed
+validation for unsupported policies, stale plans, unresolved resource dependencies,
+ownership/removal and recovery. Creates require durable caller-owned receipts;
+never silently discard them on retry. Offline checks establish no live Odoo or full
+consumer acceptance. Never weaken client safety guards or read secrets without authority.

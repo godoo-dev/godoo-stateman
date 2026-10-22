@@ -2,7 +2,7 @@
   "name": "@godoo-dev/stateman",
   "version": "0.1.0-foundation.0",
   "private": true,
-  "description": "Offline TypeScript authoring and inspection foundation for Odoo desired state",
+  "description": "Declarative Odoo resource planning, explicit recovery, apply and fresh drift for TypeScript",
   "type": "module",
   "license": "LGPL-3.0-only",
   "author": "Marc Fargas",
@@ -28,7 +28,9 @@
     "LICENSE",
     "COPYING",
     "NOTICE.md",
-    "README.md"
+    "README.md",
+    "docs/index.md",
+    "docs/python-reference.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
