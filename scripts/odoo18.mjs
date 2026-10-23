@@ -12,7 +12,9 @@ const major=process.argv[2] ? Number(process.argv[2]) : 18;
 assert.ok([18,19].includes(major),'Only18 or explicitly qualified19 is supported');
 const artifactDir=process.env.GODOO_ARTIFACT_DIR;
 assert.ok(artifactDir,'GODOO_ARTIFACT_DIR must identify an already tested package candidate');
-const manifest=JSON.parse(readFileSync(join(artifactDir,'manifest.json'),'utf8'));
+const manifestBytes=readFileSync(join(artifactDir,'manifest.json'));
+const candidateManifestSha256=createHash('sha256').update(manifestBytes).digest('hex');
+const manifest=JSON.parse(manifestBytes.toString('utf8'));
 const supplier=suppliers(process.env.GODOO_SUPPLIER_MANIFEST);
 assert.deepEqual(supplier?.manifest,manifest.suppliers,'Odoo qualification must use the package-tested supplier candidate');
 const artifact=manifest.artifacts.find(item=>item.package==='@godoo-dev/stateman');
@@ -20,6 +22,7 @@ assert.ok(artifact,'Missing Stateman candidate');
 if(major===19){
   assert.equal(process.env.GODOO_ENABLE_ODOO19,'1','19 requires explicit opt-in');
   const baseline=JSON.parse(readFileSync(join(artifactDir,'odoo18-result.json'),'utf8'));
+  assert.equal(baseline.candidateManifestSha256,candidateManifestSha256,'19 requires18 proof for the same complete candidate manifest and supplier inputs');
   assert.equal(baseline.passed,true);assert.equal(baseline.allOwnedResourcesAbsent,true);assert.equal(baseline.artifact.sha256,artifact.sha256,'19 requires18 proof for same artifact');assert.equal(baseline.sourceHead,manifest.sourceHead);
 }
 const image='odoo:'+major+'.0';
@@ -60,7 +63,7 @@ try {
   writeFileSync(join(consumer,'target.json'),JSON.stringify({url,database:'stateman_ci',major}));
   if(supplier)writeFileSync(join(consumer,'suppliers.json'),JSON.stringify(supplier.manifest));
   const output=exec(process.execPath,['live.mjs'],{cwd:consumer});console.log(output);
-  writeFileSync(join(artifactDir,'odoo'+major+'-result.json'),JSON.stringify({passed:true,owner,images,sourceHead:manifest.sourceHead,artifact,output,node:process.version,schedulerDisabled:true,url,cleanupPending:true},null,2)+'\n');
+  writeFileSync(join(artifactDir,'odoo'+major+'-result.json'),JSON.stringify({passed:true,candidateManifestSha256,owner,images,sourceHead:manifest.sourceHead,artifact,output,node:process.version,schedulerDisabled:true,url,cleanupPending:true},null,2)+'\n');
 } finally {
   const proof=[];
   for(const name of [...created.containers].reverse()){

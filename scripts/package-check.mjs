@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,7 @@ const hash = path => createHash('sha256').update(readFileSync(path)).digest('hex
 const run = (command, args, cwd = root) => execFileSync(command, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
 const artifactDir = process.env.GODOO_ARTIFACT_DIR ? realpathSync(process.env.GODOO_ARTIFACT_DIR) : mkdtempSync(join(tmpdir(), 'stateman-candidate-'));
 assert.ok(!isAbsolute(relative(root, artifactDir)) && relative(root, artifactDir).startsWith('..'), 'Artifact directory must be outside the checkout');
+assert.ok(!existsSync(join(artifactDir, 'manifest.json')), 'Candidate manifest already exists; use a fresh artifact directory');
 const pack = JSON.parse(run('npm', ['pack', '--json', '--pack-destination', artifactDir]))[0];
 const tarball = join(artifactDir, pack.filename);
 const sourceHead = run('git', ['rev-parse', 'HEAD']).trim();

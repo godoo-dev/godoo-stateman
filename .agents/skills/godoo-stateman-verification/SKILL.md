@@ -16,7 +16,8 @@ Run `npm ci --ignore-scripts` and `npm run check`. This checks source/tests and
 executes the maintained fake-RPC regressions before building. Simulation is not
 live Odoo. For an installed candidate, create a fresh external artifact directory,
 set `GODOO_ARTIFACT_DIR` to its absolute path and run `npm run check:package`.
-Keep the same directory for later integration.
+Keep the same directory for later integration. A candidate manifest cannot be
+overwritten: create a fresh directory for a new candidate.
 
 The package caller packs once, records SHA256/source/lock identity, then installs
 that exact tarball into an owned OS-temp consumer using runtime registry baseline
@@ -49,7 +50,8 @@ remaining owned state if cleanup reports a failure. Never remove unrelated state
 The engine rejects majors below18, even with a caller override. Later majors need
 explicit caller opt-in and instance-specific verification. The optional
 `GODOO_ENABLE_ODOO19=1 npm run check:odoo19` requires retained successful18 proof for
-this same candidate; never fabricate it. CI schedules19 only on explicit dispatch
+the SHA256 of this complete candidate manifest, including supplier identities;
+never fabricate it. Legacy results without that binding require fresh18 proof. CI schedules19 only on explicit dispatch
 and after18. An unexecuted19 lane is configured capability, not qualification.
 
 For a parent-selected local supplier trial, set `GODOO_SUPPLIER_MANIFEST` to the
