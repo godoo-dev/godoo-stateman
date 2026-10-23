@@ -25,8 +25,7 @@ without paths aliases, drives public API/CLI creation/no-op/update/drift, durabl
 journal/replay refusal, full parent/child readiness and offline content/children.
 It rejects missing-connection commands before poison-module evaluation. Require
 all commands to pass, installed file integrity and dependency-origin proof. Its
-manifest explicitly says supplier qualification is false; this does not test
-unreleased sibling APIs. Runtime source/rights notices must remain in the tarball.
+manifest says supplier qualification is false for this registry baseline. Runtime source/rights notices must remain in the tarball.
 The consumer is removed in finally; artifact bytes, lock and proof remain external.
 
 With Docker reachable, run `npm run check:odoo18` with the same artifact directory.
@@ -52,6 +51,14 @@ explicit caller opt-in and instance-specific verification. The optional
 `GODOO_ENABLE_ODOO19=1 npm run check:odoo19` requires retained successful18 proof for
 this same candidate; never fabricate it. CI schedules19 only on explicit dispatch
 and after18. An unexecuted19 lane is configured capability, not qualification.
+
+For a parent-selected local supplier trial, set `GODOO_SUPPLIER_MANIFEST` to the
+sealed TS manifest in both `check:package` and `check:odoo18` calls, with a fresh
+artifact directory. The callers verify all three hashes and every installed shipped
+file, record the selected manifest and reject mismatched package/live suppliers.
+The live supplier branch installs project through planModules/applyModules, checks
+cache invalidation and fresh model discovery, repeated-install no-op, upgrade and
+fresh resource creation/convergence. Registry baseline results remain separate.
 
 Parent-selected local supplier tarballs are a separate installed-consumer trial.
 Verify each manifest hash/version/source, install all selected packages directly

@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OdooClient } from '@godoo-dev/client';
-import { apply, createConnection, createFixture, drift, inspectResources, openRecoveryJournal, parseFixture, plan, resource, seedFixture, serializeFixture } from '@godoo-dev/stateman';
+import { apply, applyModules, createConnection, createFixture, drift, inspectResources, openRecoveryJournal, parseFixture, plan, planModules, resource, seedFixture, serializeFixture } from '@godoo-dev/stateman';
 
 const root = import.meta.dirname;
 const { url, database } = JSON.parse(readFileSync(join(root,'target.json'),'utf8'));
@@ -66,4 +66,29 @@ assert.equal(rows[0].name,'CLI partner');
 const poison=join(root,'poison.mts');writeFileSync(poison,"throw new Error('POISON_MODULE_EXECUTED');");
 const denied=spawnSync(process.execPath,[bin,'plan',poison],{encoding:'utf8'});
 assert.equal(denied.status,1);assert.match(denied.stderr,/CONNECTION_REQUIRED/);assert.doesNotMatch(denied.stderr,/POISON/);
-console.log(JSON.stringify({passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));
+let supplierModuleStage = false;
+if (existsSync(join(root,'suppliers.json'))) {
+  const { Introspector } = await import('@godoo-dev/introspection');
+  const introspector = new Introspector(client);
+  assert.equal((await introspector.getModels()).some(model => model.model === 'project.project'), false);
+  let invalidations = 0;
+  const stage = { identity: connection.identity, modules: client.modules, invalidateSchema: () => { invalidations++; introspector.clearCache(); } };
+  const preview = await planModules(stage,[{name:'project',action:'install'}]);
+  assert.equal(preview.prerequisites.modules.find(module=>module.name==='project').status,'uninstalled');
+  const installed = await applyModules(preview,stage);
+  assert.equal(installed.ok,true);assert.equal(installed.requiresReplan,true);assert.equal(invalidations,1);
+  assert.equal((await introspector.getModels()).some(model=>model.model==='project.project'),true);
+  const noop = await applyModules(await planModules(stage,[{name:'project',action:'install'}]),stage);
+  assert.equal(noop.ok,true);assert.equal(noop.requiresReplan,false);assert.equal(invalidations,1);
+  const upgraded = await applyModules(await planModules(stage,[{name:'project',action:'upgrade'}]),stage);
+  assert.equal(upgraded.ok,true);assert.equal(upgraded.requiresReplan,true);assert.equal(invalidations,2);
+  const projectJournal=await openRecoveryJournal(join(root,'project-recovery.json'));
+  try {
+    const desired=[resource('project.project','stateman_ci.project',{name:'Installed supplier project'})];
+    const fresh=await plan(desired,connection,{...versionOptions,recovery:projectJournal.receipts});
+    assert.equal((await apply(fresh,connection,{journal:projectJournal})).ok,true);
+    assert.equal((await drift(desired,connection,{...versionOptions,recovery:projectJournal.receipts})).converged,true);
+  } finally {await projectJournal.close();}
+  supplierModuleStage = true;
+}
+console.log(JSON.stringify({passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,supplierModuleStage,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));

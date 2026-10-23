@@ -217,6 +217,12 @@ Docker caller consumes those same bytes with owned Odoo18/Postgres15 resources,
 synthetic base-addon records and cron scheduling disabled. It records observed
 version/image identity and confirms all five owned resources are absent at cleanup.
 
+For an unreleased supplier trial, the `GODOO_SUPPLIER_MANIFEST` option
+selects a sealed TS candidate manifest for both package and Odoo callers. They
+verify all three tarball hashes, install them directly with both dependency
+overrides and retain their source/artifact identities separately from the registry
+baseline. This is installed qualification, not publication.
+
 The optional19 check requires explicit `GODOO_ENABLE_ODOO19=1` and retained18 proof
 for the exact same candidate. It is not part of ordinary18 qualification. The CI
 `required` aggregate fails if mandatory checks are skipped/cancelled/failed. Remote

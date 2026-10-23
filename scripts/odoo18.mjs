@@ -5,6 +5,7 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from '
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { suppliers, proveSuppliers } from './suppliers.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const major=process.argv[2] ? Number(process.argv[2]) : 18;
@@ -12,6 +13,8 @@ assert.ok([18,19].includes(major),'Only18 or explicitly qualified19 is supported
 const artifactDir=process.env.GODOO_ARTIFACT_DIR;
 assert.ok(artifactDir,'GODOO_ARTIFACT_DIR must identify an already tested package candidate');
 const manifest=JSON.parse(readFileSync(join(artifactDir,'manifest.json'),'utf8'));
+const supplier=suppliers(process.env.GODOO_SUPPLIER_MANIFEST);
+assert.deepEqual(supplier?.manifest,manifest.suppliers,'Odoo qualification must use the package-tested supplier candidate');
 const artifact=manifest.artifacts.find(item=>item.package==='@godoo-dev/stateman');
 assert.ok(artifact,'Missing Stateman candidate');
 if(major===19){
@@ -50,10 +53,12 @@ try {
   const readyDeadline=Date.now()+180_000;
   while(true){try{const response=await fetch(url+'/web/login',{signal:AbortSignal.timeout(2000)});if(response.ok)break;}catch{}if(Date.now()>readyDeadline)throw new Error('Owned Odoo readiness timed out');await new Promise(resolve=>setTimeout(resolve,500));}
   const sourcePackage=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
-  writeFileSync(join(consumer,'package.json'),JSON.stringify({private:true,type:'module',dependencies:{'@godoo-dev/stateman':'file:'+tarball,'@godoo-dev/client':sourcePackage.dependencies['@godoo-dev/client']}}));
+  writeFileSync(join(consumer,'package.json'),JSON.stringify({private:true,type:'module',dependencies:{'@godoo-dev/stateman':'file:'+tarball,'@godoo-dev/client':sourcePackage.dependencies['@godoo-dev/client'],...supplier?.dependencies},overrides:supplier?.overrides}));
   console.log(exec('npm',['install','--ignore-scripts','--no-audit','--no-fund'],{cwd:consumer}));
+  if(supplier)writeFileSync(join(artifactDir,'odoo'+major+'-installed-suppliers.json'),JSON.stringify(proveSuppliers(supplier,consumer),null,2)+'\n');
   copyFileSync(join(root,'tests/odoo18.mjs'),join(consumer,'live.mjs'));
   writeFileSync(join(consumer,'target.json'),JSON.stringify({url,database:'stateman_ci',major}));
+  if(supplier)writeFileSync(join(consumer,'suppliers.json'),JSON.stringify(supplier.manifest));
   const output=exec(process.execPath,['live.mjs'],{cwd:consumer});console.log(output);
   writeFileSync(join(artifactDir,'odoo'+major+'-result.json'),JSON.stringify({passed:true,owner,images,sourceHead:manifest.sourceHead,artifact,output,node:process.version,schedulerDisabled:true,url,cleanupPending:true},null,2)+'\n');
 } finally {

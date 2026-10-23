@@ -5,8 +5,10 @@ import { cpSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync 
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { suppliers, proveSuppliers } from './suppliers.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const supplier = suppliers(process.env.GODOO_SUPPLIER_MANIFEST);
 const hash = path => createHash('sha256').update(readFileSync(path)).digest('hex');
 const run = (command, args, cwd = root) => execFileSync(command, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
 const artifactDir = process.env.GODOO_ARTIFACT_DIR ? realpathSync(process.env.GODOO_ARTIFACT_DIR) : mkdtempSync(join(tmpdir(), 'stateman-candidate-'));
@@ -19,8 +21,9 @@ const patchSha256 = createHash('sha256').update(run('git', ['diff', 'HEAD', '--b
 const consumer = mkdtempSync(join(tmpdir(), 'stateman-installed-'));
 try {
   const versions = Object.fromEntries(['typescript','@types/node'].map(name => [name, JSON.parse(readFileSync(join(root,'node_modules',name,'package.json'),'utf8')).version]));
-  writeFileSync(join(consumer,'package.json'), JSON.stringify({ private: true, type: 'module', dependencies: { '@godoo-dev/stateman': `file:${tarball}` }, devDependencies: versions }, null, 2));
+  writeFileSync(join(consumer,'package.json'), JSON.stringify({ private: true, type: 'module', dependencies: { '@godoo-dev/stateman': `file:${tarball}`, ...supplier?.dependencies }, overrides: supplier?.overrides, devDependencies: versions }, null, 2));
   console.log(run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], consumer));
+  if(supplier)writeFileSync(join(artifactDir,'installed-suppliers.json'),JSON.stringify(proveSuppliers(supplier,consumer),null,2)+'\n');
   cpSync(join(root,'tests/fixtures/consumer'), join(consumer,'consumer'), { recursive: true });
   cpSync(join(root,'tests/installed-acceptance.mts'), join(consumer,'installed-acceptance.mts'));
   cpSync(join(root,'tests/fake-client.ts'), join(consumer,'fake-client.ts'));
@@ -35,7 +38,7 @@ try {
   console.log(run('node', ['--import','tsx','consumer/acceptance.mts'], consumer));
   writeFileSync(join(artifactDir,'installed-dependency-tree.json'),run('npm',['ls','--all','--json'],consumer));
   cpSync(join(consumer,'package-lock.json'),join(artifactDir,'installed-package-lock.json'));
-  const manifest = {schemaVersion:1,sourceHead,dirtyState,patchSha256,lockSha256:hash(join(root,'package-lock.json')),node:process.version,artifacts:[{package:pack.name,version:pack.version,filename:pack.filename,sha256:hash(tarball)}],installedProof:'API/CLI, typed consumer, runtime-only registry baseline, package rights/source',supplierQualification:false};
+  const manifest = {schemaVersion:1,sourceHead,dirtyState,patchSha256,lockSha256:hash(join(root,'package-lock.json')),node:process.version,artifacts:[{package:pack.name,version:pack.version,filename:pack.filename,sha256:hash(tarball)}],installedProof:'API/CLI, typed consumer, package rights/source',supplierQualification:!!supplier,suppliers:supplier?.manifest};
   writeFileSync(join(artifactDir,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   console.log(JSON.stringify({passed:true,artifactDir,manifest}));
 } finally { rmSync(consumer,{recursive:true,force:true}); }
