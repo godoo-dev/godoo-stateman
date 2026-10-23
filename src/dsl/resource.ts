@@ -10,7 +10,7 @@ import type { LookupRef, RemoveUnmanagedMap, ResourceDefinition, ResourceOptions
  * resource('res.partner', { _ref: lookup(...), name: 'Acme' })
  *
  * // With external ID
- * resource('project.project', 'bgbl.fiscal_project', { name: 'Fiscal FY' })
+ * resource('project.project', 'example.fiscal_project', { name: 'Fiscal FY' })
  */
 export function resource(model: string, definition: Record<string, unknown>): ResourceDefinition;
 export function resource(

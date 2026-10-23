@@ -2,9 +2,11 @@
 
 The local TypeScript core on Node 24+ provides offline loading plus read-only
 planning, explicit apply and fresh drift. See the [README](../README.md) for install
-and CLI commands. Sanitized disposable Odoo 17 and installed-package checks establish the tested
-supplier workflows; they do not establish complete consumer business acceptance. The supported default major is Odoo 17;
-`odooMajorVersions` is an explicit caller opt-in for other, unverified schemas.
+and CLI commands. Odoo 18 is the default and required acceptance baseline. Majors
+below18 are unsupported even with `odooMajorVersions`; later majors require explicit
+caller opt-in and instance-specific verification after18. The native checks separate
+offline simulation, isolated installed packages and owned disposable integration.
+They do not certify application business workflows or deployed instances.
 
 ## Entry points
 

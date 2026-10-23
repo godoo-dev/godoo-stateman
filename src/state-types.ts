@@ -41,7 +41,7 @@ export interface PlanOptions extends LoadOptions {
   /** Subsets include their managed dependency closure; missing definitions are errors. */
   select?: string[];
   requiredAddons?: string[];
-  /** Explicit supported Odoo major versions; default [17]. Others require caller opt-in. */
+  /** Explicit supported Odoo major versions; default [18]. Majors below18 are unsupported; later majors require explicit opt-in and verification. */
   odooMajorVersions?: number[];
   context?: Row;
   owned?: OwnedRecord[];

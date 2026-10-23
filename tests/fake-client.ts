@@ -24,7 +24,7 @@ export class FakeClient implements StateClient {
   failure?: (method: string, model: string, values?: Row) => unknown;
   schemaError?: Error;
   uid = 7;
-  version = '17.0';
+  version = '18.0';
   connection(): StateConnection {
     return { client: this, identity: async () => ({ url: 'http://fake.test/', database: 'fixture', uid: this.uid }),
       serverInfo: async () => ({ version: this.version }),

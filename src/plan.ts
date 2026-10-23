@@ -59,7 +59,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   const server = await connection.serverInfo();
   if (!server || typeof server.version !== 'string') fail('VERSION_UNKNOWN', 'Read-only server adapter did not provide an Odoo version');
   const major = Number(server.version.match(/^(\d+)/)?.[1]);
-  if (!(stored.odooMajorVersions ?? [17]).includes(major)) fail('VERSION_UNSUPPORTED', `Odoo ${server.version} is outside the explicit supported major versions`);
+  if (major < 18 || !(stored.odooMajorVersions ?? [18]).includes(major)) fail('VERSION_UNSUPPORTED', `Odoo ${server.version} is outside the explicit supported major versions`);
   observations.push({ kind: 'server', key: 'version', value: copy(server) });
   const addons = [...new Set(stored.requiredAddons ?? [])].sort();
   if (addons.length) {

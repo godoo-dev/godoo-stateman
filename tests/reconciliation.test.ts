@@ -85,9 +85,12 @@ describe('concrete resource planning and convergence', () => {
     await expect(plan([resource('x', 'fixture.x', {})], client.connection())).rejects.toMatchObject({ code: 'METADATA_INACCESSIBLE', cause: denied });
     const network = new OdooNetworkError('disconnected', new Error('offline')); client.schemaError = network;
     await expect(plan([resource('x', 'fixture.x', {})], client.connection())).rejects.toBe(network);
-    client.schemaError = undefined; client.version = '18.0';
+    client.schemaError = undefined; client.version = '19.0';
     await expect(plan([], client.connection())).rejects.toMatchObject({ code: 'VERSION_UNSUPPORTED' });
+    await expect(plan([], client.connection(), { odooMajorVersions: [19] })).resolves.toMatchObject({ operations: [] });
     client.version = '17.0';
+    await expect(plan([], client.connection(), { odooMajorVersions: [17] })).rejects.toMatchObject({ code: 'VERSION_UNSUPPORTED' });
+    client.version = '18.0';
     const connection = client.connection(); delete connection.inspectAddons;
     await expect(plan([], connection, { requiredAddons: ['project'] })).rejects.toMatchObject({ code: 'ADDON_INSPECTION_UNAVAILABLE' });
     connection.inspectAddons = async () => ({ closureComplete: false, modules: [{ name: 'project', status: 'inaccessible', dependencies: null }], diagnostics: [{ code: 'access-denied', message: 'permission unknown' }] });

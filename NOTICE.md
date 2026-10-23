@@ -35,7 +35,7 @@ foundation integration work. No predecessor apply, resolve, plan, clone/export o
 model-only scheduling engine is shipped. Existing Python source is untouched.
 
 The minimal synthetic corpus under `tests/fixtures/consumer` was authored for this
-foundation, informed only by composition patterns observed read-only in bgbl-odoo
+foundation, informed only by composition patterns observed read-only in an external application
 at `85dcedbce566d2ca24e84a20108cf551b81e0695`: project children, cron/action nesting,
 KB arrays/relations, Markdown and prelude concatenation. No private articles,
 pipeline bodies, customer data or secrets were copied. These fixtures are not

@@ -26,7 +26,7 @@ cross-project introduction or shared-resource contention, follow
 `/home/marc/dev/marc-hq/fleet/AGENTS.md` through coordinate-projects. Established
 exchanges and independent authorized work continue directly.
 
-The selected delivery is standalone TypeScript Stateman for bgbl-odoo. The local
+The selected delivery is standalone TypeScript Stateman for application consumers. The local
 package supports authoring, inspection and explicit plan/apply/drift on Node 24+.
 Fake CRUD and installed-package checks do not establish live or consumer acceptance. The Python
 source is an incomplete prior implementation retained for reference; do not treat
@@ -47,3 +47,10 @@ validation for unsupported policies, stale plans, unresolved resource dependenci
 ownership/removal and recovery. Creates require durable caller-owned receipts;
 never silently discard them on retry. Offline checks establish no live Odoo or full
 consumer acceptance. Never weaken client safety guards or read secrets without authority.
+
+Use the routed [Stateman verifier](.agents/skills/godoo-stateman-verification/SKILL.md)
+for current API/CLI delivery. The native `check`, `check:package` and `check:odoo18`
+callers distinguish simulation, isolated installed packages and owned disposable
+integration. Odoo18 is the baseline;17 is unsupported. Do not claim application
+business acceptance from these checks. No Python/npm publication or docs deploy
+is configured for this private TypeScript delivery.

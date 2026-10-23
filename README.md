@@ -2,13 +2,13 @@
 
 Compose desired Odoo configuration in TypeScript, review a deterministic plan,
 apply it with explicit recovery storage, and check fresh drift. The private local
-package `@godoo-dev/stateman` targets Node 24+ and Odoo 17. The local version still
+package `@godoo-dev/stateman` targets Node 24+ and Odoo 18. The local version still
 uses the foundation prerelease name; this work does not publish a release.
 
-The API and CLI are verified with offline tests, fresh tarball installation and
-sanitized disposable Odoo 17. Actual bgbl-odoo resources also load/typecheck
-offline; no consumer payload or credentials were used in live tests. Consumer
-migration, custom-addon behavior, business tests and staging remain with its owner.
+The current acceptance target is installed API/CLI behavior against sanitized
+disposable Odoo 18. Native checks below distinguish offline simulation, installed
+artifacts and disposable integration. Application migration, custom addons, business
+workflows and deployed-instance acceptance remain with each application owner.
 
 ## Install and develop
 
@@ -27,7 +27,7 @@ npm install /absolute/path/to/artifacts/godoo-dev-stateman-0.1.0-foundation.0.tg
 ```
 
 Released runtime dependencies are `@godoo-dev/client` 0.6.1 and
-`@godoo-dev/introspection` 0.2.2. Testcontainers is development-only. The generic
+`@godoo-dev/introspection` 0.2.2. Testcontainers is an optional application test supplier and is not a Stateman dependency. The generic
 addon-inspection seam exists in newer local godoo-ts source, not those published
 versions: supply its structural adapter from an explicitly installed local artifact
 when requesting addon checks. No sibling-relative source import is required.
@@ -206,3 +206,21 @@ consult the private [HQ target](/home/marc/dev/godoo-dev/godoo-hq/docs/stateman.
 [delivery roadmap](/home/marc/dev/godoo-dev/godoo-hq/docs/roadmap.md); these local links
 are not installation prerequisites. Source, offline tests, package publication,
 disposable Odoo verification and consumer acceptance are distinct evidence.
+
+## Required checks
+
+`npm run check` checks all TypeScript source/tests, runs maintained regressions and
+builds. Create a fresh external directory, set `GODOO_ARTIFACT_DIR` to it, then run
+`npm run check:package` followed by `npm run check:odoo18`. The package caller
+retains the exact tarball/manifest and verifies it in an isolated consumer; the
+Docker caller consumes those same bytes with owned Odoo18/Postgres15 resources,
+synthetic base-addon records and cron scheduling disabled. It records observed
+version/image identity and confirms all five owned resources are absent at cleanup.
+
+The optional19 check requires explicit `GODOO_ENABLE_ODOO19=1` and retained18 proof
+for the exact same candidate. It is not part of ordinary18 qualification. The CI
+`required` aggregate fails if mandatory checks are skipped/cancelled/failed. Remote
+protection and hosted execution remain separate evidence. Python publication and
+docs deployment workflows are retired; npm remains private. See the
+[concrete verifier](.agents/skills/godoo-stateman-verification/SKILL.md) for proof,
+isolation, installed supplier qualification and coverage limits.

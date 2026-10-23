@@ -9,7 +9,7 @@ import type { ResourceDefinition } from './types.js';
  * automatically prefixed with the parent's externalId during offline normalization.
  *
  * @example
- * resource('project.project', 'bgbl.fiscal', {
+ * resource('project.project', 'example.fiscal', {
  *   type_ids: children('project.task.type', [
  *     resource('project.task.type', 'nuevo', { name: 'Nuevo' }),
  *     resource('project.task.type', 'done', { name: 'Done' }),

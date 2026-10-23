@@ -11,22 +11,22 @@ describe('representative offline consumer', () => {
     expect(inspection.resources).toHaveLength(10);
     expect(new Set(inspection.resources.map(r => r.externalId)).size).toBe(10);
     const byId = Object.fromEntries(inspection.resources.map(r => [r.externalId, r]));
-    expect(byId['bgbl.example_project'].values.type_ids).toEqual([
-      { __type: 'resourceRef', externalId: 'bgbl.example_project.ready' },
-      { __type: 'resourceRef', externalId: 'bgbl.example_project.done' },
+    expect(byId['example.example_project'].values.type_ids).toEqual([
+      { __type: 'resourceRef', externalId: 'example.example_project.ready' },
+      { __type: 'resourceRef', externalId: 'example.example_project.done' },
     ]);
-    expect(byId['bgbl.example_project.ready'].parentScope).toEqual({ parentExternalId: 'bgbl.example_project', inverseField: 'project_ids' });
-    expect(byId['bgbl.example_cron'].values.ir_actions_server_id).toEqual({ __type: 'resourceRef', externalId: 'bgbl.example_cron.action' });
-    expect(byId['bgbl.example_cron'].values.active).toBe(false);
-    const code = String(byId['bgbl.example_cron.action'].values.code);
+    expect(byId['example.example_project.ready'].parentScope).toEqual({ parentExternalId: 'example.example_project', inverseField: 'project_ids' });
+    expect(byId['example.example_cron'].values.ir_actions_server_id).toEqual({ __type: 'resourceRef', externalId: 'example.example_cron.action' });
+    expect(byId['example.example_cron'].values.active).toBe(false);
+    const code = String(byId['example.example_cron.action'].values.code);
     expect(code).toContain('FIXTURE_LABEL = "example"\n\n# Sanitized fixture body');
     expect(code).toContain('message = FIXTURE_LABEL');
-    expect(byId['bgbl.example_guide_es'].values.content).toBe('<h1>Example guide</h1>\n<p>Use <strong>reviewed configuration</strong>.</p>');
-    expect(byId['bgbl.example_guide_es'].values.tag_ids).toEqual([
+    expect(byId['example.example_guide_es'].values.content).toBe('<h1>Example guide</h1>\n<p>Use <strong>reviewed configuration</strong>.</p>');
+    expect(byId['example.example_guide_es'].values.tag_ids).toEqual([
       lookup('document.page.tag', { name: 'es' }),
-      { __type: 'resourceRef', externalId: 'bgbl.example_tag_es' },
+      { __type: 'resourceRef', externalId: 'example.example_tag_es' },
     ]);
-    expect(byId['bgbl.example_guide_en'].values.parent_id).toEqual({ __type: 'resourceRef', externalId: 'bgbl.example_category' });
+    expect(byId['example.example_guide_en'].values.parent_id).toEqual({ __type: 'resourceRef', externalId: 'example.example_category' });
     expect(await loadResources(fixture)).toEqual(inspection);
   });
   it('renders nested content markers', async () => {

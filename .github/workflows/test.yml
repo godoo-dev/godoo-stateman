@@ -1,25 +1,87 @@
-name: Test
+name: CI
 on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      odoo19:
+        type: boolean
+        default: false
+        description: 'Qualify19 only after this exact candidate passes18'
 permissions:
   contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  offline-foundation:
+  offline:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
-      - run: npm pack --pack-destination "$RUNNER_TEMP"
+      - run: npm run check
+  package:
+    needs: offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: mkdir -p "$RUNNER_TEMP/stateman-candidate"
+      - run: npm run check:package
+        env:
+          GODOO_ARTIFACT_DIR: ${{ runner.temp }}/stateman-candidate
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: stateman-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/stateman-candidate
+          if-no-files-found: error
+  odoo18:
+    needs: package
+    uses: ./.github/workflows/odoo.yml
+    with:
+      major: '18'
+  odoo19:
+    needs: [package, odoo18]
+    if: github.event_name == 'workflow_dispatch' && inputs.odoo19 == true && needs.odoo18.result == 'success'
+    uses: ./.github/workflows/odoo.yml
+    with:
+      major: '19'
+  required:
+    name: required
+    if: always()
+    needs: [offline, package, odoo18, odoo19]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every mandatory result and requested compatibility lane
+        env:
+          OFFLINE: ${{ needs.offline.result }}
+          PACKAGE: ${{ needs.package.result }}
+          ODOO18: ${{ needs.odoo18.result }}
+          ODOO19: ${{ needs.odoo19.result }}
+          REQUESTED19: ${{ github.event_name == 'workflow_dispatch' && inputs.odoo19 == true }}
+        run: |
+          test "$OFFLINE" = success
+          test "$PACKAGE" = success
+          test "$ODOO18" = success
+          if [ "$REQUESTED19" = true ]; then
+            test "$ODOO19" = success
+          else
+            test "$ODOO19" = skipped
+          fi

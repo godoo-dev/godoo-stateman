@@ -37,6 +37,7 @@ error. No whole-stage rollback, automatic removal or concurrent-writer lock is
 promised. Recover the actual addon state and produce fresh previews/plans after
 failure; do not reuse a previous resource plan.
 
-Installed-package checks on disposable Odoo 17 exercised dependency installation,
-schema invalidation and a fresh required-addon/field resource plan. Other versions,
-Tecnativa-managed addons and consumer staging remain unverified.
+The module-stage seam requires the newer local client lifecycle API. Its selected
+immutable supplier qualification is separate from the required resource18 lane.
+Resource reconciliation checks do not establish addon-stage, managed-addon or
+application staging acceptance.

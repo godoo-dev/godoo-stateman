@@ -63,9 +63,10 @@ files; do not embed TS evaluation in Python or treat the retained Python referen
 as a second supported engine. Use `stateman load state.fixture.json --fixture` to validate offline, then
 `stateman plan state.fixture.json --fixture --connection ./connection.ts --journal ./journal.json --out ./plan.json`.
 Apply the reviewed plan normally; `--fixture` is not accepted for apply. Check
-every subprocess exit status and retain the journal. The installed package was exercised against sanitized disposable Odoo 17,
-including fixture round-trip, repeat seeding and the checked Python CLI lifecycle.
-This does not establish consumer business or staging acceptance.
+every subprocess exit status and retain the journal. The required disposable18
+check exercises installed fixture round-trip, explicit seeding and repeat no-op
+through the same recovery engine. The Python subprocess example is a caller
+pattern; it does not establish business or staging acceptance.
 
 
 Python uses the installed executable and JSON files, with Node 24 available:

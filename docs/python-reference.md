@@ -74,6 +74,7 @@ uv run mypy src
 
 Integration is explicit: `uv run pytest -m integration` starts Docker/Odoo, and the
 prior Python CI matrix selected Odoo 17.0/18.0/19.0. Active CI now checks the
-TypeScript offline foundation. Neither the old matrix nor historical Python check
+TypeScript source, installed package and disposable Odoo18 delivery. Python
+publication and automatic documentation deployment are retired. Neither the old matrix nor historical Python check
 output establishes current TS compatibility. Do not run live/business
 instances to verify a documentation edit.
