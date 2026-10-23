@@ -43,7 +43,7 @@ try {
   assert.equal((await drift(definitions('Updated CI partner'),connection,{...versionOptions,recovery:journal.receipts})).converged,true);
 } finally { await journal.close(); }
 const fixture=createFixture(await inspectResources([resource('res.partner','stateman_ci.fixture',{name:'Portable fixture'})]),{namespaces:['stateman_ci']});
-assert.deepEqual(parseFixture(serializeFixture(fixture)),fixture);
+assert.deepEqual(createFixture(parseFixture(serializeFixture(fixture)),{namespaces:['stateman_ci']}),fixture);
 const seedJournal=await openRecoveryJournal(join(root,'seed-recovery.json'));
 try {
   const seeded=await seedFixture(fixture,connection,{journal:seedJournal,plan:{...versionOptions,recovery:seedJournal.receipts}});assert.equal(seeded.ok,true);assert.ok(seeded.bindings['stateman_ci.fixture']>0);
