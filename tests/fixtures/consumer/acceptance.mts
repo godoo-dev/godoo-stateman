@@ -42,8 +42,8 @@ assert.equal(spawnSync(process.execPath, [bin, 'inspect', resolve(root, 'missing
 assert.equal(existsSync(resolve(root, 'node_modules/@godoo-dev/testcontainers')), false);
 assert.equal(existsSync(resolve(packageRoot, 'src/inspect.ts')), true);
 const manifest = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf8')) as { dependencies: Record<string, string> };
-assert.equal(manifest.dependencies['@godoo-dev/client'], '0.6.1');
-assert.equal(manifest.dependencies['@godoo-dev/introspection'], '0.2.2');
+assert.equal(manifest.dependencies['@godoo-dev/client'], '^0.6.1 || ^0.7.0');
+assert.equal(manifest.dependencies['@godoo-dev/introspection'], '^0.2.2');
 assert.equal(manifest.dependencies['@godoo-dev/testcontainers'], undefined);
 for (const [variant, childId] of [['local', 'ready'], ['qualified', 'fixture.ready']]) {
   const expectedId = childId.includes('.') ? childId : 'fixture.project.ready';
