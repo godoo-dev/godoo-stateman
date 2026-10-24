@@ -38,8 +38,10 @@ try {
   console.log(run('node', ['--import','tsx','installed-acceptance.mts'], consumer));
   console.log(run('node', ['--import','tsx','consumer/acceptance.mts'], consumer));
   writeFileSync(join(artifactDir,'installed-dependency-tree.json'),run('npm',['ls','--all','--json'],consumer));
+  cpSync(join(consumer,'package.json'),join(artifactDir,'installed-package.json'));
   cpSync(join(consumer,'package-lock.json'),join(artifactDir,'installed-package-lock.json'));
-  const manifest = {schemaVersion:1,sourceHead,dirtyState,patchSha256,lockSha256:hash(join(root,'package-lock.json')),node:process.version,artifacts:[{package:pack.name,version:pack.version,filename:pack.filename,sha256:hash(tarball)}],installedProof:'API/CLI, typed consumer, package rights/source',supplierQualification:!!supplier,suppliers:supplier?.manifest};
+  const proofHashes = Object.fromEntries(['installed-files.json','installed-package.json','installed-package-lock.json'].map(name => [name,hash(join(artifactDir,name))]));
+  const manifest = {schemaVersion:1,workflow:process.env.GITHUB_ACTIONS==='true'?{runId:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT}:undefined,proofHashes,sourceHead,dirtyState,patchSha256,lockSha256:hash(join(root,'package-lock.json')),node:process.version,artifacts:[{package:pack.name,version:pack.version,filename:pack.filename,sha256:hash(tarball)}],installedProof:'API/CLI, typed consumer, package rights/source',supplierQualification:!!supplier,suppliers:supplier?.manifest};
   writeFileSync(join(artifactDir,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   console.log(JSON.stringify({passed:true,artifactDir,manifest}));
 } finally { rmSync(consumer,{recursive:true,force:true}); }

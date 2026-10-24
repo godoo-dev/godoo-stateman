@@ -39,8 +39,8 @@ For the TypeScript foundation, use `npm ci --ignore-scripts`, `npm run typecheck
 (including tests), `npm test`, `npm run build` and `npm pack`. Verify the public
 API/CLI in an isolated tarball consumer without sibling imports. Preserve the
 predecessor notices and corresponding source in NOTICE.md, LICENSE and COPYING.
-The private local package carries inherited LGPL obligations; distribution and
-publication remain owner choices.
+The owner selected public @godoo-dev/stateman npm distribution. Preserve inherited
+LGPL obligations and corresponding source; preparation does not establish publication.
 
 Plan/apply/drift require an explicitly supplied connection. Retain fail-closed
 validation for unsupported policies, stale plans, unresolved resource dependencies,
@@ -52,5 +52,5 @@ Use the routed [Stateman verifier](.agents/skills/godoo-stateman-verification/SK
 for current API/CLI delivery. The native `check`, `check:package` and `check:odoo18`
 callers distinguish simulation, isolated installed packages and owned disposable
 integration. Odoo18 is the baseline;17 is unsupported. Do not claim application
-business acceptance from these checks. No Python/npm publication or docs deploy
-is configured for this private TypeScript delivery.
+business acceptance from these checks. Python publication and docs deployment remain retired. The manual npm Release
+workflow uses develop and the same verified archive; see docs/releasing.md.

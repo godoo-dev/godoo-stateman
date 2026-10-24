@@ -1,0 +1,84 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish the same verified archive (requires native npm setup)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  eligibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node scripts/release.mjs guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+  validation:
+    needs: eligibility
+    uses: ./.github/workflows/test.yml
+  preflight:
+    needs: [eligibility, validation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: stateman-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/stateman-candidate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: stateman-odoo18-${{ github.sha }}
+          path: ${{ runner.temp }}/stateman-candidate
+      - run: node scripts/release.mjs verify
+        env:
+          GODOO_ARTIFACT_DIR: ${{ runner.temp }}/stateman-candidate
+  publish:
+    if: inputs.publish == true
+    needs: [eligibility, validation, preflight]
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: stateman-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/stateman-candidate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: stateman-odoo18-${{ github.sha }}
+          path: ${{ runner.temp }}/stateman-candidate
+      - name: Require npm trusted-publisher support
+        run: node -e "const v=require('node:child_process').execFileSync('npm',['--version'],{encoding:'utf8'}).trim().split('.').map(Number);if(v[0]<11||(v[0]===11&&v[1]<5))process.exit(1)"
+      - run: node scripts/release.mjs publish
+        env:
+          GODOO_ARTIFACT_DIR: ${{ runner.temp }}/stateman-candidate
+          GODOO_PUBLISH: 'true'
+          GH_TOKEN: ${{ github.token }}

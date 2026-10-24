@@ -31,7 +31,8 @@ The consumer is removed in finally; artifact bytes, lock and proof remain extern
 
 With Docker reachable, run `npm run check:odoo18` with the same artifact directory.
 Missing Docker/artifact/ref/version/hash is failure, never a skipped required test.
-The harness pulls Odoo18/Postgres15 images, creates uniquely labelled containers,
+The harness reuses the package acceptance consumer lock with npm ci, relocating
+only the verified Stateman file archive path. It pulls Odoo18/Postgres15 images, creates uniquely labelled containers,
 network and two volumes, binds only random loopback HTTP and disables cron workers.
 It initializes only synthetic base-addon data. Readiness requires HTTP login and
 an authenticated observed-major read, not just a listening port.
@@ -72,8 +73,13 @@ claim registry publication. Preserve the baseline and candidate rounds separatel
 
 CI test.yml requires offline, installed package and disposable18, plus requested19.
 Its stable required aggregate rejects mandatory missing/skipped/cancelled/failed
-results. Controlled local checks do not establish remote branch protection. npm
-stays private, and retired Python publication/docs deployment do not run.
+results. Controlled local checks do not establish remote branch protection. Public npm release preparation is routed through docs/releasing.md and the manual
+Release workflow on develop. It reuses the complete CI candidate, validates frozen
+consumer locks/observed18/cleanup and never rebuilds for promotion. Run
+`GODOO_ARTIFACT_DIR=... npm run release:check` after qualification; offline checks
+include refusal/recovery controls. Registry publication, trusted-publisher setup and
+GitHub environment enforcement require separate evidence. Retired Python
+publication/docs deployment do not run.
 
 For changes to check callers, exercise a real invalid type/test fixture in an
 isolated copy and invalid command mode; verify nonzero propagation. For candidate

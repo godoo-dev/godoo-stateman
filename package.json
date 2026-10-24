@@ -1,7 +1,6 @@
 {
   "name": "@godoo-dev/stateman",
-  "version": "0.1.0-foundation.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "Declarative Odoo resource planning, explicit recovery, apply and fresh drift for TypeScript",
   "type": "module",
   "license": "LGPL-3.0-only",
@@ -39,11 +38,12 @@
     "check": "node scripts/check.mjs offline",
     "check:package": "node scripts/check.mjs package",
     "check:odoo18": "node scripts/check.mjs odoo18",
-    "check:odoo19": "node scripts/odoo18.mjs 19"
+    "check:odoo19": "node scripts/odoo18.mjs 19",
+    "release:check": "node scripts/release.mjs verify"
   },
   "dependencies": {
-    "@godoo-dev/client": "0.6.1",
-    "@godoo-dev/introspection": "0.2.2",
+    "@godoo-dev/client": "^0.6.1 || ^0.7.0",
+    "@godoo-dev/introspection": "^0.2.2",
     "debug": "^4.4.3",
     "juice": "^11.1.1",
     "marked": "^17.0.5",
@@ -54,5 +54,17 @@
     "@types/node": "^24.0.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/godoo-dev/godoo-stateman.git"
+  },
+  "homepage": "https://github.com/godoo-dev/godoo-stateman#readme",
+  "bugs": {
+    "url": "https://github.com/godoo-dev/godoo-stateman/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }

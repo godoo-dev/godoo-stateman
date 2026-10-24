@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { suppliers, proveSuppliers } from './suppliers.mjs';
+import { frozenConsumer } from './consumer.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const major=process.argv[2] ? Number(process.argv[2]) : 18;
@@ -25,6 +26,7 @@ if(major===19){
   assert.equal(baseline.candidateManifestSha256,candidateManifestSha256,'19 requires18 proof for the same complete candidate manifest and supplier inputs');
   assert.equal(baseline.passed,true);assert.equal(baseline.allOwnedResourcesAbsent,true);assert.equal(baseline.artifact.sha256,artifact.sha256,'19 requires18 proof for same artifact');assert.equal(baseline.sourceHead,manifest.sourceHead);
 }
+const consumerInput=frozenConsumer(artifactDir); // Validate before provisioning.
 const image='odoo:'+major+'.0';
 const tarball=resolve(artifactDir,artifact.filename);
 assert.equal(createHash('sha256').update(readFileSync(tarball)).digest('hex'),artifact.sha256,'Candidate hash mismatch');
@@ -55,15 +57,15 @@ try {
   assert.equal(ports[0].HostIp,'127.0.0.1');const url='http://127.0.0.1:'+ports[0].HostPort;
   const readyDeadline=Date.now()+180_000;
   while(true){try{const response=await fetch(url+'/web/login',{signal:AbortSignal.timeout(2000)});if(response.ok)break;}catch{}if(Date.now()>readyDeadline)throw new Error('Owned Odoo readiness timed out');await new Promise(resolve=>setTimeout(resolve,500));}
-  const sourcePackage=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
-  writeFileSync(join(consumer,'package.json'),JSON.stringify({private:true,type:'module',dependencies:{'@godoo-dev/stateman':'file:'+tarball,'@godoo-dev/client':sourcePackage.dependencies['@godoo-dev/client'],...supplier?.dependencies},overrides:supplier?.overrides}));
-  console.log(exec('npm',['install','--ignore-scripts','--no-audit','--no-fund'],{cwd:consumer}));
+  writeFileSync(join(consumer,'package.json'),JSON.stringify(consumerInput.package));
+  writeFileSync(join(consumer,'package-lock.json'),JSON.stringify(consumerInput.lock));
+  console.log(exec('npm',['ci','--ignore-scripts','--no-audit','--no-fund'],{cwd:consumer}));
   if(supplier)writeFileSync(join(artifactDir,'odoo'+major+'-installed-suppliers.json'),JSON.stringify(proveSuppliers(supplier,consumer),null,2)+'\n');
   copyFileSync(join(root,'tests/odoo18.mjs'),join(consumer,'live.mjs'));
   writeFileSync(join(consumer,'target.json'),JSON.stringify({url,database:'stateman_ci',major}));
   if(supplier)writeFileSync(join(consumer,'suppliers.json'),JSON.stringify(supplier.manifest));
   const output=exec(process.execPath,['live.mjs'],{cwd:consumer});console.log(output);
-  writeFileSync(join(artifactDir,'odoo'+major+'-result.json'),JSON.stringify({passed:true,candidateManifestSha256,owner,images,sourceHead:manifest.sourceHead,artifact,output,node:process.version,schedulerDisabled:true,url,cleanupPending:true},null,2)+'\n');
+  writeFileSync(join(artifactDir,'odoo'+major+'-result.json'),JSON.stringify({passed:true,workflow:process.env.GITHUB_ACTIONS==='true'?{runId:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT}:undefined,candidateManifestSha256,consumerLockTemplateSha256:manifest.proofHashes['installed-package-lock.json'],owner,images,sourceHead:manifest.sourceHead,artifact,output,node:process.version,schedulerDisabled:true,url,cleanupPending:true},null,2)+'\n');
 } finally {
   const proof=[];
   for(const name of [...created.containers].reverse()){

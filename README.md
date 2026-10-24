@@ -1,9 +1,9 @@
 # godoo-stateman
 
 Compose desired Odoo configuration in TypeScript, review a deterministic plan,
-apply it with explicit recovery storage, and check fresh drift. The private local
-package `@godoo-dev/stateman` targets Node 24+ and Odoo 18. The local version still
-uses the foundation prerelease name; this work does not publish a release.
+apply it with explicit recovery storage, and check fresh drift. The package
+`@godoo-dev/stateman` targets Node 24+ and Odoo 18. Version 0.1.0 is prepared for
+public npm distribution; registry availability requires completed publication.
 
 The current acceptance target is installed API/CLI behavior against sanitized
 disposable Odoo 18. Native checks below distinguish offline simulation, installed
@@ -23,20 +23,22 @@ npm pack --pack-destination /absolute/path/to/artifacts
 Install that tarball in a separate Node 24 ESM project:
 
 ```sh
-npm install /absolute/path/to/artifacts/godoo-dev-stateman-0.1.0-foundation.0.tgz
+npm install /absolute/path/to/artifacts/godoo-dev-stateman-0.1.0.tgz
 ```
 
-Released runtime dependencies are `@godoo-dev/client` 0.6.1 and
-`@godoo-dev/introspection` 0.2.2. Testcontainers is an optional application test supplier and is not a Stateman dependency. The generic
-addon-inspection seam exists in newer local godoo-ts source, not those published
-versions: supply its structural adapter from an explicitly installed local artifact
-when requesting addon checks. No sibling-relative source import is required.
-The package remains private; distribution and licensing choices stay with the owner.
+The lock uses published client 0.6.1 and introspection 0.2.2. Compatibility ranges
+also accept client 0.7.x and introspection 0.2.x; selected unreleased suppliers need
+the separate installed-candidate proof below. Testcontainers is an optional
+application test supplier, not a Stateman dependency. The addon-inspection seam
+requires a structural adapter from the selected supplier; the published baseline
+does not provide the newer lifecycle seam. No sibling source import is required.
+Public npm distribution retains LGPL-3.0-only, source attribution and corresponding
+TypeScript source in the archive. See [release preparation](docs/releasing.md).
 
 For the complete local delivery, install the supplied client, introspection,
 Stateman and testcontainers tarballs as direct `file:` dependencies. Retain the
-provided package lock and verify `npm ls --all`. Until a release reconciles source
-versions, prevent Stateman's registry pins from introducing nested older clients:
+provided package lock and verify `npm ls --all`. For candidate qualification, prevent registry ranges from introducing nested
+older clients:
 
 ```json
 {
@@ -47,8 +49,8 @@ versions, prevent Stateman's registry pins from introducing nested older clients
 }
 ```
 
-Use the delivery's exact artifact manifest and fresh-install recipe. Local staged
-prerelease versions identify source commits; they do not claim registry publication.
+Use the delivery's exact artifact manifest and fresh-install recipe. Candidate versions and hashes identify tested bytes; they do not claim registry
+publication.
 
 ## Author and inspect offline
 
@@ -227,6 +229,7 @@ The optional19 check requires explicit `GODOO_ENABLE_ODOO19=1` and retained18 pr
 for the exact same candidate. It is not part of ordinary18 qualification. The CI
 `required` aggregate fails if mandatory checks are skipped/cancelled/failed. Remote
 protection and hosted execution remain separate evidence. Python publication and
-docs deployment workflows are retired; npm remains private. See the
+docs deployment workflows are retired. npm publication is an explicit manual
+operation; see [release preparation](docs/releasing.md) and the
 [concrete verifier](.agents/skills/godoo-stateman-verification/SKILL.md) for proof,
 isolation, installed supplier qualification and coverage limits.

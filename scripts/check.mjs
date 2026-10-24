@@ -8,7 +8,7 @@ if (!['offline', 'package', 'odoo18'].includes(mode) || process.argv.length !== 
   process.exit(2);
 }
 const commands = mode === 'offline'
-  ? [['npm', ['run', 'typecheck']], ['npm', ['test']], ['npm', ['run', 'build']]]
+  ? [[process.execPath, ['--test', 'scripts/release.test.mjs']], ['npm', ['run', 'typecheck']], ['npm', ['test']], ['npm', ['run', 'build']]]
   : [[process.execPath, [mode === 'package' ? 'scripts/package-check.mjs' : 'scripts/odoo18.mjs']]];
 for (const [command, args] of commands) {
   const result = spawnSync(command, args, { cwd: root, stdio: 'inherit' });

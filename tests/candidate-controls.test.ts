@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -11,8 +11,12 @@ const root = process.cwd();
 describe('native candidate admission', () => {
   function fixture(run: (area: string, manifest: Record<string, unknown>, env: NodeJS.ProcessEnv) => void) {
     const area = mkdtempSync(join(tmpdir(), 'stateman-candidate-control-'));
-    const artifact = { package: '@godoo-dev/stateman', version: '0.1.0-foundation.0', filename: 'candidate.tgz', sha256: digest('candidate') };
-    const manifest = { sourceHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), artifacts: [artifact], supplierQualification: false };
+    const artifact = { package: '@godoo-dev/stateman', version: JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version, filename: 'candidate.tgz', sha256: digest('candidate') };
+    const consumerPackage = JSON.stringify({ dependencies: { '@godoo-dev/stateman': 'file:old.tgz' } });
+    const consumerLock = JSON.stringify({ lockfileVersion: 3, packages: { '': { dependencies: { '@godoo-dev/stateman': 'file:old.tgz' } }, 'node_modules/@godoo-dev/stateman': { version: artifact.version, resolved: 'file:old.tgz' } } });
+    writeFileSync(join(area, 'installed-package.json'), consumerPackage);
+    writeFileSync(join(area, 'installed-package-lock.json'), consumerLock);
+    const manifest = { proofHashes: { 'installed-package.json': digest(consumerPackage), 'installed-package-lock.json': digest(consumerLock) }, sourceHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), artifacts: [artifact], supplierQualification: false };
     writeFileSync(join(area, artifact.filename), 'candidate');
     for (const command of ['docker', 'npm']) {
       const path = join(area, command);
