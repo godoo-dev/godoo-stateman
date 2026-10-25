@@ -42,9 +42,10 @@ The installed API creates a res.partner with durable receipt, checks fresh no-op
 updates it, detects manual drift and rejects a stale reviewed plan without changing
 that drift. Fresh retry converges. Installed CLI subprocesses plan/apply/drift and
 an independent read verify actual names and identities. HTML checks cover source
-and ca_ES/en_GB/es_ES exact reads, bounded serialization/EOF completion, fresh
-convergence, a repeat apply with zero commits and meaningful content/language
-negatives. They never render or send mail. No authoring business
+and ca_ES/en_GB/es_ES exact reads for text and HTML, with en_US both active
+and inactive, explicit default restoration after translation writes, bounded
+serialization/EOF completion, fresh convergence, language update and repeat apply
+with zero commits, and meaningful content/language negatives. They never render or send mail. No authoring business
 payload or live environment is loaded. Require the observed18 result, exact image
 and tarball identity, result and five-resource ownership/absence cleanup proofs.
 The harness removes only its labelled resources, including on failure; inspect

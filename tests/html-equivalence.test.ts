@@ -92,8 +92,9 @@ describe('HTML reconciliation through planning and apply', () => {
     expect((await apply(first, connection)).ok).toBe(true);
     client.languages.set('en_GB', '<p>Català<br/></p>');
     const changed = await plan(definitions, connection, options);
-    expect(changed.operations).toHaveLength(1);
+    expect(changed.operations).toHaveLength(2);
     expect(changed.operations[0]).toMatchObject({ values: { body_html: '<p>English<br></p>' }, context: { lang: 'en_GB' } });
+    expect(changed.operations[1]).toMatchObject({ key: 'test.mail:translation-defaults', values: { body_html: '<p>Base<br></p>' }, context: { lang: false } });
     expect((await apply(changed, connection)).ok).toBe(true);
     expect(client.languages.get('ca_ES')).toBe('<p>Català<br/></p>');
   });

@@ -65,8 +65,17 @@ const storedHtml = {
   source:'<p>Source<br/></p><t t-set="label" t-value="\'Example\'"/><img src="/test.png"/>',
   ca_ES:'<p>Català<br/></p>',en_GB:'<p>English<br/></p><p style="ma"/>',es_ES:'<p>Castellano<br/></p>',
 };
-const templates = [resource('mail.template','stateman_ci.html',{name:'Stateman synthetic HTML',model_id:partnerModel.id,body_html:translated(sourceHtml,languageHtml)})];
-const htmlJournal = await openRecoveryJournal(join(root,'html-recovery.json'));
+for (const inactiveBase of [false,true]) {
+if (inactiveBase) {
+  const users=await client.searchRead('res.users', [['lang','=','en_US']], {fields:[],context:{active_test:false}});
+  if(users.length) await client.write('res.users',users.map(row=>row.id),{lang:'en_GB'});
+  const [baseLanguage]=await client.searchRead('res.lang',[['code','=','en_US']],{fields:[],context:{active_test:false}});
+  assert.ok(baseLanguage);await client.write('res.lang',[baseLanguage.id],{active:false});
+}
+const templateId=inactiveBase?'stateman_ci.html_inactive':'stateman_ci.html';
+const descriptionByLanguage={ca_ES:'Descripció catalana',en_GB:'English description',es_ES:'Descripción castellana'};
+const templates = [resource('mail.template',templateId,{name:'Stateman synthetic HTML',model_id:partnerModel.id,description:translated('Default description',descriptionByLanguage),body_html:translated(sourceHtml,languageHtml)})];
+const htmlJournal = await openRecoveryJournal(join(root,`html-${inactiveBase}-recovery.json`));
 try {
   const options = () => ({...versionOptions,context:{lang:false},recovery:htmlJournal.receipts});
   const rendered = await inspectResources(templates);
@@ -79,7 +88,8 @@ try {
   const again = await apply(fresh,connection,{journal:htmlJournal});
   assert.equal(again.ok,true);assert.equal(again.committed,0);
   for(const lang of [false,'ca_ES','en_GB','es_ES']) {
-    const [row] = await client.searchRead('mail.template',[['id','=',fresh.bindings['stateman_ci.html']]],{fields:['body_html'],context:{lang}});
+    const [row] = await client.searchRead('mail.template',[['id','=',fresh.bindings[templateId]]],{fields:['body_html','description'],context:{lang}});
+    assert.equal(row.description,lang?descriptionByLanguage[lang]:'Default description');
     assert.equal(row.body_html,storedHtml[lang||'source']); // Independent exact read, not just the helper.
     assert.equal(equivalentHtml(lang?languageHtml[lang]:sourceHtml,row.body_html),true);
   }
@@ -90,8 +100,19 @@ try {
   const changedLanguage = structuredClone(rendered);
   changedLanguage.resources[0].translations.entries.find(entry=>entry.lang==='en_GB').value='<p>Different English<br></p>';
   const changedPlan=await plan(changedLanguage,connection,options());
-  assert.equal(changedPlan.operations.length,1);assert.equal(changedPlan.operations[0].context.lang,'en_GB');
+  assert.equal(changedPlan.operations.length,2);assert.equal(changedPlan.operations[0].context.lang,'en_GB');
+  assert.equal(changedPlan.operations[1].context.lang,false);
+  assert.equal(changedPlan.operations[1].values.body_html,sourceHtml);
+  const changedResult=await apply(changedPlan,connection,{journal:htmlJournal});
+  assert.equal(changedResult.ok,true,JSON.stringify(changedResult));
+  for(const lang of [false,'ca_ES','en_GB','es_ES']) {
+    const [row]=await client.searchRead('mail.template',[['id','=',fresh.bindings[templateId]]],{fields:['body_html','description'],context:{lang}});
+    assert.equal(row.description,lang?descriptionByLanguage[lang]:'Default description');
+    assert.equal(row.body_html,lang==='en_GB'?'<p>Different English<br/></p>':storedHtml[lang||'source']);
+  }
+  assert.equal((await apply(await plan(changedLanguage,connection,options()),connection,{journal:htmlJournal})).committed,0);
 } finally {await htmlJournal.close();}
+}
 // Exercise the installed CLI in fresh subprocesses against the same owned target.
 writeFileSync(join(root,'connection.mjs'),`import {OdooClient} from '@godoo-dev/client'; import {createConnection} from '@godoo-dev/stateman'; const client=new OdooClient(${JSON.stringify({url,database,username:'admin',password:'admin'})}); await client.authenticate(); export default createConnection(client,{url:${JSON.stringify(url)}});`);
 writeFileSync(join(root,'resources.mjs'),"import {resource} from '@godoo-dev/stateman'; export const partner=resource('res.partner','stateman_ci.partner',{name:'CLI partner'});\n");
@@ -134,4 +155,4 @@ if (existsSync(join(root,'suppliers.json'))) {
   } finally {await projectJournal.close();}
   supplierModuleStage = true;
 }
-console.log(JSON.stringify({passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,supplierModuleStage,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','mail.template HTML source/three-language exact reads/convergence/repeat committed0/content negatives','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));
+console.log(JSON.stringify({passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,supplierModuleStage,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','mail.template HTML/text active+inactive-en_US source/three-language exact reads/convergence/update/repeat committed0/content negatives','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));

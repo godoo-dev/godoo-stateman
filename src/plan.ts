@@ -30,7 +30,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   complete.resources.sort((a, b) => a.externalId.localeCompare(b.externalId));
   const { contentRoot: _root, readFile: _reader, ...serializable } = options;
   const stored: StoredPlanOptions = copy(serializable);
-  const context = { ...stored.context, active_test: false };
+  const context: Row = { ...stored.context, active_test: false };
   const observations: Observation[] = [];
   const diagnostics = ['Read access does not establish write permission. RPC writes retain client safety guards.',
     'Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock.',
@@ -281,14 +281,23 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       if (Object.keys(scalar).length) operations.push(op(resource, 'update', scalar));
     }
     if (Object.keys(relation).length) links.push(op(resource, 'link', relation));
-    // Legacy field translations remain explicit contextual writes, with fresh
-    // language reads included in assumptions. Consumer language records need none.
+    // Contextual writes may mirror into Odoo's inactive en_US fallback. Restore
+    // only affected defaults as explicit reviewed work, after all translations.
+    const translationDefaults: Row = {};
     for (const entry of resource.translations?.entries ?? []) {
       const field = schema[resource.model][entry.field];
       if (!field || field.relation || typeof entry.value !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}: translation needs a scalar string field`);
+      const defaultValue = desired.get(id)![entry.field];
+      if (typeof defaultValue !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}.${entry.field}: translation needs an authored string default`);
+      const baseLang = context.lang === false ? 'en_US' : context.lang;
+      if (entry.lang === baseLang && !fieldEqual(defaultValue, entry.value, field)) fail('TRANSLATION_CONFLICT', `${id}.${entry.field}: base context and translation ${entry.lang} request different values`);
       const rows = bindings[id] ? await search(resource.model, [['id', '=', bindings[id]]], [entry.field], undefined, { lang: entry.lang }) : [];
-      if (!rows.length || !fieldEqual(rows[0][entry.field], entry.value, field)) links.push(op(resource, 'update', { [entry.field]: entry.value }, `translation:${entry.field}:${entry.lang}`, { lang: entry.lang }));
+      if (!rows.length || !fieldEqual(rows[0][entry.field], entry.value, field)) {
+        links.push(op(resource, 'update', { [entry.field]: entry.value }, `translation:${entry.field}:${entry.lang}`, { lang: entry.lang }));
+        translationDefaults[entry.field] = defaultValue;
+      }
     }
+    if (Object.keys(translationDefaults).length) links.push(op(resource, 'update', translationDefaults, 'translation-defaults'));
   }
   operations.push(...links);
 
