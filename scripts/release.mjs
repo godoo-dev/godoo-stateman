@@ -25,7 +25,7 @@ export function requireReleaseSource(root = defaultRoot, env = process.env) {
   return sha;
 }
 
-export function verifyCandidate(directory, { root = defaultRoot, complete = true } = {}) {
+export function verifyCandidate(directory, { root = defaultRoot, complete = true, env = process.env } = {}) {
   assert(directory, 'GODOO_ARTIFACT_DIR is required');
   const manifestPath = join(directory, 'manifest.json');
   const manifest = json(manifestPath);
@@ -37,9 +37,9 @@ export function verifyCandidate(directory, { root = defaultRoot, complete = true
   assert.equal(manifest.sourceHead, git(root, 'rev-parse', 'HEAD'), 'Candidate source mismatch');
   assert.equal(git(root, 'status', '--porcelain'), '', 'Source changed after qualification');
   assert.equal(manifest.dirtyState, '', 'Candidate was packed from dirty source');
-  if (process.env.GITHUB_ACTIONS === 'true') {
-    assert.equal(manifest.sourceHead, process.env.GITHUB_SHA);
-    assert.deepEqual(manifest.workflow, { runId: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT }, 'Candidate is not from this workflow attempt');
+  if (env.GITHUB_ACTIONS === 'true') {
+    assert.equal(manifest.sourceHead, env.GITHUB_SHA);
+    assert.deepEqual(manifest.workflow, { runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT }, 'Candidate is not from this workflow attempt');
   }
   assert.equal(manifest.lockSha256, hash(join(root, 'package-lock.json')), 'Source lock mismatch');
   assert.equal(manifest.artifacts?.length, 1, 'Exactly one Stateman archive required');

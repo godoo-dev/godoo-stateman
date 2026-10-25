@@ -48,7 +48,20 @@ test('clean current develop may qualify; manual/ref/repository, dirty and stale 
 
 test('promotion checks exact retained archive, consumer and18 evidence without rebuilding dist',t=>{
   const f=fixture(t);rmSync(join(f.root,'dist'),{recursive:true});
-  assert.equal(verifyCandidate(f.directory,{root:f.root}).artifact.sha256,f.artifact.sha256);
+  assert.equal(verifyCandidate(f.directory,{root:f.root,env:f.env}).artifact.sha256,f.artifact.sha256);
+});
+
+test('hosted promotion binds the candidate to the current source and workflow attempt',t=>{
+  const f=fixture(t);
+  const env={...f.env,GITHUB_ACTIONS:'true',GITHUB_SHA:f.manifest.sourceHead,GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'2'};
+  f.manifest.workflow={runId:env.GITHUB_RUN_ID,attempt:env.GITHUB_RUN_ATTEMPT};
+  write(join(f.directory,'manifest.json'),f.manifest);
+  f.proof.workflow=f.manifest.workflow;
+  f.proof.candidateManifestSha256=hash(join(f.directory,'manifest.json'));
+  write(join(f.directory,'odoo18-result.json'),f.proof);
+  assert.equal(verifyCandidate(f.directory,{root:f.root,env}).artifact.sha256,f.artifact.sha256);
+  for(const [key,value] of Object.entries({GITHUB_SHA:'0'.repeat(40),GITHUB_RUN_ID:'124',GITHUB_RUN_ATTEMPT:'1'}))
+    assert.throws(()=>verifyCandidate(f.directory,{root:f.root,env:{...env,[key]:value}}));
 });
 
 for(const [name,mutate] of [
@@ -63,7 +76,7 @@ for(const [name,mutate] of [
   ['incomplete cleanup',f=>{f.proof.allOwnedResourcesAbsent=false;write(join(f.directory,'odoo18-result.json'),f.proof);} ],
   ['unchecked ownership',f=>{const p=join(f.directory,'odoo18-cleanup.json');const c=load(p);c.proof[0].ownerChecked=false;write(p,c);} ],
   ['source mutation',f=>write(join(f.root,'src/index.ts'),'changed')],
-])test('candidate refuses '+name,t=>{const f=fixture(t);mutate(f);assert.throws(()=>verifyCandidate(f.directory,{root:f.root}));});
+])test('candidate refuses '+name,t=>{const f=fixture(t);mutate(f);assert.throws(()=>verifyCandidate(f.directory,{root:f.root,env:f.env}));});
 
 test('relocated frozen consumer keeps every third-party version and integrity; mutation is refused',t=>{
   const f=fixture(t);const original=load(join(f.directory,'installed-package-lock.json'));
