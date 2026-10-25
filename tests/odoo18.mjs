@@ -69,8 +69,15 @@ for (const inactiveBase of [false,true]) {
 if (inactiveBase) {
   const users=await client.searchRead('res.users', [['lang','=','en_US']], {fields:[],context:{active_test:false}});
   if(users.length) await client.write('res.users',users.map(row=>row.id),{lang:'en_GB'});
+  const contacts=await client.searchRead('res.partner', [['lang','=','en_US']], {fields:[],context:{active_test:false}});
+  if(contacts.length) await client.write('res.partner',contacts.map(row=>row.id),{lang:'en_GB'});
+  // Upstream res.lang.write rejects active contacts and even inactive users
+  // still using this language. Only synthetic owned database records are moved.
+  for(const model of ['res.users','res.partner']) assert.deepEqual(await client.searchRead(model,[['lang','=','en_US']],{fields:[],context:{active_test:false}}),[]);
   const [baseLanguage]=await client.searchRead('res.lang',[['code','=','en_US']],{fields:[],context:{active_test:false}});
   assert.ok(baseLanguage);await client.write('res.lang',[baseLanguage.id],{active:false});
+  const [inactiveLanguage]=await client.searchRead('res.lang',[['id','=',baseLanguage.id]],{fields:['active'],context:{active_test:false}});
+  assert.equal(inactiveLanguage.active,false);
 }
 const templateId=inactiveBase?'stateman_ci.html_inactive':'stateman_ci.html';
 const descriptionByLanguage={ca_ES:'Descripció catalana',en_GB:'English description',es_ES:'Descripción castellana'};
