@@ -4,6 +4,7 @@ import type { Inspection, InspectedResource } from './inspect.js';
 import { isLookupRef, isResourceRef } from './dsl/types.js';
 import { assertId, copy, digest, domain, equal, fail, identity, record, sortGraph, walkRefs, xmlid } from './state-utils.js';
 import { StateError } from './state-types.js';
+import { equivalentHtml } from './html-equivalence.js';
 import type { FieldMetadata, Mutation, Observation, Plan, PlanOptions, Row, Schema, StateConnection, StateInput, StoredPlanOptions } from './state-types.js';
 
 const multiple = (field: FieldMetadata): boolean => ['one2many', 'many2many'].includes(field.type);
@@ -13,6 +14,10 @@ function normalized(value: unknown, field: FieldMetadata): unknown {
   if (field.type === 'many2one') return Array.isArray(value) ? value[0] : value === null ? false : value;
   if (multiple(field)) return sortedIds(value);
   return value;
+}
+function fieldEqual(a: unknown, b: unknown, field: FieldMetadata): boolean {
+  return field.type === 'html' && typeof a === 'string' && typeof b === 'string'
+    ? equivalentHtml(a, b) : equal(normalized(a, field), normalized(b, field));
 }
 
 /** Read-only planning. Every observation relevant to mutations is included in the digest. */
@@ -264,7 +269,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
         const current = sortedIds(actual.get(id)![name]);
         const missing = (value as unknown[]).filter(v => typeof v !== 'number' || !current.includes(v));
         if (missing.length) relation[name] = missing.map(v => [4, v, 0]);
-      } else if (!bindings[id] || !equal(normalized(value, field), normalized(actual.get(id)![name], field))) scalar[name] = value;
+      } else if (!bindings[id] || !fieldEqual(value, actual.get(id)![name], field)) scalar[name] = value;
     }
     if (resource.model === 'ir.cron') {
       if (typeof desired.get(id)!.active === 'boolean') delete scalar.active;
@@ -282,7 +287,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       const field = schema[resource.model][entry.field];
       if (!field || field.relation || typeof entry.value !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}: translation needs a scalar string field`);
       const rows = bindings[id] ? await search(resource.model, [['id', '=', bindings[id]]], [entry.field], undefined, { lang: entry.lang }) : [];
-      if (!rows.length || !equal(rows[0][entry.field], entry.value)) links.push(op(resource, 'update', { [entry.field]: entry.value }, `translation:${entry.field}:${entry.lang}`, { lang: entry.lang }));
+      if (!rows.length || !fieldEqual(rows[0][entry.field], entry.value, field)) links.push(op(resource, 'update', { [entry.field]: entry.value }, `translation:${entry.field}:${entry.lang}`, { lang: entry.lang }));
     }
   }
   operations.push(...links);

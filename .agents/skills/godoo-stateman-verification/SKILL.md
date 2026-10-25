@@ -34,13 +34,17 @@ Missing Docker/artifact/ref/version/hash is failure, never a skipped required te
 The harness reuses the package acceptance consumer lock with npm ci, relocating
 only the verified Stateman file archive path. It pulls Odoo18/Postgres15 images, creates uniquely labelled containers,
 network and two volumes, binds only random loopback HTTP and disables cron workers.
-It initializes only synthetic base-addon data. Readiness requires HTTP login and
+It initializes synthetic base-addon data, then installs mail in its owned database
+for synthetic mail.template HTML checks. Readiness requires HTTP login and
 an authenticated observed-major read, not just a listening port.
 
 The installed API creates a res.partner with durable receipt, checks fresh no-op,
 updates it, detects manual drift and rejects a stale reviewed plan without changing
 that drift. Fresh retry converges. Installed CLI subprocesses plan/apply/drift and
-an independent read verify actual names and identities. No authoring business
+an independent read verify actual names and identities. HTML checks cover source
+and ca_ES/en_GB/es_ES exact reads, bounded serialization/EOF completion, fresh
+convergence, a repeat apply with zero commits and meaningful content/language
+negatives. They never render or send mail. No authoring business
 payload or live environment is loaded. Require the observed18 result, exact image
 and tarball identity, result and five-resource ownership/absence cleanup proofs.
 The harness removes only its labelled resources, including on failure; inspect

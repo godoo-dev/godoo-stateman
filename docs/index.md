@@ -105,6 +105,35 @@ closure. Source availability, catalog freshness, unfiltered visibility and
 Python/system prerequisites remain unknown even with complete registered edges.
 No module refresh/install/upgrade or action execution occurs in this core.
 
+## HTML storage convergence
+
+For fields reported as `html`, planning uses `equivalentHtml(a, b)` for both
+base values and contextual translation reads. The comparison tolerates
+the observed Odoo 18 serialization of standard HTML void elements (`<br>` / `<br/>`,
+`<img ...>` / `<img .../>`) and empty QWeb elements (`<t ...></t>` / `<t .../>`).
+It also recognizes an empty final paragraph whose only attribute is an unfinished
+double-quoted literal `style`, such as `<p style="margin:0px`, when Odoo completes
+it as `<p style="margin:0px"/>`. This narrow EOF case requires balanced preceding
+elements and a style value containing only ASCII letters/digits, spaces and
+`. : ; # % _ + -`. It excludes expression syntax, URLs and other attributes.
+Other malformed structure is never repaired.
+
+All text and whitespace, entities, attribute spelling/order/values, URLs and QWeb
+expressions remain significant. The helper is for storage comparison, not rendering
+or sanitization. Writes retain the authored string, and reviewed-plan observations
+retain the exact server values for stale-plan checks. Languages are read and
+compared separately. Arbitrary DOM repair and whitespace equivalence are excluded.
+Tag names must be lowercase and attribute values quoted for these rules to apply.
+Raw-text elements (such as `script`, `style` and `textarea`), text interpolation
+syntax (`{{`, `#{`, `${`), and unsupported markup cause the whole comparison to
+fall back to exact equality. Comments are retained exactly.
+
+```ts
+import { equivalentHtml } from '@godoo-dev/stateman';
+equivalentHtml('<t t-out="object.name"></t><br>', '<t t-out="object.name"/><br/>'); // true
+equivalentHtml('<p>A B<br></p>', '<p>AB<br/></p>'); // false
+```
+
 ## Apply and failure handling
 
 Apply checks the saved digest, re-plans the complete saved intent and compares
