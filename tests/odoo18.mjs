@@ -98,7 +98,7 @@ try {
     assert.ok((await plan(changed,connection,options())).operations.some(op=>op.values.body_html===body));
   }
   const changedLanguage = structuredClone(rendered);
-  changedLanguage.resources[0].translations.entries.find(entry=>entry.lang==='en_GB').value='<p>Different English<br></p>';
+  changedLanguage.resources[0].translations.entries.find(entry=>entry.lang==='en_GB'&&entry.field==='body_html').value='<p>Different English<br></p>';
   const changedPlan=await plan(changedLanguage,connection,options());
   assert.equal(changedPlan.operations.length,2);assert.equal(changedPlan.operations[0].context.lang,'en_GB');
   assert.equal(changedPlan.operations[1].context.lang,false);
