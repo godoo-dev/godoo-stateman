@@ -28,7 +28,7 @@ from __future__ import annotations
 from typing import Any
 
 from godoo_stateman.dsl.types.deferred import resolve as _resolve
-from godoo_stateman.dsl.types.nodes import ChildrenWrapper, DataSourceNode, ResourceNode
+from godoo_stateman.dsl.types.nodes import ChildrenWrapper, DataSourceNode, ResourceNode, ResourceOptions
 
 # ---------------------------------------------------------------------------
 # Internal accumulator
@@ -105,7 +105,10 @@ class _ModelResourceCallable:
         self._collector = collector
 
     def __call__(self, slug: str, **fields: Any) -> _ResourceBuilder:
-        node = ResourceNode(model=self._model, slug=slug, fields=dict(fields))
+        # Strip the reserved `_options=` kwarg before it lands in `fields`, so it
+        # never reaches Odoo as a field write. Defaults to ResourceOptions() (SAFE-01).
+        options = fields.pop("_options", ResourceOptions())
+        node = ResourceNode(model=self._model, slug=slug, fields=dict(fields), options=options)
         return _ResourceBuilder(node, self._collector)
 
 

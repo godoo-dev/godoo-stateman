@@ -15,7 +15,7 @@ from typing import Any
 
 from godoo_stateman.diff import diff
 from godoo_stateman.dsl.types.desired import DesiredState
-from godoo_stateman.dsl.types.nodes import ResourceNode
+from godoo_stateman.dsl.types.nodes import ResourceNode, ResourceOptions
 from godoo_stateman.identity import XmlIdRecord
 from godoo_stateman.live.livestate import LiveState
 from godoo_stateman.plan.types import PlanAction, PlanStep
@@ -194,6 +194,36 @@ def test_create_on_no_xmlid() -> None:
     assert step.xmlid == "test_prefix.my_partner"
     assert step.res_id is None
     assert step.field_diff == ()
+    # Open-Q1: CREATE carries the full normalized desired dict.
+    assert step.desired_fields == {"name": "Alice"}
+    # D-03: default delete_behavior when no _options given on the resource.
+    assert step.delete_behavior == "reject"
+
+
+def test_create_carries_delete_behavior_from_resource_options() -> None:
+    """diff() populates PlanStep.delete_behavior from resource.options (D-03)."""
+    snapshot = _make_snapshot({"res.partner": (True, {"name": ("char", True, False)})})
+    live_state = _make_live_state(managed={}, live_fields={})
+    resource = ResourceNode(
+        model="res.partner",
+        slug="my_partner",
+        fields={"name": "Alice"},
+        options=ResourceOptions(delete_behavior="archive"),
+    )
+    state = DesiredState(
+        xmlid_prefix="test_prefix",
+        resources=(resource,),
+        data_sources=(),
+        config_parameters=(),
+    )
+
+    steps = diff(state, live_state, snapshot)
+
+    assert len(steps) == 1
+    step = steps[0]
+    assert step.action == PlanAction.CREATE
+    assert step.delete_behavior == "archive"
+    assert step.desired_fields == {"name": "Alice"}
 
 
 # ---------------------------------------------------------------------------

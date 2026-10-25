@@ -1,8 +1,8 @@
 site_name: godoo-stateman
-site_description: Terraform for Odoo — declarative Odoo state reconciliation over jsonrpc
+site_description: TypeScript offline desired-state authoring and inspection
 site_url: https://marcfargas.github.io/godoo-stateman/
-repo_url: https://github.com/marcfargas/godoo-stateman
-repo_name: marcfargas/godoo-stateman
+repo_url: https://github.com/godoo-dev/godoo-stateman
+repo_name: godoo-dev/godoo-stateman
 
 theme:
   name: material
@@ -31,4 +31,4 @@ plugins:
 
 nav:
   - Home: index.md
-  - API Reference: api/
+  - Python Reference: python-reference.md

@@ -64,11 +64,11 @@ async def test_record_not_found_returns_1() -> None:
     }
     client = _make_client(search_read_return=[])  # record not found
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
 
         result = await _import_impl("res.partner", 99, "mymod", "myslug", False)
 
@@ -85,11 +85,11 @@ async def test_record_not_found_does_not_call_write_xmlid() -> None:
     }
     client = _make_client(search_read_return=[])
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         with patch("godoo_stateman.cli.commands.import_.write_xmlid") as mock_write:
             await _import_impl("res.partner", 99, "mymod", "myslug", False)
 
@@ -116,11 +116,11 @@ async def test_same_res_id_is_idempotent_returns_0() -> None:
 
     existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=42, complete_name="mymod.myslug")
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         with patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing):
             result = await _import_impl("res.partner", 42, "mymod", "myslug", False)
 
@@ -141,11 +141,11 @@ async def test_same_res_id_does_not_call_write_xmlid() -> None:
 
     existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=42, complete_name="mymod.myslug")
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         _p1 = patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing)
         _p2 = patch("godoo_stateman.cli.commands.import_.write_xmlid")
         with _p1, _p2 as mock_write:
@@ -173,11 +173,11 @@ async def test_different_res_id_no_force_returns_1() -> None:
 
     existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug")
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         with patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing):
             result = await _import_impl("res.partner", 99, "mymod", "myslug", False)
 
@@ -200,11 +200,11 @@ async def test_different_res_id_no_force_prints_error_message() -> None:
 
     printed_messages: list[str] = []
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         _p1 = patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing)
         _p2 = patch("godoo_stateman.cli.commands.import_.console")
         with _p1, _p2 as mock_console:
@@ -232,11 +232,11 @@ async def test_different_res_id_no_force_does_not_call_write_xmlid() -> None:
 
     existing = XmlIdRecord(module="mymod", name="myslug", model="res.partner", res_id=10, complete_name="mymod.myslug")
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         _p1 = patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing)
         _p2 = patch("godoo_stateman.cli.commands.import_.write_xmlid")
         with _p1, _p2 as mock_write:
@@ -267,11 +267,11 @@ async def test_different_res_id_force_calls_write_xmlid() -> None:
         module="mymod", name="myslug", model="res.partner", res_id=99, complete_name="mymod.myslug"
     )
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         with (
             patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=existing),
             patch(
@@ -305,11 +305,11 @@ async def test_new_xmlid_calls_write_xmlid_with_correct_args() -> None:
         module="mymod", name="myslug", model="res.partner", res_id=42, complete_name="mymod.myslug"
     )
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         with (
             patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=None),
             patch(
@@ -336,11 +336,11 @@ async def test_new_xmlid_returns_0() -> None:
     client = _make_client(search_read_return=[{"id": 42}])
     new_record = XmlIdRecord(module="ns", name="slug", model="res.partner", res_id=42, complete_name="ns.slug")
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         _p1 = patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=None)
         _p2 = patch("godoo_stateman.cli.commands.import_.write_xmlid", return_value=new_record)
         with _p1, _p2:
@@ -364,11 +364,11 @@ async def test_step1_search_read_called_with_correct_args() -> None:
     }
     client = _make_client(search_read_return=[])  # triggers not-found exit
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         await _import_impl("res.partner", 42, "mymod", "myslug", False)
 
     client.search_read.assert_called_once_with(
@@ -405,11 +405,11 @@ async def test_odoo_validation_error_from_write_xmlid_is_caught() -> None:
 
     printed_messages: list[str] = []
 
-    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.OdooClient") as mock_cls:
+    with patch.dict("os.environ", env), patch("godoo_stateman.cli.commands.import_.open_client") as mock_open:
         ctx = AsyncMock()
         ctx.__aenter__ = AsyncMock(return_value=client)
         ctx.__aexit__ = AsyncMock(return_value=False)
-        mock_cls.return_value = ctx
+        mock_open.return_value = ctx
         with (
             patch("godoo_stateman.cli.commands.import_.find_by_xmlid", return_value=None),
             patch(

@@ -22,14 +22,12 @@ Exit codes (UX-02, Phase-1 D-18):
 from __future__ import annotations
 
 import asyncio
-import os
-import re
 from pathlib import Path
 
 import typer
-from godoo.client.client import OdooClient, OdooClientConfig
 from rich.console import Console
 
+from godoo_stateman.cli._connection import open_client, read_connection
 from godoo_stateman.diff import diff
 from godoo_stateman.dsl.eval import eval_config
 from godoo_stateman.dsl.graph import build_graph
@@ -41,7 +39,6 @@ from godoo_stateman.live.seam import resolve_data_sources, resolve_deferred
 from godoo_stateman.plan.render import render_plan
 from godoo_stateman.plan.types import PlanAction
 from godoo_stateman.schema.registry import SchemaRegistry
-from godoo_stateman.schema.version import OdooVersion
 
 
 async def _plan_impl(config: Path, verbose: bool) -> int:
@@ -61,36 +58,22 @@ async def _plan_impl(config: Path, verbose: bool) -> int:
         console.print(f"[red]Error evaluating config: {exc}[/red]")
         return 1
 
-    # Step 2: Read Odoo credentials from environment variables (T-03-10).
-    # Never accept credentials from CLI args (they appear in process listings).
-    missing: list[str] = []
-    url = os.environ.get("GODOO_URL", "")
-    db = os.environ.get("GODOO_DB", "")
-    user = os.environ.get("GODOO_USER", "")
-    password = os.environ.get("GODOO_PASSWORD", "")
-    if not url:
-        missing.append("GODOO_URL")
-    if not db:
-        missing.append("GODOO_DB")
-    if not user:
-        missing.append("GODOO_USER")
-    if not password:
-        missing.append("GODOO_PASSWORD")
-    if missing:
+    # Step 2: Read Odoo credentials from environment variables (T-03-10, D-04).
+    # Shared cli/_connection.py helper: never accept credentials from CLI args
+    # (they appear in process listings) and validate ODOO_VERSION (ASVS L1 V5).
+    try:
+        connection, missing = read_connection()
+    except ValueError:
+        # Invalid ODOO_VERSION format — preserve the BadParameter exit semantics.
+        raise typer.BadParameter("ODOO_VERSION must match N.N format (e.g. '17.0')") from None
+    if connection is None:
         console.print(f"[red]Missing required environment variable(s): {', '.join(missing)}[/red]")
         return 1
 
     try:
-        async with OdooClient(OdooClientConfig(url=url, database=db, username=user, password=password)) as client:
-            # Step 3: Create the schema registry.
-            # T-03.1-02: validate ODOO_VERSION before int conversion (ASVS L1 V5).
-            # Inline duplicate of snapshot.py:61 — extraction deferred per D-04.
-            _odoo_version_str = os.environ.get("ODOO_VERSION", "17.0")
-            if not re.match(r"^\d+\.\d+$", _odoo_version_str):
-                raise typer.BadParameter("ODOO_VERSION must match N.N format (e.g. '17.0')")
-            _parts = _odoo_version_str.split(".")
-            _odoo_version = OdooVersion(major=int(_parts[0]), minor=int(_parts[1]))
-            registry = SchemaRegistry(client, _odoo_version)
+        async with open_client(connection) as client:
+            # Step 3: Create the schema registry from the resolved connection.
+            registry = SchemaRegistry(client, connection.odoo_version)
 
             # Step 4: Build the initial snapshot from desired-state models.
             # Concrete call — no None fallback. Passing None would skip schema-

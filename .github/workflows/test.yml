@@ -1,76 +1,88 @@
----
-name: Test
-
+name: CI
 on:
+  workflow_call:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
-
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      odoo19:
+        type: boolean
+        default: false
+        description: 'Qualify19 only after this exact candidate passes18'
+permissions:
+  contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  lint:
-    name: Lint
+  offline:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.14"
-      # --no-sources: [tool.uv.sources] maps godoo-* to local ../godoo-py/packages/*
-      # which do not exist on CI runners. All three packages are on PyPI at >=0.2.0.
-      # --no-sources makes uv resolve from the index instead of local paths.
-      # Note: uv sync --no-sources without --locked re-resolves the lockfile on each
-      # run; this is intentional because the committed lockfile uses editable sources.
-      - name: Install dependencies
-        run: uv sync --no-sources
-      - name: Ruff check
-        run: uv run --no-sources ruff check .
-      - name: Ruff format
-        run: uv run --no-sources ruff format --check .
-      - name: mypy
-        run: uv run --no-sources mypy src/godoo_stateman
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.14"
-      - name: Install dependencies
-        run: uv sync --no-sources
-      - name: Run unit tests
-        run: uv run --no-sources pytest -v --cov --cov-report=xml -m "not integration"
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
-        with:
-          files: ./coverage.xml
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  integration:
-    name: Integration Tests (Odoo ${{ matrix.odoo_version }})
-    runs-on: ubuntu-latest
-    needs: [lint, unit-tests]
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        odoo_version: ["17.0", "18.0", "19.0"]
-    env:
-      ODOO_VERSION: ${{ matrix.odoo_version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          python-version: "3.14"
-      - name: Install dependencies
-        run: uv sync --no-sources
-      - name: Run integration tests
-        run: uv run --no-sources pytest tests/acceptance -v -s -m integration --log-cli-level=ERROR
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+  package:
+    needs: offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: mkdir -p "$RUNNER_TEMP/stateman-candidate"
+      - run: npm run check:package
+        env:
+          GODOO_ARTIFACT_DIR: ${{ runner.temp }}/stateman-candidate
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: stateman-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/stateman-candidate
+          if-no-files-found: error
+  odoo18:
+    needs: package
+    uses: ./.github/workflows/odoo.yml
+    with:
+      major: '18'
+  odoo19:
+    needs: [package, odoo18]
+    if: github.event_name == 'workflow_dispatch' && inputs.odoo19 == true && needs.odoo18.result == 'success'
+    uses: ./.github/workflows/odoo.yml
+    with:
+      major: '19'
+  required:
+    name: required
+    if: always()
+    needs: [offline, package, odoo18, odoo19]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every mandatory result and requested compatibility lane
+        env:
+          OFFLINE: ${{ needs.offline.result }}
+          PACKAGE: ${{ needs.package.result }}
+          ODOO18: ${{ needs.odoo18.result }}
+          ODOO19: ${{ needs.odoo19.result }}
+          REQUESTED19: ${{ github.event_name == 'workflow_dispatch' && inputs.odoo19 == true }}
+        run: |
+          test "$OFFLINE" = success
+          test "$PACKAGE" = success
+          test "$ODOO18" = success
+          if [ "$REQUESTED19" = true ]; then
+            test "$ODOO19" = success
+          else
+            test "$ODOO19" = skipped
+          fi
