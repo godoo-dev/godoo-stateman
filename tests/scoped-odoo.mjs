@@ -52,9 +52,11 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
     assert.deepEqual((await client.searchRead('product.template', [['id', '=', unrelated]], { fields: ['taxes_id'], context }))[0].taxes_id, [taxB]);
     const hiddenTax = await client.create('account.tax', { ...taxValues('Stateman purchase tax'), type_tax_use: 'purchase' }, context);
     await client.write('product.template', [product], { taxes_id: [[4, hiddenTax, 0]] }, context);
-    const filtered = await plan(desired(exact([taxA])), connection, scope);
-    assert.deepEqual(filtered.operations.find(op => op.type === 'unlink').values, { taxes_id: [[3, hiddenTax, 0]] });
-    assert.equal((await apply(filtered, connection)).ok, true);
+    await assert.rejects(plan(desired(exact([taxA])), connection, scope), error => error.code === 'EXACT_VISIBILITY' && error.message.includes(String(hiddenTax)));
+    // Odoo's filtered field cannot remove this purchase-tax link via command3.
+    // Retire only this synthetic adversarial fixture, then continue ordinary
+    // visible sale-tax reconciliation on the shared product.
+    await client.unlink('account.tax', [hiddenTax]);
     assert.equal((await apply(await plan(desired(exact([taxA])), connection, scope), connection)).committed, 0);
     assert.equal((await apply(await plan(desired(exact([])), connection, scope), connection)).ok, true);
     assert.deepEqual((await client.searchRead('product.template', [['id', '=', product]], { fields: ['taxes_id'], context }))[0].taxes_id, []);

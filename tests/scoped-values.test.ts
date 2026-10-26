@@ -81,7 +81,7 @@ describe('scoped relation and company values', () => {
   });
 });
 
-it('discovers hidden relation-read links independently of field domains', async () => {
+it('refuses hidden relation-read links independently of field domains', async () => {
   const { store, context } = scopedStore();
   const a = store.seed('x', {}), b = store.seed('x', {});
   store.seed('x', { items: [a, b] }, 'scope.root');
@@ -94,8 +94,7 @@ it('discovers hidden relation-read links independently of field domains', async 
   };
   for (const domain of ["[('name','=','Filtered')]", [['name', '=', 'Filtered']]]) {
     store.schema.x.items.domain = domain;
-    const reviewed = await plan([resource('x', 'scope.root', { items: exact([a]) })], store.connection(), { context });
-    expect(reviewed.operations[0].values).toEqual({ items: [[3, b, 0]] });
+    await expect(plan([resource('x', 'scope.root', { items: exact([a]) })], store.connection(), { context })).rejects.toMatchObject({ code: 'EXACT_VISIBILITY', message: expect.stringContaining(String(b)) });
   }
   expect(store.mutations).toHaveLength(0);
 });

@@ -263,8 +263,11 @@ when their group might not apply to this user. This is intentionally conservativ
 
 The planner audits at most 10,000 visible target records and uses numeric-ID M2M
 membership searches to discover links hidden by relation-field read filtering.
-Field domains limit candidate presentation/ordinary reads, not the owned membership
-asserted by `exact()`; its plan includes those otherwise hidden links.
+If these searches discover links hidden by a field domain, planning refuses with
+the concrete target IDs: Odoo 18 also filters the old membership used by its unlink
+implementation, so command3 cannot safely reconcile those links. Ordinary visible
+product sale-tax sets are supported; domain-hidden links need explicit operator
+investigation outside this contract.
 Larger target universes fail before writes. These Odoo 18 checks establish the
 supported standard ORM scope, not completeness for custom model/search overrides.
 The reviewed observations include the audit universe and rules, so changes to

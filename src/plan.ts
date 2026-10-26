@@ -359,6 +359,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
           const inScope = universe.filter(row => !companyField || row.company_id === false || exactCompanies!.includes(normalized(row.company_id, companyField) as number)).map(row => row.id as number);
           for (const desired of value as unknown[]) if (typeof desired === 'number' && !inScope.includes(desired)) fail('EXACT_VISIBILITY', `${id}.${name}: desired target ${desired} is outside the owned company scope`);
           const unseen = inScope.filter(target => !current.includes(target));
+          const readMembership = new Set(current);
           async function discoverMembership(candidates: number[]): Promise<void> {
             if (!candidates.length) return;
             const linked = await search(resource.model, [['id', '=', bindings[id]], [name, 'in', candidates]], []);
@@ -369,6 +370,8 @@ export async function plan(input: StateInput, connection: StateConnection, optio
             await discoverMembership(candidates.slice(middle));
           }
           if (bindings[id]) for (let start = 0; start < unseen.length; start += 1000) await discoverMembership(unseen.slice(start, start + 1000));
+          const hidden = current.filter(target => !readMembership.has(target));
+          if (hidden.length) fail('EXACT_VISIBILITY', `${id}.${name}: relation reads hide ${field.relation} IDs ${hidden.join(', ')}; Odoo's filtered M2M unlink cannot safely reconcile these links`);
           current.sort((a, b) => a - b);
           const unexpected = current.filter(id => !(value as unknown[]).includes(id));
           if (unexpected.length) exactUnlinks.push(op(resource, 'unlink', { [name]: unexpected.map(id => [3, id, 0]) }, `unlink:${name}`));
