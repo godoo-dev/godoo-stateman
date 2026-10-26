@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OdooClient } from '@godoo-dev/client';
 import { apply, applyModules, createConnection, createFixture, drift, inspectResources, openRecoveryJournal, parseFixture, plan, planModules, resource, seedFixture, serializeFixture } from '@godoo-dev/stateman';
+import { scopedOdoo } from './scoped-odoo.mjs';
 
 const root = import.meta.dirname;
 const { url, database } = JSON.parse(readFileSync(join(root,'target.json'),'utf8'));
@@ -91,4 +92,5 @@ if (existsSync(join(root,'suppliers.json'))) {
   } finally {await projectJournal.close();}
   supplierModuleStage = true;
 }
-console.log(JSON.stringify({passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,supplierModuleStage,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));
+const scoped = await scopedOdoo({ client, connection, root, url, database, versionOptions });
+console.log(JSON.stringify({scoped,passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,supplierModuleStage,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));

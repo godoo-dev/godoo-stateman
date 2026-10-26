@@ -51,7 +51,7 @@ export class FakeClient implements StateClient {
     const rows = (this.data[model] ?? []).filter(row => criteria.every(([field, operator, expected]) => {
       const actual = row[field];
       if (operator === '=') return Array.isArray(actual) ? actual.includes(expected) : actual === expected;
-      if (operator === 'in') return expected.includes(actual);
+      if (operator === 'in') return Array.isArray(actual) ? actual.some(value => expected.includes(value)) : expected.includes(actual);
       throw new Error(`Unsupported fake domain ${operator}`);
     })).slice(0, options.limit);
     return rows.map(row => Object.fromEntries(['id', ...(options.fields ?? Object.keys(row))].map(name => [name, clone(row[name] ?? false)])));

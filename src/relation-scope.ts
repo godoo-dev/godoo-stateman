@@ -1,0 +1,40 @@
+import { assertId, equal, fail } from './state-utils.js';
+import type { FieldMetadata, Row } from './state-types.js';
+
+export type ObservedSearch = (model: string, domain: any[], fields: string[], limit?: number, context?: Row) => Promise<Row[]>;
+
+/** Conservative read-only audit: arbitrary record rules cannot prove exact membership.
+ * Odoo 18 Many2many.read applies target rules and field domains. The caller
+ * audits numeric-ID membership independently of the filtered field read.
+ */
+export async function validateExactScope(field: FieldMetadata, context: Row, userId: number, search: ObservedSearch): Promise<number[]> {
+  if (field.type !== 'many2many' || !field.relation || field.readonly || field.store !== true || field.company_dependent) fail('EXACT_UNSUPPORTED', 'exact() requires a writable stored ordinary M2M field');
+  if (field.context && Object.keys(field.context).length) fail('EXACT_VISIBILITY', 'exact() does not support relation field context overrides');
+  if ('force_company' in context || 'company_id' in context) fail('EXACT_VISIBILITY', 'exact() requires allowed_company_ids without competing company context keys');
+  const companies = context.allowed_company_ids;
+  if (!Array.isArray(companies) || !companies.length) fail('EXACT_VISIBILITY', 'exact() requires explicit context.allowed_company_ids containing all authorized companies');
+  companies.forEach(id => assertId(id, 'Exact company scope'));
+  if (new Set(companies).size !== companies.length) fail('EXACT_VISIBILITY', 'Duplicate allowed_company_ids');
+  const users = await search('res.users', [['id', '=', userId]], ['company_ids']);
+  const authorized = users[0]?.company_ids;
+  if (users.length !== 1 || !Array.isArray(authorized) || !equal([...companies].sort((a, b) => a - b), [...authorized].sort((a, b) => a - b))) fail('EXACT_VISIBILITY', 'exact() requires the complete authorized company set, not a company-filtered subset');
+  const visible = await search('res.company', [['id', 'in', companies]], []);
+  if (visible.length !== companies.length) fail('EXACT_VISIBILITY', 'Exact company scope contains missing or inaccessible companies');
+  // Audit all read rules, including group rules. Rejecting an irrelevant custom
+  // group rule is conservative; silently missing a relevant rule is unsafe.
+  const rules = await search('ir.rule', [['model_id.model', '=', field.relation], ['active', '=', true], ['perm_read', '=', true]], ['name', 'domain_force']);
+  for (const rule of rules) {
+    if (!completeCompanyRule(rule.domain_force)) fail('EXACT_VISIBILITY', `Cannot prove complete relation visibility under rule ${String(rule.name)} on ${field.relation}`);
+  }
+  return [...companies].sort((a, b) => a - b);
+}
+
+function completeCompanyRule(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const expression = value.replace(/\s/g, '').replace(/"/g, "'");
+  return [
+    '[]', "[(1,'=',1)]", "[('company_id','in',company_ids)]",
+    "['|',('company_id','=',False),('company_id','in',company_ids)]",
+    "['|',('company_id','in',company_ids),('company_id','=',False)]",
+  ].includes(expression);
+}

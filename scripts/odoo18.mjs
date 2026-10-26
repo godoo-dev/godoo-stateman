@@ -62,6 +62,7 @@ try {
   console.log(exec('npm',['ci','--ignore-scripts','--no-audit','--no-fund'],{cwd:consumer}));
   if(supplier)writeFileSync(join(artifactDir,'odoo'+major+'-installed-suppliers.json'),JSON.stringify(proveSuppliers(supplier,consumer),null,2)+'\n');
   copyFileSync(join(root,'tests/odoo18.mjs'),join(consumer,'live.mjs'));
+  copyFileSync(join(root,'tests/scoped-odoo.mjs'),join(consumer,'scoped-odoo.mjs'));
   writeFileSync(join(consumer,'target.json'),JSON.stringify({url,database:'stateman_ci',major}));
   if(supplier)writeFileSync(join(consumer,'suppliers.json'),JSON.stringify(supplier.manifest));
   const output=exec(process.execPath,['live.mjs'],{cwd:consumer});console.log(output);
