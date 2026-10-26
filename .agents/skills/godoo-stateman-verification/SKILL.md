@@ -23,7 +23,8 @@ The package caller packs once, records SHA256/source/lock identity, then install
 that exact tarball into an owned OS-temp consumer using runtime registry baseline
 dependencies. It copies maintained acceptance fixtures outside source, typechecks
 without paths aliases, drives public API/CLI creation/no-op/update/drift, durable
-journal/replay refusal, full parent/child readiness and offline content/children.
+journal/replay refusal, full parent/child readiness, exact relation ownership, contextual company values
+and offline content/children.
 It rejects missing-connection commands before poison-module evaluation. Require
 all commands to pass, installed file integrity and dependency-origin proof. Its
 manifest says supplier qualification is false for this registry baseline. Runtime source/rights notices must remain in the tarball.
@@ -34,13 +35,19 @@ Missing Docker/artifact/ref/version/hash is failure, never a skipped required te
 The harness reuses the package acceptance consumer lock with npm ci, relocating
 only the verified Stateman file archive path. It pulls Odoo18/Postgres15 images, creates uniquely labelled containers,
 network and two volumes, binds only random loopback HTTP and disables cron workers.
-It initializes only synthetic base-addon data. Readiness requires HTTP login and
+It initializes synthetic base data; the scoped-value fixtures explicitly install
+account and create fictional companies, accounts, taxes and shared products. Readiness requires HTTP login and
 an authenticated observed-major read, not just a listening port.
 
 The installed API creates a res.partner with durable receipt, checks fresh no-op,
 updates it, detects manual drift and rejects a stale reviewed plan without changing
 that drift. Fresh retry converges. Installed CLI subprocesses plan/apply/drift and
-an independent read verify actual names and identities. No authoring business
+an independent read verify actual names and identities. Scoped fixtures exercise
+product taxes (including domain-hidden links), explicit empty sets, preservation
+and stale membership; income properties cover unchanged A/undeclared C, changed B,
+translations, explicit false, real restricted-user refusal and durable recovery
+after an injected contextual RPC failure. Installed CLI saved-plan/apply/drift
+and repeated zero-write apply cover the scoped authoring path too. No authoring business
 payload or live environment is loaded. Require the observed18 result, exact image
 and tarball identity, result and five-resource ownership/absence cleanup proofs.
 The harness removes only its labelled resources, including on failure; inspect

@@ -32,9 +32,11 @@ export async function validateExactScope(field: FieldMetadata, context: Row, use
 function completeCompanyRule(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   const expression = value.replace(/\s/g, '').replace(/"/g, "'");
-  return [
-    '[]', "[(1,'=',1)]", "[('company_id','in',company_ids)]",
-    "['|',('company_id','=',False),('company_id','in',company_ids)]",
-    "['|',('company_id','in',company_ids),('company_id','=',False)]",
-  ].includes(expression);
+  if (['[]', "[(1,'=',1)]"].includes(expression)) return true;
+  // Core accounting uses parent_of: every authorized company is included, plus
+  // ancestors. The caller preserves any ancestor outside the explicit scope.
+  return ['in', 'parent_of'].some(operator => {
+    const company = `('company_id','${operator}',company_ids)`;
+    return [`[${company}]`, `['|',('company_id','=',False),${company}]`, `['|',${company},('company_id','=',False)]`].includes(expression);
+  });
 }

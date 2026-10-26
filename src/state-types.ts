@@ -64,6 +64,8 @@ export interface Mutation {
   /** Exact existing record, or resolved from the earlier create for this XML ID. */
   id?: number;
   values: Row;
+  /** Effective observed values for a contextual change; null means a new record. */
+  before?: Row;
   context?: Row;
   /** Current company for a company-dependent effective-value write. */
   companyId?: number;

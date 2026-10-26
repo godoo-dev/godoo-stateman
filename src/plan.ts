@@ -316,6 +316,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
           if (!bindings[id] || !equal(normalized(entry.value, field), normalized(rows[0][name], field))) {
             const mutation = op(resource, 'update', { [name]: entry.value }, `company:${name}:${entry.companyId}`, entry.context);
             mutation.companyId = entry.companyId;
+            mutation.before = { [name]: bindings[id] ? normalized(rows[0][name], field) : null };
             links.push(mutation);
           }
         }

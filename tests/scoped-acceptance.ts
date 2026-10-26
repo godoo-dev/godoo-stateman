@@ -51,6 +51,7 @@ export async function scopedAcceptance() {
   await assert.rejects(plan(desired, store.connection(), { context: { allowed_company_ids: [companies[0]] }, recovery: receipts }), { code: 'COMPANY_CONTEXT' });
   assert.deepEqual(companyPlan.operations.filter(op => op.companyId).map(op => op.companyId), [companies[1]]);
   const operation = companyPlan.operations.find(op => op.companyId)!;
+  assert.deepEqual(operation.before, { property: a });
   assert.deepEqual(operation.context?.allowed_company_ids, [companies[1], companies[0], companies[2]]);
   assert.equal(operation.context?.custom, 'base');
   store.effective.set(`x:${record}:property:${companies[1]}`, false);

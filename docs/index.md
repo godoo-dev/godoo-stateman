@@ -254,8 +254,8 @@ unmanaged. Company subsets are refused, as are field context overrides,
 unsupported company partitions, incomplete relation
 reads and arbitrary target read rules. The audit requires read access to the
 user's company authorization, companies and `ir.rule`. Recognized rules are empty,
-constant true, and direct `company_id in company_ids` predicates, optionally
-including shared (`company_id = False`) records. Other rules are rejected even
+constant true, and `company_id in company_ids` or `company_id parent_of company_ids`
+predicates, optionally including shared (`company_id = False`) records. Other rules are rejected even
 when their group might not apply to this user. This is intentionally conservative.
 
 The planner audits at most 10,000 visible target records and uses numeric-ID M2M
@@ -286,6 +286,7 @@ boolean and string/date fields; numeric fields require a number (use `0`, not
 `false`). `null` and removing an override to resume a fallback are unsupported.
 Omitted companies preserve their overrides and effective values. Contextual writes
 are deferred until resource identity and referenced resources are ready. Every
-operation shows `companyId`, record/XML ID, field, value and full context; fresh
+operation shows `companyId`, record/XML ID, field, effective `before` value,
+desired `values` and full context; fresh
 company reads participate in stale checks. Partial failure uses the same retained
 create receipts and ordinary re-plan/review/retry path.

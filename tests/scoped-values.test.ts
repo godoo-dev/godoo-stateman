@@ -25,7 +25,7 @@ describe('scoped relation and company values', () => {
     const { store, companies, context } = scopedStore();
     const target = store.seed('x', {});
     store.seed('x', { items: [target] }, 'scope.root');
-    const rule = store.seed('ir.rule', { name: 'Company', 'model_id.model': 'x', active: true, perm_read: true, domain_force: "['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]" });
+    const rule = store.seed('ir.rule', { name: 'Company', 'model_id.model': 'x', active: true, perm_read: true, domain_force: "['|', ('company_id', '=', False), ('company_id', 'parent_of', company_ids)]" });
     const desired = [resource('x', 'scope.root', { items: exact([]) })];
     const reviewed = await plan(desired, store.connection(), { context });
     store.data['ir.rule'].find(row => row.id === rule)!.domain_force = '[]';
