@@ -34,7 +34,7 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
   let journalOpen = true;
   const desired = taxes => [resource('product.template', 'stateman_scope.service', { name: 'Stateman shared service', type: 'service', taxes_id: taxes })];
   try {
-    const initial = await apply(await plan(desired([taxA, taxB]), connection, { ...scope, recovery: journal.receipts }), connection, { journal });
+    const initial = await apply(await plan(desired(exact([taxA, taxB])), connection, { ...scope, recovery: journal.receipts }), connection, { journal });
     assert.equal(initial.ok, true, JSON.stringify(initial));
     const product = initial.drift.bindings['stateman_scope.service'];
     const [before] = await client.searchRead('product.template', [['id', '=', product]], { fields: ['name', 'type', 'taxes_id'], context });

@@ -248,6 +248,9 @@ Do not use competing `force_company` or `company_id` context keys with these mar
 
 Exact sets support writable stored M2M fields, including explicit empty intent,
 lookup/managed/numeric targets and targets created earlier in the same plan.
+For a new resource, the create explicitly starts its exact M2M fields empty to
+suppress server defaults, then ordered positive links establish the requested set.
+Existing records use only enumerated link/unlink commands.
 Membership is owned across all authorized companies and shared targets;
 visible target records whose ordinary `company_id` lies outside that scope remain
 unmanaged. Company subsets are refused, as are field context overrides,

@@ -81,6 +81,7 @@ export class FakeClient implements StateClient {
       if (['many2many', 'one2many'].includes(this.schema[model][field].type)) {
         const links = new Set(row[field] as number[]);
         for (const [command, target] of value as number[][]) {
+          if (command === 6) { links.clear(); continue; } // Empty initial membership on an exact create.
           if (command === 4) links.add(target); else if (command === 3) links.delete(target); else throw new Error('Unexpected relation command');
           // Simulate the real project/stage inverse relation independently.
           const inverse = model === 'project.project' && field === 'type_ids' ? ['project.task.type', 'project_ids'] : model === 'project.task.type' && field === 'project_ids' ? ['project.project', 'type_ids'] : null;

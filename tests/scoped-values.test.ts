@@ -119,3 +119,19 @@ it('preserves links outside the authorized company partition and retries partial
   expect(store.data.x.find(row => row.id === root)?.items).toEqual([foreign, shared]);
   expect(store.data.x.find(row => row.id === extra)).toBeDefined();
 });
+
+it('suppresses server M2M defaults only for exact creates', async () => {
+  const { store, context } = scopedStore();
+  const defaultTarget = store.seed('x', { name: 'Server default' });
+  const seed = store.seed.bind(store);
+  store.seed = (model, values, externalId) => seed(model, model === 'x' ? { items: [defaultTarget], ...values } : values, externalId);
+  const receipts: any[] = [];
+  const journal = { save: async (receipt: any) => { receipts.push(receipt); } };
+  for (const [id, value, expected] of [['scope.exact', exact([]), []], ['scope.additive', [], [defaultTarget]]] as const) {
+    const result = await apply(await plan([resource('x', id, { items: value })], store.connection(), { context }), store.connection(), { journal });
+    expect(result.ok).toBe(true);
+    const record = result.drift!.bindings[id];
+    expect(store.data.x.find(row => row.id === record)!.items).toEqual(expected);
+  }
+  expect(store.data.x.find(row => row.id === defaultTarget)).toBeDefined();
+});

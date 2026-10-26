@@ -335,6 +335,10 @@ export async function plan(input: StateInput, connection: StateConnection, optio
         let current = sortedIds(actual.get(id)![name]);
         if (isExact(raw) && bindings[id] && !Array.isArray(actual.get(id)![name])) fail('EXACT_VISIBILITY', `${id}.${name}: incomplete relation read`);
         if (isExact(raw)) {
+          // Explicit empty initial membership suppresses server defaults on a
+          // new record. Desired targets are linked after their identities exist.
+          // This is never emitted for an existing record or an ordinary list.
+          if (!bindings[id]) scalar[name] = [[6, 0, []]];
           // Validate every observed link, including unexpected ones, before it
           // can become a concrete reviewed unlink. No target deletion occurs.
           const targetMeta = await fields(field.relation!);
