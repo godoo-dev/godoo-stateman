@@ -8,6 +8,7 @@ export type { FileReader, TranslationMeta, TranslationEntry } from './content.js
 
 export { plan, drift } from './plan.js';
 export { apply } from './apply.js';
+export { equivalentHtml } from './html-equivalence.js';
 export * from './state-types.js';
 export { openRecoveryJournal, readRecoveryJournal } from './journal.js';
 export { createSchemaContext, createConnection } from './runtime.js';

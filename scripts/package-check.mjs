@@ -28,6 +28,7 @@ try {
   cpSync(join(root,'tests/fixtures/consumer'), join(consumer,'consumer'), { recursive: true });
   cpSync(join(root,'tests/installed-acceptance.mts'), join(consumer,'installed-acceptance.mts'));
   cpSync(join(root,'tests/fake-client.ts'), join(consumer,'fake-client.ts'));
+  for (const name of ['scoped-client.ts', 'scoped-acceptance.ts']) cpSync(join(root,'tests',name), join(consumer,name));
   writeFileSync(join(consumer,'tsconfig.json'), JSON.stringify({compilerOptions:{target:'ES2023',module:'NodeNext',moduleResolution:'NodeNext',strict:true,noEmit:true,types:['node']},include:['*.ts','*.mts','consumer/**/*.ts','consumer/**/*.mts']}));
   const installed = join(consumer,'node_modules/@godoo-dev/stateman');
   assert.ok(realpathSync(installed).startsWith(realpathSync(consumer) + '/'), 'Package resolved outside isolated consumer');

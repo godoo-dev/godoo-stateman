@@ -30,6 +30,11 @@ export interface FieldMetadata {
   relation_field?: string;
   required?: boolean;
   readonly?: boolean;
+  company_dependent?: boolean;
+  translate?: boolean;
+  store?: boolean;
+  domain?: unknown;
+  context?: Row;
 }
 export type Schema = Record<string, Record<string, FieldMetadata>>;
 export type StateInput = string | Inspection | readonly ResourceDefinition[];
@@ -59,7 +64,11 @@ export interface Mutation {
   /** Exact existing record, or resolved from the earlier create for this XML ID. */
   id?: number;
   values: Row;
+  /** Effective observed values for a contextual change; null means a new record. */
+  before?: Row;
   context?: Row;
+  /** Current company for a company-dependent effective-value write. */
+  companyId?: number;
   dependsOn: string[];
 }
 export interface Plan {

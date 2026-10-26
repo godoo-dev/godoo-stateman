@@ -88,8 +88,15 @@ Shared references to the same declared child retain that canonical identity.
 content paths use the input directory or `--content-root`; use module-relative
 absolute paths for content in nested modules. Rendering is not HTML sanitization.
 `translated` supports scalar string fields through contextual writes and fresh
-language reads. Separate language records are ordinary resources. Python assembly
+language reads. Plans restore affected defaults after translation writes, using
+the caller's base context; choose it explicitly (for example `{ lang: false }`).
+See [translation write ordering](docs/index.md#translation-write-ordering).
+Separate language records are ordinary resources. Python assembly
 is an ordinary helper producing a string; Stateman never executes that Python.
+HTML fields use bounded Odoo storage comparison, including translations;
+`equivalentHtml` exposes the same rules for read assertions. Authored strings,
+text whitespace and exact stale-plan observations remain intact. See
+[HTML storage convergence](docs/index.md#html-storage-convergence) for its limits.
 
 ## Plan, apply and inspect fresh drift
 
@@ -151,8 +158,12 @@ a transaction or a concurrent-writer lock. Keep an environment under one operato
   `env.ref()` calls. Stateman does not infer Python dependencies. A selection includes
   managed closure; missing definitions or unsupported cycles fail before writes.
 - Nested M2O, declared child/inverse, same-model, list and recursive JSON references
-  resolve to committed IDs. X2many links are additive. Unrelated stages, tags and
-  manual records stay linked unless specific M2M links are explicitly removed.
+  resolve to committed IDs. X2many lists are additive. Opt into owned M2M
+  membership with `exact([...])`; its visibility audit requires an explicit complete
+  authorized-company context. Reviewed unlinks remove only those relations.
+- `companyValues([{ company: lookup('res.company', { name: 'Company A' }), value }])`
+  manages effective values of a company-dependent field on one resource identity.
+  Omitted companies stay unmanaged. See the [scoped-value contracts](docs/index.md#exact-relation-sets-and-company-dependent-values).
 - Legacy `removeUnmanaged` is ignored with a diagnostic; model-wide orphan policies
   are rejected. Enumerate M2M unlink IDs, or record removals plus an exact ownership
   allowlist. Other XML-ID aliases protect a record from archive/delete. Adoption

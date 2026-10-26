@@ -4,6 +4,8 @@ export { lookup } from './lookup.js';
 export { resource, ref } from './resource.js';
 export { model } from './model.js';
 export { children, isChildrenRef } from './children.js';
+export { exact, companyValues, isExact, isCompanyValues } from './scoped-values.js';
+export type { ExactRelation, CompanyValue, CompanyValues, RelationTarget } from './scoped-values.js';
 export type { ChildrenRef } from './children.js';
 export * from './types.js';
 export { md, mdFile, translated, withCss, html } from './markers.js';

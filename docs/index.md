@@ -76,9 +76,10 @@ rejects before writes. Parent x2many/child inverse edges are staged as creation
 followed by links. `children`
 scopes adoption to the actual parent; if that parent is new, it never falls back
 to a global name lookup. JSON/list refs resolve recursively. X2many authoring uses
-lists of numeric IDs/lookups/refs, not arbitrary command tuples. Numeric relation
+lists of numeric IDs/lookups/refs, not arbitrary command tuples. Use `exact()`
+for explicit M2M ownership within a validated company visibility scope (below). Numeric relation
 IDs are checked for visible target records. Field metadata validates relation
-models. Writes use positive links to preserve unrelated/manual records.
+models. Ordinary lists use positive links to preserve unrelated/manual records.
 
 ## Planning and prerequisites
 
@@ -104,6 +105,58 @@ is assumed. An empty `requiredAddons` checks models/fields but asserts no addon
 closure. Source availability, catalog freshness, unfiltered visibility and
 Python/system prerequisites remain unknown even with complete registered edges.
 No module refresh/install/upgrade or action execution occurs in this core.
+
+## Translation write ordering
+
+When a contextual translation differs, the reviewed plan includes its update and
+one final `translation-defaults` update containing the authored default values of
+only the fields with translation writes. This final operation uses the caller's
+base context (for example `{ lang: false }`). Odoo 18 also overwrites its fallback
+value during contextual writes when `en_US` is inactive; the final default write
+preserves that value without activating a language. Text and HTML defaults keep
+their original authoring bytes.
+
+Dependent resources and cron activation wait for this visible operation. A failed
+write uses ordinary failure handling; a fresh plan after partial completion can
+restore the base through an ordinary scalar update. Already-converged plans stay
+empty. There is no hidden post-apply repair or extra language/ACL discovery.
+
+Choose the base context explicitly when managing translations. With `lang: false`,
+Odoo uses its `en_US` fallback. With an explicit language string, defaults belong
+to that language. A translation targeting that same language must agree with its
+default (using the field's storage comparison), or planning fails with
+`TRANSLATION_CONFLICT`. If `lang` is omitted, the connection's effective language
+remains caller-owned; Stateman does not discover it. Every translated field must
+have an authored string default, including manually supplied inspections.
+
+## HTML storage convergence
+
+For fields reported as `html`, planning uses `equivalentHtml(a, b)` for both
+base values and contextual translation reads. The comparison tolerates
+the observed Odoo 18 serialization of standard HTML void elements (`<br>` / `<br/>`,
+`<img ...>` / `<img .../>`) and empty QWeb elements (`<t ...></t>` / `<t .../>`).
+It also recognizes an empty final paragraph whose only attribute is an unfinished
+double-quoted literal `style`, such as `<p style="margin:0px`, when Odoo completes
+it as `<p style="margin:0px"/>`. This narrow EOF case requires balanced preceding
+elements and a style value containing only ASCII letters/digits, spaces and
+`. : ; # % _ + -`. It excludes expression syntax, URLs and other attributes.
+Other malformed structure is never repaired.
+
+All text and whitespace, entities, attribute spelling/order/values, URLs and QWeb
+expressions remain significant. The helper is for storage comparison, not rendering
+or sanitization. Writes retain the authored string, and reviewed-plan observations
+retain the exact server values for stale-plan checks. Languages are read and
+compared separately. Arbitrary DOM repair and whitespace equivalence are excluded.
+Tag names must be lowercase and attribute values quoted for these rules to apply.
+Raw-text elements (such as `script`, `style` and `textarea`), text interpolation
+syntax (`{{`, `#{`, `${`), and unsupported markup cause the whole comparison to
+fall back to exact equality. Comments are retained exactly.
+
+```ts
+import { equivalentHtml } from '@godoo-dev/stateman';
+equivalentHtml('<t t-out="object.name"></t><br>', '<t t-out="object.name"/><br/>'); // true
+equivalentHtml('<p>A B<br></p>', '<p>AB<br/></p>'); // false
+```
 
 ## Apply and failure handling
 
@@ -198,3 +251,100 @@ separate from source typechecks and fake-CRUD acceptance.
 
 See [portable fixtures and seeding](fixtures.md) and [explicit addon stages](modules.md).
 These compose the same planning/recovery engine with explicitly selected targets.
+
+## Exact relation sets and company-dependent values
+
+These additions are source behavior for the next candidate; they are not part of
+published 0.1.0. Qualify artifacts with the native installed-package and disposable
+Odoo 18 checks before use.
+
+`exact([targets])` opts one M2M field into exact membership across an explicitly
+supplied `context.allowed_company_ids` containing all companies authorized for the
+connection user. Other companies remain outside that owned scope. Planning must
+reject restricted visibility it cannot establish, including unrecognized target
+record rules and field context overrides. Apply reviews
+concrete positive links and enumerated unlinks; it never deletes shared targets.
+Ordinary lists remain additive and `exact([])` declares an empty owned set.
+
+`companyValues([{ company: lookup('res.company', { name: 'Company A' }), value }])`
+declares effective values of a company-dependent field on one resource. Companies
+must already exist and be authorized; relation values can refer to newly created
+managed resources. Each company is selected first in `allowed_company_ids`, while
+retaining the base visibility context. Omitted companies remain unmanaged;
+`false` is an explicit effective false value, not removal of an Odoo fallback.
+Translated company-dependent fields and nested company/exact markers are rejected.
+Ordinary translated fields can coexist on the same resource. Company observations
+and scoped mutations participate in the reviewed digest and readiness graph.
+
+
+```ts
+import { companyValues, exact, lookup, ref, resource } from '@godoo-dev/stateman';
+
+const service = resource('product.template', 'example.service', {
+  name: 'Shared service',
+  taxes_id: exact([lookup('account.tax', { name: 'Example sale tax' })]),
+  property_account_income_id: companyValues([
+    { company: lookup('res.company', { name: 'Company A' }), value: ref('example.incomeA') },
+    { company: lookup('res.company', { name: 'Company B' }), value: ref('example.incomeB') },
+  ]),
+});
+```
+
+Include the managed account definitions in the same input. The example requires
+those company/tax identities to exist and be unambiguous and accessible. Supply
+`context: { allowed_company_ids: [/* every authorized company ID */], lang: 'en_US' }`
+to `plan`. This visibility list is the owned exact-set scope; ordinary field
+translations retain its company order, while each company-value operation moves
+its declared company to the first position. Base custom context keys are retained.
+Do not use competing `force_company` or `company_id` context keys with these markers.
+
+Exact sets support writable stored M2M fields, including explicit empty intent,
+lookup/managed/numeric targets and targets created earlier in the same plan.
+For a new resource, the create explicitly starts its exact M2M fields empty to
+suppress server defaults, then ordered positive links establish the requested set.
+Existing records use only enumerated link/unlink commands.
+Membership is owned across all authorized companies and shared targets;
+visible target records whose ordinary `company_id` lies outside that scope remain
+unmanaged. Company subsets are refused, as are field context overrides,
+unsupported company partitions, incomplete relation
+reads and arbitrary target read rules. The audit requires read access to the
+user's company authorization, companies and `ir.rule`. Recognized rules are empty,
+constant true, and `company_id in company_ids` or `company_id parent_of company_ids`
+predicates, optionally including shared (`company_id = False`) records. Other rules are rejected even
+when their group might not apply to this user. This is intentionally conservative.
+
+The planner audits at most 10,000 visible target records and uses numeric-ID M2M
+membership searches to discover links hidden by relation-field read filtering.
+If these searches discover links hidden by a field domain, planning refuses with
+the concrete target IDs: Odoo 18 also filters the old membership used by its unlink
+implementation, so command3 cannot safely reconcile those links. Ordinary visible
+product sale-tax sets are supported; domain-hidden links need explicit operator
+investigation outside this contract.
+Larger target universes fail before writes. These Odoo 18 checks establish the
+supported standard ORM scope, not completeness for custom model/search overrides.
+The reviewed observations include the audit universe and rules, so changes to
+these also require a fresh plan. Exact removals become enumerated `[3,id,0]`
+unlink operations following additions; reviewing/applying that plan authorizes
+only those links. They never authorize target archive/delete. Do not combine
+`exact()` and `PlanOptions.unlink` for the same field.
+
+Company values support non-translated writable scalar fields whose fresh metadata
+reports `company_dependent`, including many2one references. Companies must already
+exist and be authorized; new companies need a separate earlier stage. Duplicate
+company entries, malformed or nested markers, company-dependent translations,
+x2many/JSON company values, and creating a resource with a required company-value
+field are refused. A translated ordinary field may coexist on the same resource.
+Without a base company list, each declared value uses that company alone; an
+explicit base list must be authorized and include every declared company.
+
+Values describe Odoo's **effective** per-company read, including its fallback;
+they do not assert that an explicit JSONB override exists. If the fallback already
+matches, there is no write. `false` requests an effective false for relation,
+boolean and string/date fields; numeric fields require a number (use `0`, not
+`false`). `null` and removing an override to resume a fallback are unsupported.
+Omitted companies preserve their overrides and effective values. Contextual writes
+are deferred until resource identity and referenced resources are ready. Every
+operation shows `companyId`, record/XML ID, field, effective `before` value,
+desired `values` and full context; fresh
+company reads participate in stale checks. Partial failure uses the same retained
+create receipts and ordinary re-plan/review/retry path.
