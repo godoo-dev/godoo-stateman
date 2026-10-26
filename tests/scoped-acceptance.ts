@@ -41,15 +41,25 @@ export async function scopedAcceptance() {
   store.effective.set(`x:${record}:property:${companies[0]}`, a);
   store.effective.set(`x:${record}:property:${companies[1]}`, a);
   store.effective.set(`x:${record}:property:${companies[2]}`, b);
+  store.mirrorTranslations = true;
+  store.data.x.find(row => row.id === record)!.body = '<p>Base<br/></p>';
+  store.languages.set(`x:${record}:body:es_ES`, '<p>Idioma<br/></p>');
+  const combinedContext = { ...context, lang: false };
   const desired = [resource('x', 'scope.shared', {
+    items: exact([a]),
+    body: translated('<p>Base<br></p>', { es_ES: '<p>Idioma<br></p>' }),
     property: companyValues([
       { company: lookup('res.company', { name: 'Company A' }), value: a },
       { company: companies[1], value: ref('scope.account') },
     ]), description: translated('Keep', { es_ES: 'Conservar' }),
   }), resource('x', 'scope.account', { name: 'New account' })];
-  const companyPlan = await plan(desired, store.connection(), { context, recovery: receipts });
-  await assert.rejects(plan(desired, store.connection(), { context: { allowed_company_ids: [companies[0]] }, recovery: receipts }), { code: 'COMPANY_CONTEXT' });
+  const companyPlan = await plan(desired, store.connection(), { context: combinedContext, recovery: receipts });
+  await assert.rejects(plan(desired, store.connection(), { context: { allowed_company_ids: [companies[0]] }, recovery: receipts }), { code: 'EXACT_VISIBILITY' });
   assert.deepEqual(companyPlan.operations.filter(op => op.companyId).map(op => op.companyId), [companies[1]]);
+  assert.equal(companyPlan.operations.some(op => 'body' in op.values), false);
+  const restore = companyPlan.operations.find(op => op.key.endsWith(':translation-defaults'))!;
+  assert.deepEqual(restore.values, { description: 'Keep' });
+  assert.equal(restore.context?.lang, false);
   const operation = companyPlan.operations.find(op => op.companyId)!;
   assert.deepEqual(operation.before, { property: a });
   assert.deepEqual(operation.context?.allowed_company_ids, [companies[1], companies[0], companies[2]]);
@@ -60,12 +70,15 @@ export async function scopedAcceptance() {
   store.failure = (_method, _model, values) => values?.property ? new Error('company write refused') : undefined;
   const failed = await apply(companyPlan, store.connection(), { journal }); assert.equal(failed.ok, false);
   store.failure = undefined;
-  const retried = await apply(await plan(desired, store.connection(), { context, recovery: receipts }), store.connection(), { journal });
+  const retried = await apply(await plan(desired, store.connection(), { context: combinedContext, recovery: receipts }), store.connection(), { journal });
   assert.equal(retried.ok, true);
   assert.equal(store.data.x.filter(row => row.name === 'New account').length, 1);
+  assert.deepEqual(store.data.x.find(row => row.id === record)!.items, [a]);
+  assert.equal(store.data.x.find(row => row.id === record)!.description, 'Keep');
+  assert.equal(store.languages.get(`x:${record}:description:es_ES`), 'Conservar');
   assert.equal(store.effective.get(`x:${record}:property:${companies[0]}`), a);
   assert.equal(store.effective.get(`x:${record}:property:${companies[2]}`), b);
-  assert.equal((await apply(await plan(desired, store.connection(), { context, recovery: receipts }), store.connection())).committed, 0);
+  assert.equal((await apply(await plan(desired, store.connection(), { context: combinedContext, recovery: receipts }), store.connection())).committed, 0);
   const reset = [resource('x', 'scope.shared', { property: companyValues([{ company: companies[1], value: false }]) })];
   assert.equal((await apply(await plan(reset, store.connection(), { context }), store.connection())).ok, true);
   assert.equal(store.effective.get(`x:${record}:property:${companies[1]}`), false);

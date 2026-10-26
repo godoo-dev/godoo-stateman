@@ -9,12 +9,14 @@ export class ScopedClient extends FakeClient {
   contexts: Row[] = [];
   languages = new Map<string, unknown>();
   hiddenCompany?: number;
+  mirrorTranslations = false;
   constructor() {
     super();
     this.schema['res.company'] = { name: { type: 'char' } };
     this.schema['res.users'] = { company_ids: { type: 'many2many', relation: 'res.company' } };
     this.schema.x.items.store = true;
     this.schema.x.property = { type: 'many2one', relation: 'x', company_dependent: true };
+    this.schema.x.body = { type: 'html', translate: true };
     this.schema.x.description = { type: 'text', translate: true };
     this.schema['ir.rule'] = { name: { type: 'char' }, 'model_id.model': { type: 'char' }, active: { type: 'boolean' }, perm_read: { type: 'boolean' }, domain_force: { type: 'text' } };
   }
@@ -40,7 +42,12 @@ export class ScopedClient extends FakeClient {
     for (const id of Array.isArray(ids) ? ids : [ids]) {
       for (const [name, value] of contextual) {
         if (this.schema[model][name].company_dependent) this.effective.set(`${model}:${id}:${name}:${company}`, value);
-        else this.languages.set(`${model}:${id}:${name}:${context.lang}`, value);
+        else {
+          this.languages.set(`${model}:${id}:${name}:${context.lang}`, value);
+          // Independent inactive-base fixture: contextual translations also
+          // overwrite the fallback until the authored default is restored.
+          if (this.mirrorTranslations) await super.write(model, id, { [name]: value });
+        }
       }
       this.mutations.push({ method: 'write', model, id, values });
       this.contexts.push(context);

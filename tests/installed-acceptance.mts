@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { apply, children, plan, drift, resource, ref, openRecoveryJournal, readRecoveryJournal } from '@godoo-dev/stateman';
+import { apply, children, equivalentHtml, plan, drift, resource, ref, openRecoveryJournal, readRecoveryJournal } from '@godoo-dev/stateman';
 import { FakeClient } from './fake-client.js';
 import { scopedAcceptance } from './scoped-acceptance.js';
 
@@ -12,6 +12,11 @@ console.log('PASS: installed exact M2M ownership and company-dependent effective
 
 const root = import.meta.dirname;
 const client = new FakeClient();
+assert.equal(equivalentHtml('<t t-out="object.name"></t><br>', '<t t-out="object.name"/><br/>'), true);
+assert.equal(equivalentHtml('<p style="ma', '<p style="ma"/>'), true);
+assert.equal(equivalentHtml('<t t-out="object.name"></t>', '<t t-out="object.email"/>'), false);
+client.seed('document.page', { content: '<p>Installed<br/></p>' }, 'fixture.html');
+assert.deepEqual((await plan([resource('document.page', 'fixture.html', { content: '<p>Installed<br></p>' })], client.connection())).operations, []);
 const definitions = [resource('x', 'fixture.root', { name: 'Root' }), resource('x', 'fixture.child', { name: 'Child', parent_id: ref('fixture.root'), items: [ref('fixture.root')] })];
 const path = resolve(root, 'api-recovery.json');
 const journal = await openRecoveryJournal(path);

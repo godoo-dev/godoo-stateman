@@ -6,6 +6,7 @@ import { isCompanyValues, isExact } from './dsl/scoped-values.js';
 import { validateExactScope } from './relation-scope.js';
 import { assertId, copy, digest, domain, equal, fail, identity, record, sortGraph, walkRefs, xmlid } from './state-utils.js';
 import { StateError } from './state-types.js';
+import { equivalentHtml } from './html-equivalence.js';
 import type { FieldMetadata, Mutation, Observation, Plan, PlanOptions, Row, Schema, StateConnection, StateInput, StoredPlanOptions } from './state-types.js';
 
 const multiple = (field: FieldMetadata): boolean => ['one2many', 'many2many'].includes(field.type);
@@ -22,6 +23,10 @@ function companyScalar(value: unknown, field: FieldMetadata): boolean {
   if (field.type === 'integer') return typeof value === 'number' && Number.isSafeInteger(value);
   if (['float', 'monetary'].includes(field.type)) return typeof value === 'number' && Number.isFinite(value);
   return value === false || typeof value === 'string';
+}
+function fieldEqual(a: unknown, b: unknown, field: FieldMetadata): boolean {
+  return field.type === 'html' && typeof a === 'string' && typeof b === 'string'
+    ? equivalentHtml(a, b) : equal(normalized(a, field), normalized(b, field));
 }
 
 /** Read-only planning. Every observation relevant to mutations is included in the digest. */
@@ -313,7 +318,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
         for (const entry of entries.sort((a, b) => a.companyId - b.companyId)) {
           const rows = bindings[id] ? await search(resource.model, [['id', '=', bindings[id]]], [name], undefined, entry.context) : [];
           if (bindings[id] && rows.length !== 1) fail('RECORD_UNAVAILABLE', `${id}: inaccessible in company ${entry.companyId}`);
-          if (!bindings[id] || !equal(normalized(entry.value, field), normalized(rows[0][name], field))) {
+          if (!bindings[id] || !fieldEqual(entry.value, rows[0][name], field)) {
             const mutation = op(resource, 'update', { [name]: entry.value }, `company:${name}:${entry.companyId}`, entry.context);
             mutation.companyId = entry.companyId;
             mutation.before = { [name]: bindings[id] ? normalized(rows[0][name], field) : null };
@@ -378,7 +383,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
         }
         const missing = (value as unknown[]).filter(v => typeof v !== 'number' || !current.includes(v));
         if (missing.length) relation[name] = missing.map(v => [4, v, 0]);
-      } else if (!bindings[id] || !equal(normalized(value, field), normalized(actual.get(id)![name], field))) scalar[name] = value;
+      } else if (!bindings[id] || !fieldEqual(value, actual.get(id)![name], field)) scalar[name] = value;
     }
     if (resource.model === 'ir.cron') {
       if (typeof desired.get(id)!.active === 'boolean') delete scalar.active;
@@ -390,14 +395,23 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       if (Object.keys(scalar).length) operations.push(op(resource, 'update', scalar));
     }
     if (Object.keys(relation).length) links.push(op(resource, 'link', relation));
-    // Legacy field translations remain explicit contextual writes, with fresh
-    // language reads included in assumptions. Consumer language records need none.
+    // Contextual writes may mirror into Odoo's inactive en_US fallback. Restore
+    // only affected defaults as explicit reviewed work, after all translations.
+    const translationDefaults: Row = {};
     for (const entry of resource.translations?.entries ?? []) {
       const field = schema[resource.model][entry.field];
       if (!field || field.relation || typeof entry.value !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}: translation needs a scalar string field`);
+      const defaultValue = desired.get(id)![entry.field];
+      if (typeof defaultValue !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}.${entry.field}: translation needs an authored string default`);
+      const baseLang = context.lang === false ? 'en_US' : context.lang;
+      if (entry.lang === baseLang && !fieldEqual(defaultValue, entry.value, field)) fail('TRANSLATION_CONFLICT', `${id}.${entry.field}: base context and translation ${entry.lang} request different values`);
       const rows = bindings[id] ? await search(resource.model, [['id', '=', bindings[id]]], [entry.field], undefined, { lang: entry.lang }) : [];
-      if (!rows.length || !equal(rows[0][entry.field], entry.value)) links.push(op(resource, 'update', { [entry.field]: entry.value }, `translation:${entry.field}:${entry.lang}`, { lang: entry.lang }));
+      if (!rows.length || !fieldEqual(rows[0][entry.field], entry.value, field)) {
+        links.push(op(resource, 'update', { [entry.field]: entry.value }, `translation:${entry.field}:${entry.lang}`, { lang: entry.lang }));
+        translationDefaults[entry.field] = defaultValue;
+      }
     }
+    if (Object.keys(translationDefaults).length) links.push(op(resource, 'update', translationDefaults, 'translation-defaults'));
   }
   operations.push(...links, ...exactUnlinks);
 

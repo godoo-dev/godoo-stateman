@@ -88,8 +88,15 @@ Shared references to the same declared child retain that canonical identity.
 content paths use the input directory or `--content-root`; use module-relative
 absolute paths for content in nested modules. Rendering is not HTML sanitization.
 `translated` supports scalar string fields through contextual writes and fresh
-language reads. Separate language records are ordinary resources. Python assembly
+language reads. Plans restore affected defaults after translation writes, using
+the caller's base context; choose it explicitly (for example `{ lang: false }`).
+See [translation write ordering](docs/index.md#translation-write-ordering).
+Separate language records are ordinary resources. Python assembly
 is an ordinary helper producing a string; Stateman never executes that Python.
+HTML fields use bounded Odoo storage comparison, including translations;
+`equivalentHtml` exposes the same rules for read assertions. Authored strings,
+text whitespace and exact stale-plan observations remain intact. See
+[HTML storage convergence](docs/index.md#html-storage-convergence) for its limits.
 
 ## Plan, apply and inspect fresh drift
 

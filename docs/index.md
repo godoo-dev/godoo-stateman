@@ -106,6 +106,58 @@ closure. Source availability, catalog freshness, unfiltered visibility and
 Python/system prerequisites remain unknown even with complete registered edges.
 No module refresh/install/upgrade or action execution occurs in this core.
 
+## Translation write ordering
+
+When a contextual translation differs, the reviewed plan includes its update and
+one final `translation-defaults` update containing the authored default values of
+only the fields with translation writes. This final operation uses the caller's
+base context (for example `{ lang: false }`). Odoo 18 also overwrites its fallback
+value during contextual writes when `en_US` is inactive; the final default write
+preserves that value without activating a language. Text and HTML defaults keep
+their original authoring bytes.
+
+Dependent resources and cron activation wait for this visible operation. A failed
+write uses ordinary failure handling; a fresh plan after partial completion can
+restore the base through an ordinary scalar update. Already-converged plans stay
+empty. There is no hidden post-apply repair or extra language/ACL discovery.
+
+Choose the base context explicitly when managing translations. With `lang: false`,
+Odoo uses its `en_US` fallback. With an explicit language string, defaults belong
+to that language. A translation targeting that same language must agree with its
+default (using the field's storage comparison), or planning fails with
+`TRANSLATION_CONFLICT`. If `lang` is omitted, the connection's effective language
+remains caller-owned; Stateman does not discover it. Every translated field must
+have an authored string default, including manually supplied inspections.
+
+## HTML storage convergence
+
+For fields reported as `html`, planning uses `equivalentHtml(a, b)` for both
+base values and contextual translation reads. The comparison tolerates
+the observed Odoo 18 serialization of standard HTML void elements (`<br>` / `<br/>`,
+`<img ...>` / `<img .../>`) and empty QWeb elements (`<t ...></t>` / `<t .../>`).
+It also recognizes an empty final paragraph whose only attribute is an unfinished
+double-quoted literal `style`, such as `<p style="margin:0px`, when Odoo completes
+it as `<p style="margin:0px"/>`. This narrow EOF case requires balanced preceding
+elements and a style value containing only ASCII letters/digits, spaces and
+`. : ; # % _ + -`. It excludes expression syntax, URLs and other attributes.
+Other malformed structure is never repaired.
+
+All text and whitespace, entities, attribute spelling/order/values, URLs and QWeb
+expressions remain significant. The helper is for storage comparison, not rendering
+or sanitization. Writes retain the authored string, and reviewed-plan observations
+retain the exact server values for stale-plan checks. Languages are read and
+compared separately. Arbitrary DOM repair and whitespace equivalence are excluded.
+Tag names must be lowercase and attribute values quoted for these rules to apply.
+Raw-text elements (such as `script`, `style` and `textarea`), text interpolation
+syntax (`{{`, `#{`, `${`), and unsupported markup cause the whole comparison to
+fall back to exact equality. Comments are retained exactly.
+
+```ts
+import { equivalentHtml } from '@godoo-dev/stateman';
+equivalentHtml('<t t-out="object.name"></t><br>', '<t t-out="object.name"/><br/>'); // true
+equivalentHtml('<p>A B<br></p>', '<p>AB<br/></p>'); // false
+```
+
 ## Apply and failure handling
 
 Apply checks the saved digest, re-plans the complete saved intent and compares
