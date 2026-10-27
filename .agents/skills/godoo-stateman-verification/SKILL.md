@@ -105,6 +105,7 @@ receipt/dependency/security contract to make a regression pass.
 
 When API paths, fixtures, runtime assumptions or commands change, compare these
 instructions and their actual callers, repair driving/observation gaps, then rerun
-the affected public interface. Route product failures through the shared tracker.
+the affected public interface. Route product failures through
+[project capture](../godoo-stateman-capture/SKILL.md) into this repository’s GitHub issues.
 Cloud/business/staging/human acceptance remains application-owned. No service,
 registry, deployment or credential authority follows from this verifier.

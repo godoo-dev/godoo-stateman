@@ -2,8 +2,10 @@
 
 Compose desired Odoo configuration in TypeScript, review a deterministic plan,
 apply it with explicit recovery storage, and check fresh drift. The package
-`@godoo-dev/stateman` targets Node 24+ and Odoo 18. Version 0.1.0 is prepared for
-public npm distribution; registry availability requires completed publication.
+`@godoo-dev/stateman` targets Node 24+ and Odoo 18. The [v0.1.0 release](https://github.com/godoo-dev/godoo-stateman/releases/tag/v0.1.0)
+was published on 25 October 2026; its release record reports verified npm bytes
+and installed API/CLI consumers. This is historical release evidence, not a fresh
+registry or application acceptance check.
 
 The current acceptance target is installed API/CLI behavior against sanitized
 disposable Odoo 18. Native checks below distinguish offline simulation, installed
@@ -214,10 +216,11 @@ TypeScript source ships in the tarball. Python source/tests/packaging are preser
 as an incomplete prior implementation; see the [Python reference](docs/python-reference.md).
 This is not a commitment to maintain parallel implementations.
 
-The [developer API guide](docs/index.md) describes the local core. Maintainers can
-consult the private [HQ target](/home/marc/dev/godoo-dev/godoo-hq/docs/stateman.md) and
-[delivery roadmap](/home/marc/dev/godoo-dev/godoo-hq/docs/roadmap.md); these local links
-are not installation prerequisites. Source, offline tests, package publication,
+The [developer API guide](docs/index.md) describes the local core. The
+[product contract and direction](docs/stateman.md) belong to this repository.
+The [organization README](https://github.com/godoo-dev/.github/blob/main/profile/README.md)
+provides optional family orientation; ordinary use requires no online profile
+fetch. Source, offline tests, package publication,
 disposable Odoo verification and consumer acceptance are distinct evidence.
 
 ## Required checks
