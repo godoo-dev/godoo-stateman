@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { apply, companyValues, exact, inspectResources, lookup, plan, ref, resource, translated } from '@godoo-dev/stateman';
-import { scopedAcceptance } from './scoped-acceptance.js';
+import { scopedAcceptance, standardContextAcceptance } from './scoped-acceptance.js';
 import { scopedStore } from './scoped-client.js';
 
 describe('scoped relation and company values', () => {
+  it('qualifies the bounded accounting display context', standardContextAcceptance);
   it('reconciles exact sets and company values through failure/recovery', scopedAcceptance);
   it.each(['missing-context', 'partial-companies', 'field-context', 'record-rule', 'target-hidden', 'non-m2m', 'competing-context'] as const)('refuses unsafe exact visibility: %s', async kind => {
     const { store, companies, context } = scopedStore();

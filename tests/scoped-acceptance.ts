@@ -85,3 +85,56 @@ export async function scopedAcceptance() {
   assert.equal((await drift(reset, store.connection(), { context })).converged, true);
   return { store, companies, context, record, a, b };
 }
+
+/** Standard accounting display context, also run from the isolated tarball. */
+export async function standardContextAcceptance() {
+  const { store, context } = scopedStore();
+  store.schema['account.tax'] = { name: { type: 'char' } };
+  store.schema['account.account'] = { tax_ids: { type: 'many2many', relation: 'account.tax', store: true, context: { append_type_to_tax_name: true } } };
+  const a = store.seed('account.tax', { name: 'Tax A' }), b = store.seed('account.tax', { name: 'Tax B' });
+  const account = store.seed('account.account', { tax_ids: [a, b] }, 'scope.standard');
+  const desired = (ids: number[]) => [resource('account.account', 'scope.standard', { tax_ids: exact(ids) })];
+  for (const ids of [[a], [], [b]]) {
+    const reviewed = await plan(desired(ids), store.connection(), { context });
+    assert.equal(reviewed.digest, (await plan(desired(ids), store.connection(), { context })).digest);
+    assert.equal((await apply(JSON.parse(JSON.stringify(reviewed)), store.connection())).ok, true);
+    assert.deepEqual(store.data['account.account'].find(row => row.id === account)!.tax_ids, ids);
+    assert.equal((await apply(await plan(desired(ids), store.connection(), { context }), store.connection())).committed, 0);
+  }
+  assert.equal(store.data['account.tax'].length, 2);
+  const field = store.schema['account.account'].tax_ids;
+  const reviewed = await plan(desired([]), store.connection(), { context });
+  field.context = {};
+  await assert.rejects(apply(reviewed, store.connection()), { code: 'STALE_PLAN' });
+  for (const rejected of [{ append_type_to_tax_name: false }, { append_type_to_tax_name: 1 }, { append_type_to_tax_name: 'true' }, { append_type_to_tax_name: true, active_test: false }, { allowed_company_ids: [1] }, { arbitrary: 'PRIVATE_VALUE' }]) {
+    field.context = rejected;
+    await assert.rejects(plan(desired([]), store.connection(), { context }), error => {
+      const failure = error as Error & { code: string };
+      assert.equal(failure.code, 'EXACT_VISIBILITY');
+      assert.match(failure.message, /scope.standard.*account.account.tax_ids/);
+      assert.ok(failure.message.includes(Object.keys(rejected)[0]));
+      assert.ok(!failure.message.includes('PRIVATE_VALUE'));
+      return true;
+    });
+  }
+  field.context = { append_type_to_tax_name: true };
+  field.relation = 'x';
+  await assert.rejects(plan(desired([]), store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
+  field.relation = 'account.tax';
+  store.schema.x.items.context = { append_type_to_tax_name: true };
+  store.seed('x', {}, 'scope.wrong');
+  await assert.rejects(plan([resource('x', 'scope.wrong', { items: exact([]) })], store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
+  store.schema['account.account'].other_taxes = { ...field };
+  await assert.rejects(plan([resource('account.account', 'scope.standard', { other_taxes: exact([]) })], store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
+  store.schema.x.tax_ids = { ...field };
+  await assert.rejects(plan([resource('x', 'scope.wrong', { tax_ids: exact([]) })], store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
+  const beforeRefusals = store.mutations.length;
+  for (const malformed of ['append_type_to_tax_name', ['append_type_to_tax_name']]) {
+    field.context = malformed as any;
+    await assert.rejects(plan(desired([]), store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
+  }
+  assert.equal(store.mutations.length, beforeRefusals);
+  field.context = { append_type_to_tax_name: true };
+  store.version = '19.0';
+  await assert.rejects(plan(desired([]), store.connection(), { context, odooMajorVersions: [19] }), { code: 'EXACT_VISIBILITY' });
+}
