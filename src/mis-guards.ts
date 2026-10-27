@@ -32,19 +32,20 @@ export async function protectMis(resources: InspectedResource[], bindings: Recor
         const rows = await search(r.model, [['id', '=', id]], ['multi'], 2);
         if (rows.length !== 1 || rows[0].multi !== v.multi) fail('MIS_MULTI_TRANSITION', `${r.externalId}: multi/scalar transitions need an explicit migration`);
       }
-      if (id && v.multi === true && Array.isArray(v.expression_ids)) {
+      if (id && (v.multi === true || v.multi === false) && Array.isArray(v.expression_ids)) {
         const rows = await search('mis.report.kpi.expression', [['kpi_id', '=', id]], ['subkpi_id']);
-        for (const expression of v.expression_ids.filter(isResourceRef)) {
-          const child = byId.get(expression.externalId);
-          if (!child || !('subkpi_id' in child.values)) continue;
-          const sub = await resolve(child.values.subkpi_id, 'mis.report.subkpi');
-          if (typeof sub === 'number' && rows.some(row => m2o(row.subkpi_id) === sub && Number(row.id) !== bindings[expression.externalId])) fail('MIS_EXPRESSION_CONFLICT', `${expression.externalId}: explicitly adopt the retained sub-KPI expression`);
+        const expressions = v.expression_ids.filter(isResourceRef);
+        if (v.multi) {
+          for (const expression of expressions) {
+            const child = byId.get(expression.externalId);
+            if (!child || !('subkpi_id' in child.values)) continue;
+            const sub = await resolve(child.values.subkpi_id, 'mis.report.subkpi');
+            if (typeof sub === 'number' && rows.some(row => m2o(row.subkpi_id) === sub && Number(row.id) !== bindings[expression.externalId])) fail('MIS_EXPRESSION_CONFLICT', `${expression.externalId}: explicitly adopt the retained sub-KPI expression`);
+          }
+        } else {
+          const desired = expressions.map(e => bindings[e.externalId]);
+          if (rows.length > 1 || rows.some(row => !desired.includes(Number(row.id)) || row.subkpi_id)) fail('MIS_EXPRESSION_CONFLICT', `${r.externalId}: retained scalar expression conflicts; explicitly adopt the existing expression or remove owned conflicts`);
         }
-      }
-      if (id && v.multi === false && Array.isArray(v.expression_ids)) {
-        const rows = await search('mis.report.kpi.expression', [['kpi_id', '=', id]], ['subkpi_id']);
-        const desired = v.expression_ids.filter(isResourceRef).map(e => bindings[e.externalId]);
-        if (rows.length > 1 || rows.some(row => !desired.includes(Number(row.id)) || row.subkpi_id)) fail('MIS_EXPRESSION_CONFLICT', `${r.externalId}: retained scalar expression conflicts; explicitly adopt the existing expression or remove owned conflicts`);
       }
     }
     if (r.model === 'mis.report.instance.period' && id && Array.isArray(v.source_sumcol_ids)) {

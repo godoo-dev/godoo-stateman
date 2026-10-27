@@ -27,6 +27,11 @@ export const dependencyPaths = (value: unknown): string[] => typeof value === 's
 export const fieldGuardNames = ['model', 'model_id', 'name', 'state', 'modules', 'ttype', 'store', 'readonly', 'compute', 'depends', 'relation', 'related', 'company_dependent', 'translate'] as const;
 type Search = (model: string, criteria: any[], names: string[], limit?: number) => Promise<Row[]>;
 type Fields = (model: string) => Promise<Record<string, FieldMetadata>>;
+function hasSupportedComputeShape(field: Row): boolean {
+  return field.ttype === 'json' && field.store === false && field.readonly === true
+    && typeof field.compute === 'string' && !!field.compute.trim()
+    && !field.relation && !field.related && !field.company_dependent && !field.translate;
+}
 /** Guard all binding paths, including XML IDs and recovered IDs, before authored-field reads. */
 export async function protectComputedFields(resources: InspectedResource[], bindings: Record<string, number>, search: Search, fields: Fields, resolve: (value: unknown, model?: string) => Promise<unknown>): Promise<void> {
   for (const resource of resources.filter(r => r.model === 'ir.model.fields')) {
@@ -38,7 +43,7 @@ export async function protectComputedFields(resources: InspectedResource[], bind
     const current = rows[0];
     if (current && fieldGuardNames.some(name => !(name in current))) fail('METADATA_INACCESSIBLE', `${id}: incomplete compatibility metadata`);
     if (current && (current.state !== 'manual' || current.modules)) fail('FIELD_BASE_PROTECTED', `${id}: base/module-defined fields cannot be managed`);
-    if (current && (current.ttype !== 'json' || current.store !== false || current.readonly !== true || typeof current.compute !== 'string' || !current.compute.trim() || current.relation || current.related || current.company_dependent || current.translate)) fail('FIELD_INCOMPATIBLE', `${id}: existing field is not a readonly nonstored JSON compute; adoption and aliases cannot convert it`);
+    if (current && !hasSupportedComputeShape(current)) fail('FIELD_INCOMPATIBLE', `${id}: existing field is not a readonly nonstored JSON compute; adoption and aliases cannot convert it`);
     const resolved: Row = { ...values };
     if ('model_id' in values) resolved.model_id = await resolve(values.model_id, 'ir.model');
     const m2o = (v: unknown): unknown => Array.isArray(v) ? v[0] : v;
@@ -58,7 +63,7 @@ export async function protectComputedFields(resources: InspectedResource[], bind
       if ((await search('ir.model.fields', [['model', '=', effective.model], ['name', '=', effective.name]], [], 2)).length) fail('FIELD_NAME_TAKEN', `${id}: ${effective.model}.${effective.name} already exists; use explicit _ref adoption`);
     }
     const allowed = new Set(['model', 'model_id', 'name', 'state', 'ttype', 'store', 'readonly', 'compute', 'depends', 'field_description', 'help', 'relation', 'related', 'company_dependent', 'translate']);
-    if (Object.keys(values).some(name => !allowed.has(name)) || effective.state !== 'manual' || typeof effective.name !== 'string' || !/^x_[a-zA-Z0-9_]+$/.test(effective.name) || effective.ttype !== 'json' || effective.store !== false || effective.readonly !== true || typeof effective.compute !== 'string' || !effective.compute.trim() || effective.relation || effective.related || effective.company_dependent || effective.translate) fail('FIELD_SHAPE_UNSUPPORTED', `${id}: only manual x_ readonly nonstored JSON computed fields are supported`);
+    if (Object.keys(values).some(name => !allowed.has(name)) || effective.state !== 'manual' || typeof effective.name !== 'string' || !/^x_[a-zA-Z0-9_]+$/.test(effective.name) || !hasSupportedComputeShape(effective)) fail('FIELD_SHAPE_UNSUPPORTED', `${id}: only manual x_ readonly nonstored JSON computed fields are supported`);
     if (current) {
       const live = (await fields(String(effective.model)))[String(effective.name)];
       if (!live || live.type !== 'json' || live.store !== false || live.readonly !== true) fail('FIELD_NOT_READY', `${id}: fresh target-model metadata does not match the protected field`);
