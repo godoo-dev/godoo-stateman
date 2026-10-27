@@ -95,6 +95,15 @@ sets `active_test:false`; language/company context remains part of the plan.
 `readFile` and `contentRoot` affect initial rendering and are excluded from stored
 options because the rendered input is already captured.
 
+XML identities, base records and translated
+fields use batches of at most 100 compatible keys. Exact relation audits batch only
+identical candidate predicates across source records; a positive probe still
+identifies concrete hidden links per source and refuses unsafe reconciliation.
+All batch results must be complete and unambiguous. Missing translated records
+fail before writes instead of producing an update from an empty observation.
+Independent plan/apply passes remain fresh; older saved plans require regeneration.
+No read or write concurrency is introduced by this change.
+
 Identical reads share one observation within a
 single plan. Company-effective reads group only declared fields for the same
 record/context, then batch records with identical field sets in bounded chunks.
@@ -106,13 +115,18 @@ planner revisions must be regenerated because their observations differ.
 
 The maintained fictional catalog benchmark covers seven company-dependent fields,
 nine companies, translations, repeated references and exact tax/suggestion sets.
-At 300 existing records the unchanged planner made 55,501 search RPCs; request
-reuse and 100-record company batches reduce this to 1,561, with 27 effective-value
-reads instead of 18,900. Serialized plans shrink from 25.8 MB to 7.3 MB. These are
-in-memory RPC counts and payload sizes, not production timing guarantees. The
-regression budget is `6 * records + 80` search calls, zero identical repeats and
-`9 * ceil(records / 100)` effective-value reads for this exact workload. Identity,
-translation and raw membership audits still contribute per-record calls.
+At 300 existing records the original planner made 55,501 search RPCs. Request
+sharing and company batches first reduced this to 1,561; identity, base, translation
+and membership batches now use 76 searches, with the same 27 effective-value reads
+instead of the original 18,900. The same fixture uses 48 searches at both 30 and
+100 records. Serialized 300-record plans shrink from the original 25.8 MB to
+6.5 MB. These are in-memory RPC counts and payload sizes, not production timing
+guarantees. The regression budget is `14 * ceil(records / 100) + 40` search calls,
+zero identical repeats and `9 * ceil(records / 100)` effective-value reads for this
+exact workload. A separate mixed fixture checks three languages, seven exact
+relations, varying field signatures and a target universe above 1,000 records.
+Membership probes group only identical unseen-target chunks; a positive probe
+may need additional per-source diagnostic reads and still fails closed.
 
 Run `npx vitest run tests/planning-benchmark.test.ts` for the maintained
 30/100/300-record checks. `GODOO_BENCH_SIZES=30,100,300,530` selects a wider run;

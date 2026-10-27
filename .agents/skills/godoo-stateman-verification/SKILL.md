@@ -25,7 +25,8 @@ dependencies. It copies maintained acceptance fixtures outside source, typecheck
 without paths aliases, drives public API/CLI creation/no-op/update/drift, durable
 journal/replay refusal, full parent/child readiness, exact relation ownership, contextual company values
 and offline content/children. The installed catalog fixture also checks physical
-request budgets, per-company compatible batches and fresh apply revalidation.
+request budgets, per-company compatible batches, mixed three-language/seven-relation
+read batching and fresh apply revalidation.
 It rejects missing-connection commands before poison-module evaluation. Require
 all commands to pass, installed file integrity and dependency-origin proof. Its
 manifest says supplier qualification is false for this registry baseline. Runtime source/rights notices must remain in the tarball.
@@ -53,7 +54,9 @@ exercise rejected mixed contexts, changed schema and hidden links during apply
 revalidation; these are injected faults alongside real Odoo RPCs. Income properties cover unchanged A/undeclared C, changed B,
 translations, explicit false, real restricted-user refusal and durable recovery
 after an injected contextual RPC failure. Twelve-product/two-field company batches verify effective ORM reads, one changed
-middle record, undeclared-company preservation and zero-write convergence.
+middle record, undeclared-company preservation and zero-write convergence. The same
+twelve records verify identity/base/translation/membership batching, a changed
+translation, and a hidden purchase-tax link on only one source in a batch.
 Installed CLI saved-plan/apply/drift and repeated zero-write apply cover the scoped authoring path too. HTML checks cover source
 and ca_ES/en_GB/es_ES exact reads for text and HTML, with en_US both active
 and inactive, explicit default restoration after translation writes, bounded

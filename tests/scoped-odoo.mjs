@@ -179,12 +179,15 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
     await client.write('product.template', batchProducts, { property_account_income_id: accountC }, inCompany(companyC));
     const batchDesired = batchProducts.map((id, i) => resource('product.template', `stateman_scope.batch_${i}`, {
       _ref: lookup('product.template', { id }), taxes_id: exact([taxA]),
+      name: translated(`Stateman batch service ${i}`, { es_ES: `Servicio por lote ${i}` }),
       property_account_income_id: companyValues([{ company: companyA, value: accountA }, { company: companyB, value: false }]),
       property_account_expense_id: companyValues([{ company: companyA, value: false }, { company: companyB, value: false }]),
     }));
     const batchReads = [];
+    const batchAllReads = [];
     const measured = { ...connection, client: new Proxy(client, { get(target, key) {
       if (key === 'searchRead') return async (...args) => {
+        batchAllReads.push(args);
         if (args[0] === 'product.template' && args[2]?.fields?.includes('property_account_income_id')) batchReads.push(args);
         return target.searchRead(...args);
       };
@@ -198,8 +201,24 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
       assert.equal(criteria[0][1], 'in');
     }
     assert.equal(batchPlan.operations.filter(op => op.companyId).length, 0);
+    assert.equal(batchAllReads.filter(([model, , options]) => model === 'product.template' && options.context.lang === 'es_ES').length, 1);
+    assert.ok(batchAllReads.some(([model, criteria]) => model === 'product.template' && criteria[0]?.[1] === 'in' && criteria[0][2].length === 12 && criteria[1]?.[0] === 'taxes_id'));
     assert.equal((await apply(batchPlan, connection)).ok, true);
-    const batchReviewed = await plan(batchDesired, connection, scope);
+    batchAllReads.length = 0;
+    const batchReviewed = await plan(batchDesired, measured, scope);
+    assert.equal(batchAllReads.filter(([model]) => model === 'ir.model.data').length, 1);
+    assert.equal(batchAllReads.filter(([model, , options]) => model === 'product.template' && options.fields.includes('taxes_id')).length, 1);
+    assert.equal(batchAllReads.filter(([model, , options]) => model === 'product.template' && options.context.lang === 'es_ES').length, 1);
+    const hiddenBatchTax = await client.create('account.tax', { ...taxValues('Stateman batch hidden tax'), type_tax_use: 'purchase' }, context);
+    await client.write('product.template', [batchProducts[11]], { taxes_id: [[4, hiddenBatchTax, 0]] }, context);
+    await assert.rejects(plan(batchDesired, connection, scope), error => error.code === 'EXACT_VISIBILITY' && error.message.includes(String(hiddenBatchTax)));
+    await assert.rejects(apply(batchReviewed, connection), { code: 'EXACT_VISIBILITY' });
+    assert.deepEqual((await client.searchRead('product.template', [['id', 'in', batchProducts], ['taxes_id', 'in', [hiddenBatchTax]]], { fields: [], context })).map(row => row.id), [batchProducts[11]]);
+    await client.write('product.template', [batchProducts[11]], { taxes_id: [[3, hiddenBatchTax, 0]] }, context);
+    await client.unlink('account.tax', [hiddenBatchTax]);
+    await client.write('product.template', [batchProducts[6]], { name: 'Cambio de traducción' }, { ...context, lang: 'es_ES' });
+    await assert.rejects(apply(batchReviewed, connection), { code: 'STALE_PLAN' });
+    assert.equal((await apply(await plan(batchDesired, connection, scope), connection)).ok, true);
     await client.write('product.template', [batchProducts[6]], { property_account_income_id: false }, inCompany(companyA));
     await assert.rejects(apply(batchReviewed, connection), { code: 'STALE_PLAN' });
     const batchFresh = await plan(batchDesired, connection, scope);

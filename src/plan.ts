@@ -7,6 +7,8 @@ import { validateExactScope } from './relation-scope.js';
 import { assertId, copy, digest, domain, equal, fail, identity, record, sortGraph, walkRefs, xmlid } from './state-utils.js';
 import { StateError } from './state-types.js';
 import { equivalentHtml } from './html-equivalence.js';
+import { readIdentities, readMembership, readRecords } from './plan-reads.js';
+import type { MembershipProbe, RecordRead } from './plan-reads.js';
 import type { FieldMetadata, Mutation, Observation, Plan, PlanOptions, Row, Schema, StateConnection, StateInput, StoredPlanOptions } from './state-types.js';
 
 const multiple = (field: FieldMetadata): boolean => ['one2many', 'many2many'].includes(field.type);
@@ -129,7 +131,9 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     // rows or the immutable observation used for stale-plan comparison.
     return copy(await pending);
   }
+  const identities = await readIdentities(resources.map(resource => resource.externalId), search);
   const imd = async (id: string): Promise<Row | undefined> => {
+    if (identities.has(id)) return identities.get(id);
     const { module, name } = xmlid(id);
     const rows = await search('ir.model.data', [['module', '=', module], ['name', '=', name]], ['model', 'res_id'], 2);
     if (rows.length > 1) fail('IDENTITY_COLLISION', `Multiple XML-ID bindings for ${id}`);
@@ -250,14 +254,16 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       const claim = `${resource.model}:${resolved}`;
       if (claims.has(claim)) fail('IDENTITY_COLLISION', `${id} and ${claims.get(claim)} claim the same record ${claim}`);
       claims.set(claim, id);
-      const baseNames = Object.keys(desired.get(id)!).filter(name => !isCompanyValues(desired.get(id)![name]));
-      const rows = await search(resource.model, [['id', '=', resolved]], [...baseNames, ...(resource.model === 'ir.cron' ? ['active'] : [])]);
-      if (rows.length !== 1) fail('RECORD_UNAVAILABLE', `${id}: record ${resolved} is missing or inaccessible; refusing duplicate creation`);
-      bindings[id] = resolved; actual.set(id, rows[0]);
+      bindings[id] = resolved; actual.set(id, {});
     } else actual.set(id, {});
     resolving.delete(id);
   }
   for (const resource of resources) await bind(resource);
+  const baseReads: RecordRead[] = resources.filter(resource => bindings[resource.externalId]).map(resource => ({
+    key: resource.externalId, label: resource.externalId, model: resource.model, id: bindings[resource.externalId],
+    names: [...Object.keys(desired.get(resource.externalId)!).filter(name => !isCompanyValues(desired.get(resource.externalId)![name])), ...(resource.model === 'ir.cron' ? ['active'] : [])],
+  }));
+  for (const [id, row] of await readRecords(baseReads, search)) actual.set(id, row);
 
   async function resolveValue(value: unknown, expectedModel?: string, valueContext?: Row): Promise<unknown> {
     if (isLookupRef(value)) {
@@ -352,6 +358,60 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       }
     }
   }
+  const exactKey = (id: string, name: string): string => digest({ id, name });
+  const exactState = new Map<string, { current: number[]; inScope: number[] }>();
+  const probes: MembershipProbe[] = [];
+  for (const resource of resources) {
+    const id = resource.externalId;
+    for (const [name, raw] of Object.entries(desired.get(id)!)) {
+      if (!isExact(raw)) continue;
+      const field = schema[resource.model][name];
+      let current = sortedIds(actual.get(id)![name]);
+      if (bindings[id] && !Array.isArray(actual.get(id)![name])) fail('EXACT_VISIBILITY', `${id}.${name}: incomplete relation read`);
+      const exactCompanies = await validateExactScope(field, context, target.uid, search, { externalId: id, model: resource.model, field: name, major });
+      const targetMeta = await fields(field.relation!);
+      const companyField = targetMeta.company_id;
+      if (!companyField && targetMeta.company_ids) fail('EXACT_VISIBILITY', 'exact() does not support targets partitioned through company_ids');
+      if (companyField && (companyField.type !== 'many2one' || companyField.relation !== 'res.company')) fail('EXACT_VISIBILITY', 'Unsupported target company partition');
+      if (current.length) {
+        const visible = await search(field.relation!, [['id', 'in', current]], companyField ? ['company_id'] : []);
+        if (visible.length !== current.length) fail('EXACT_VISIBILITY', `${id}.${name}: existing relation targets are inaccessible`);
+        current = visible.filter(row => !companyField || row.company_id === false || exactCompanies!.includes(normalized(row.company_id, companyField) as number)).map(row => row.id as number);
+      }
+      // Numeric-ID membership searches use Odoo 18's raw M2M EXISTS and do
+      // not apply the relation field's read domain. Discover hidden links
+      // only among independently visible, authorized targets. Bound the
+      // audit universe; split matching batches instead of one RPC per target.
+      const universe = await search(field.relation!, [], companyField ? ['company_id'] : [], 10001);
+      if (universe.length > 10000) fail('EXACT_VISIBILITY', `${id}.${name}: target visibility audit exceeds 10000 records`);
+      const inScope = universe.filter(row => !companyField || row.company_id === false || exactCompanies!.includes(normalized(row.company_id, companyField) as number)).map(row => row.id as number);
+      const key = exactKey(id, name);
+      exactState.set(key, { current, inScope });
+      const unseen = inScope.filter(target => !current.includes(target));
+      if (bindings[id]) for (let start = 0; start < unseen.length; start += 1000) {
+        probes.push({ key, model: resource.model, field: name, id: bindings[id], candidates: unseen.slice(start, start + 1000) });
+      }
+    }
+  }
+  const hiddenMembership = await readMembership(probes, search);
+  for (const resource of resources) for (const [name, raw] of Object.entries(desired.get(resource.externalId)!)) {
+    if (!isExact(raw)) continue;
+    const hidden = hiddenMembership.get(exactKey(resource.externalId, name)) ?? [];
+    if (hidden.length) fail('EXACT_VISIBILITY', `${resource.externalId}.${name}: relation reads hide ${schema[resource.model][name].relation} IDs ${hidden.join(', ')}; Odoo's filtered M2M unlink cannot safely reconcile these links`);
+  }
+  const translationKey = (id: string, field: string, lang: string): string => digest({ id, field, lang });
+  const translationReads: RecordRead[] = [];
+  for (const resource of resources) for (const entry of resource.translations?.entries ?? []) {
+    const id = resource.externalId;
+    const field = schema[resource.model][entry.field];
+    if (!field || field.relation || typeof entry.value !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}: translation needs a scalar string field`);
+    const defaultValue = desired.get(id)![entry.field];
+    if (typeof defaultValue !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}.${entry.field}: translation needs an authored string default`);
+    const baseLang = context.lang === false ? 'en_US' : context.lang;
+    if (entry.lang === baseLang && !fieldEqual(defaultValue, entry.value, field)) fail('TRANSLATION_CONFLICT', `${id}.${entry.field}: base context and translation ${entry.lang} request different values`);
+    if (bindings[id]) translationReads.push({ key: translationKey(id, entry.field, entry.lang), label: `${id}.${entry.field} (${entry.lang})`, model: resource.model, id: bindings[id], names: [entry.field], context: { lang: entry.lang } });
+  }
+  const translations = await readRecords(translationReads, search);
   const operations: Mutation[] = [];
   const links: Mutation[] = [];
   const exactUnlinks: Mutation[] = [];
@@ -391,8 +451,6 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       const intended = isExact(raw) ? raw.targets : raw;
       if (multiple(field) && (!Array.isArray(intended) || intended.some(v => !(typeof v === 'number' || isLookupRef(v) || isResourceRef(v))))) fail('RELATION_VALUE', `${id}.${name}: use a list of IDs/lookups/refs, not raw relation commands`);
       if (isExact(raw) && (stored.unlink ?? []).some(request => request.externalId === id && request.field === name)) fail('UNLINK_CONFLICT', `${id}.${name}: exact() cannot combine with an explicit unlink request`);
-      let exactCompanies: number[] | undefined;
-      if (isExact(raw)) exactCompanies = await validateExactScope(field, context, target.uid, search, { externalId: id, model: resource.model, field: name, major });
       const value = await resolveValue(intended, field.relation);
       if (field.type === 'many2one' && !(value === false || value === null || typeof value === 'number' || isResourceRef(value))) fail('RELATION_VALUE', `${id}.${name}: expected a single relation target`);
       if (multiple(field)) {
@@ -405,40 +463,9 @@ export async function plan(input: StateInput, connection: StateConnection, optio
           // new record. Desired targets are linked after their identities exist.
           // This is never emitted for an existing record or an ordinary list.
           if (!bindings[id]) scalar[name] = [[6, 0, []]];
-          // Validate every observed link, including unexpected ones, before it
-          // can become a concrete reviewed unlink. No target deletion occurs.
-          const targetMeta = await fields(field.relation!);
-          const companyField = targetMeta.company_id;
-          if (!companyField && targetMeta.company_ids) fail('EXACT_VISIBILITY', 'exact() does not support targets partitioned through company_ids');
-          if (companyField && (companyField.type !== 'many2one' || companyField.relation !== 'res.company')) fail('EXACT_VISIBILITY', 'Unsupported target company partition');
-          if (current.length) {
-            const visible = await search(field.relation!, [['id', 'in', current]], companyField ? ['company_id'] : []);
-            if (visible.length !== current.length) fail('EXACT_VISIBILITY', `${id}.${name}: existing relation targets are inaccessible`);
-            current = visible.filter(row => !companyField || row.company_id === false || exactCompanies!.includes(normalized(row.company_id, companyField) as number)).map(row => row.id as number);
-          }
-          // Numeric-ID membership searches use Odoo 18's raw M2M EXISTS and do
-          // not apply the relation field's read domain. Discover hidden links
-          // only among independently visible, authorized targets. Bound the
-          // audit universe; split matching batches instead of one RPC per target.
-          const universe = await search(field.relation!, [], companyField ? ['company_id'] : [], 10001);
-          if (universe.length > 10000) fail('EXACT_VISIBILITY', `${id}.${name}: target visibility audit exceeds 10000 records`);
-          const inScope = universe.filter(row => !companyField || row.company_id === false || exactCompanies!.includes(normalized(row.company_id, companyField) as number)).map(row => row.id as number);
-          for (const desired of value as unknown[]) if (typeof desired === 'number' && !inScope.includes(desired)) fail('EXACT_VISIBILITY', `${id}.${name}: desired target ${desired} is outside the owned company scope`);
-          const unseen = inScope.filter(target => !current.includes(target));
-          const readMembership = new Set(current);
-          async function discoverMembership(candidates: number[]): Promise<void> {
-            if (!candidates.length) return;
-            const linked = await search(resource.model, [['id', '=', bindings[id]], [name, 'in', candidates]], []);
-            if (!linked.length) return;
-            if (candidates.length === 1) { current.push(candidates[0]); return; }
-            const middle = Math.floor(candidates.length / 2);
-            await discoverMembership(candidates.slice(0, middle));
-            await discoverMembership(candidates.slice(middle));
-          }
-          if (bindings[id]) for (let start = 0; start < unseen.length; start += 1000) await discoverMembership(unseen.slice(start, start + 1000));
-          const hidden = current.filter(target => !readMembership.has(target));
-          if (hidden.length) fail('EXACT_VISIBILITY', `${id}.${name}: relation reads hide ${field.relation} IDs ${hidden.join(', ')}; Odoo's filtered M2M unlink cannot safely reconcile these links`);
-          current.sort((a, b) => a - b);
+          const state = exactState.get(exactKey(id, name))!;
+          current = [...state.current];
+          for (const desired of value as unknown[]) if (typeof desired === 'number' && !state.inScope.includes(desired)) fail('EXACT_VISIBILITY', `${id}.${name}: desired target ${desired} is outside the owned company scope`);
           const unexpected = current.filter(id => !(value as unknown[]).includes(id));
           if (unexpected.length) exactUnlinks.push(op(resource, 'unlink', { [name]: unexpected.map(id => [3, id, 0]) }, `unlink:${name}`));
         }
@@ -461,12 +488,8 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     const translationDefaults: Row = {};
     for (const entry of resource.translations?.entries ?? []) {
       const field = schema[resource.model][entry.field];
-      if (!field || field.relation || typeof entry.value !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}: translation needs a scalar string field`);
       const defaultValue = desired.get(id)![entry.field];
-      if (typeof defaultValue !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}.${entry.field}: translation needs an authored string default`);
-      const baseLang = context.lang === false ? 'en_US' : context.lang;
-      if (entry.lang === baseLang && !fieldEqual(defaultValue, entry.value, field)) fail('TRANSLATION_CONFLICT', `${id}.${entry.field}: base context and translation ${entry.lang} request different values`);
-      const rows = bindings[id] ? await search(resource.model, [['id', '=', bindings[id]]], [entry.field], undefined, { lang: entry.lang }) : [];
+      const rows = bindings[id] ? [translations.get(translationKey(id, entry.field, entry.lang))!] : [];
       if (!rows.length || !fieldEqual(rows[0][entry.field], entry.value, field)) {
         links.push(op(resource, 'update', { [entry.field]: entry.value }, `translation:${entry.field}:${entry.lang}`, { lang: entry.lang }));
         translationDefaults[entry.field] = defaultValue;
