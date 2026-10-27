@@ -167,6 +167,49 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
     assert.equal((await apply(await plan(reset, connection, scope), connection)).ok, true);
     assert.equal(await readAccount(companyB), false); assert.equal((await readAccount(companyC))[0], accountC);
 
+    // Real effective ORM reads across compatible records and two property fields.
+    // C remains undeclared; each declared company's batch must contain all 12
+    // records, with both fields, and still detect one changed middle record.
+    const batchProducts = [];
+    for (let i = 0; i < 12; i++) batchProducts.push(await client.create('product.template', {
+      name: `Stateman batch service ${i}`, type: 'service', taxes_id: [[6, 0, [taxA]]],
+    }, context));
+    await client.write('product.template', batchProducts, { property_account_income_id: accountA, property_account_expense_id: false }, inCompany(companyA));
+    await client.write('product.template', batchProducts, { property_account_income_id: false, property_account_expense_id: false }, inCompany(companyB));
+    await client.write('product.template', batchProducts, { property_account_income_id: accountC }, inCompany(companyC));
+    const batchDesired = batchProducts.map((id, i) => resource('product.template', `stateman_scope.batch_${i}`, {
+      _ref: lookup('product.template', { id }), taxes_id: exact([taxA]),
+      property_account_income_id: companyValues([{ company: companyA, value: accountA }, { company: companyB, value: false }]),
+      property_account_expense_id: companyValues([{ company: companyA, value: false }, { company: companyB, value: false }]),
+    }));
+    const batchReads = [];
+    const measured = { ...connection, client: new Proxy(client, { get(target, key) {
+      if (key === 'searchRead') return async (...args) => {
+        if (args[0] === 'product.template' && args[2]?.fields?.includes('property_account_income_id')) batchReads.push(args);
+        return target.searchRead(...args);
+      };
+      const value = Reflect.get(target, key); return typeof value === 'function' ? value.bind(target) : value;
+    } }) };
+    const batchPlan = await plan(batchDesired, measured, scope);
+    assert.equal(batchReads.length, 2);
+    for (const [, criteria, options] of batchReads) {
+      assert.deepEqual(options.fields, ['id', 'property_account_expense_id', 'property_account_income_id']);
+      assert.deepEqual([...criteria[0][2]].sort((a, b) => a - b), [...batchProducts].sort((a, b) => a - b));
+      assert.equal(criteria[0][1], 'in');
+    }
+    assert.equal(batchPlan.operations.filter(op => op.companyId).length, 0);
+    assert.equal((await apply(batchPlan, connection)).ok, true);
+    const batchReviewed = await plan(batchDesired, connection, scope);
+    await client.write('product.template', [batchProducts[6]], { property_account_income_id: false }, inCompany(companyA));
+    await assert.rejects(apply(batchReviewed, connection), { code: 'STALE_PLAN' });
+    const batchFresh = await plan(batchDesired, connection, scope);
+    assert.deepEqual(batchFresh.operations.filter(op => op.companyId).map(op => op.before), [{ property_account_income_id: false }]);
+    assert.equal((await apply(batchFresh, connection)).ok, true);
+    assert.equal((await apply(await plan(batchDesired, connection, scope), connection)).committed, 0);
+    const preserved = await client.searchRead('product.template', [['id', 'in', batchProducts]], { fields: ['property_account_income_id'], context: inCompany(companyC) });
+    assert.equal(preserved.length, batchProducts.length);
+    assert.ok(preserved.every(row => row.property_account_income_id[0] === accountC));
+
     // A real separate user with company A only cannot manage B. This is not a
     // credentials probe: this disposable user's password is synthetic test data.
     const [internal] = await client.searchRead('ir.model.data', [['module', '=', 'base'], ['name', '=', 'group_user']], { fields: ['res_id'] });
@@ -190,6 +233,6 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
     assert.equal(cli(['drift', cliInput, ...shared]).converged, true);
     cli(['plan', cliInput, ...shared, '--out', cliPlan]);
     assert.equal(cli(['apply', cliPlan, ...shared]).committed, 0);
-    return { standardAccountingContext: true, exactRelations: true, companyValues: true, companies, product, accountB, checks: ['real product taxes additive/exact/empty/new-target/stale/unlink-only/preservation/no-op', 'income property A/B/C effective context and undeclared preservation', 'contextual stale refusal, translation coexistence, durable created-account retry', 'actual restricted-user refusal, explicit false and zero-write repeat', 'installed CLI scoped authoring, saved JSON plan/apply/drift and zero-write repeat'] };
+    return { standardAccountingContext: true, exactRelations: true, companyValues: true, planningBatches: { products: 12, fields: 2, companies: 2, reads: batchReads.length }, companies, product, accountB, checks: ['real product taxes additive/exact/empty/new-target/stale/unlink-only/preservation/no-op', 'income property A/B/C effective context and undeclared preservation', '12-record two-field company batches, contextual stale mutation, undeclared-company preservation and zero-write repeat', 'contextual stale refusal, translation coexistence, durable created-account retry', 'actual restricted-user refusal, explicit false and zero-write repeat', 'installed CLI scoped authoring, saved JSON plan/apply/drift and zero-write repeat'] };
   } finally { if (journalOpen) await journal.close(); }
 }

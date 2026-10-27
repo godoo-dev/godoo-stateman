@@ -95,6 +95,32 @@ sets `active_test:false`; language/company context remains part of the plan.
 `readFile` and `contentRoot` affect initial rendering and are excluded from stored
 options because the rendered input is already captured.
 
+Identical reads share one observation within a
+single plan. Company-effective reads group only declared fields for the same
+record/context, then batch records with identical field sets in bounded chunks.
+The full context, including company order and language, remains significant.
+Each independent plan, apply revalidation and final drift starts fresh. This
+does not provide a database snapshot or concurrent-writer lock; exact membership
+audits and missing/inaccessible-record checks still apply. Plans made by older
+planner revisions must be regenerated because their observations differ.
+
+The maintained fictional catalog benchmark covers seven company-dependent fields,
+nine companies, translations, repeated references and exact tax/suggestion sets.
+At 300 existing records the unchanged planner made 55,501 search RPCs; request
+reuse and 100-record company batches reduce this to 1,561, with 27 effective-value
+reads instead of 18,900. Serialized plans shrink from 25.8 MB to 7.3 MB. These are
+in-memory RPC counts and payload sizes, not production timing guarantees. The
+regression budget is `6 * records + 80` search calls, zero identical repeats and
+`9 * ceil(records / 100)` effective-value reads for this exact workload. Identity,
+translation and raw membership audits still contribute per-record calls.
+
+Run `npx vitest run tests/planning-benchmark.test.ts` for the maintained
+30/100/300-record checks. `GODOO_BENCH_SIZES=30,100,300,530` selects a wider run;
+`GODOO_BENCH_OUT=/absolute/path/result.json` retains measurements. Reported
+50 ms latency projections are arithmetic estimates; the fixture injects no
+network latency. Source and installed API checks also cover fresh-plan mutations,
+batched-read completeness, contextual separation and apply revalidation.
+
 Required addons use a structural adapter compatible with godoo-ts
 `inspectModulePrerequisites`: `{modules,closureComplete,diagnostics}`. Every requested
 addon and its visible closure must report installed; inaccessible, missing,

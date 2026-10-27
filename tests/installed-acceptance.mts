@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { apply, children, equivalentHtml, plan, drift, resource, ref, openRecoveryJournal, readRecoveryJournal } from '@godoo-dev/stateman';
 import { FakeClient } from './fake-client.js';
 import { scopedAcceptance, standardContextAcceptance } from './scoped-acceptance.js';
+import { planningAcceptance } from './planning-acceptance.js';
 
 await scopedAcceptance();
+await planningAcceptance();
 await standardContextAcceptance();
 console.log('PASS: installed exact M2M ownership and company-dependent effective values, stale refusal, partial failure/recovery, translations, new targets and zero-write repeat.');
 

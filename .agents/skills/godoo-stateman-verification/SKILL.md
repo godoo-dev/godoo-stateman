@@ -24,7 +24,8 @@ that exact tarball into an owned OS-temp consumer using runtime registry baselin
 dependencies. It copies maintained acceptance fixtures outside source, typechecks
 without paths aliases, drives public API/CLI creation/no-op/update/drift, durable
 journal/replay refusal, full parent/child readiness, exact relation ownership, contextual company values
-and offline content/children.
+and offline content/children. The installed catalog fixture also checks physical
+request budgets, per-company compatible batches and fresh apply revalidation.
 It rejects missing-connection commands before poison-module evaluation. Require
 all commands to pass, installed file integrity and dependency-origin proof. Its
 manifest says supplier qualification is false for this registry baseline. Runtime source/rights notices must remain in the tarball.
@@ -51,8 +52,9 @@ sets, API/CLI zero-write repeats and preservation. Metadata/read fault adapters
 exercise rejected mixed contexts, changed schema and hidden links during apply
 revalidation; these are injected faults alongside real Odoo RPCs. Income properties cover unchanged A/undeclared C, changed B,
 translations, explicit false, real restricted-user refusal and durable recovery
-after an injected contextual RPC failure. Installed CLI saved-plan/apply/drift
-and repeated zero-write apply cover the scoped authoring path too. HTML checks cover source
+after an injected contextual RPC failure. Twelve-product/two-field company batches verify effective ORM reads, one changed
+middle record, undeclared-company preservation and zero-write convergence.
+Installed CLI saved-plan/apply/drift and repeated zero-write apply cover the scoped authoring path too. HTML checks cover source
 and ca_ES/en_GB/es_ES exact reads for text and HTML, with en_US both active
 and inactive, explicit default restoration after translation writes, bounded
 serialization/EOF completion, fresh convergence, language update and repeat apply
