@@ -1,7 +1,14 @@
 # Release Stateman
 
-Version 0.1.0 is prepared for public npm distribution as `@godoo-dev/stateman`.
-It is not available from npm until the registry upload and readback complete.
+The [v0.1.0 release](https://github.com/godoo-dev/godoo-stateman/releases/tag/v0.1.0)
+was published on 25 October 2026 as public `@godoo-dev/stateman`. Its release
+record reports verified registry bytes and installed API/CLI consumers from source
+`9ff36580da66e3167b5ea1acdb783296b33e7738` and links the
+[qualification run](https://github.com/godoo-dev/godoo-stateman/actions/runs/40235199652).
+The initial bootstrap used npm owner authentication and has no GitHub provenance
+attestation. These are attributed historical results; this documentation update
+has not repeated registry installation or consumer acceptance. Later develop
+changes require their own versioned candidate and publication evidence.
 Retain LGPL-3.0-only, LICENSE, COPYING, NOTICE.md and corresponding TypeScript
 source in each tarball. Preserved Python remains a reference implementation.
 
@@ -17,7 +24,7 @@ Publishing requires a separately configured npm trusted publisher for
 and a GitHub environment with the owner's intended reviewer/branch restrictions.
 Do not infer either configuration from this YAML. A fresh scoped package may need
 the npm owner's first-publication/bootstrap procedure before OIDC is available.
-Keep credentials in the native publishing setup, never in source or HQ scripts.
+Keep credentials in the native publishing setup, never in source or coordination scripts.
 
 With the source integrated and those controls configured, dispatch Release from
 develop. Inspect its candidate/preflight before selecting `publish: true`.
