@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -77,7 +77,7 @@ try {
   const proof=[];
   for(const name of [...created.containers].reverse()){
     const label=exec('docker',['inspect',name,'--format','{{index .Config.Labels "godoo.ci.owner"}}']);assert.equal(label,owner);
-    if(name===odoo){try{writeFileSync(join(artifactDir,'odoo'+major+'-container.log'),exec('docker',['logs',name],{stdio:['ignore','pipe','pipe']}));}catch{}}
+    if(name===odoo){try{const logs=spawnSync('docker',['logs',name],{encoding:'utf8'});writeFileSync(join(artifactDir,'odoo'+major+'-container.log'),(logs.stdout??'')+(logs.stderr??''));}catch{}}
     exec('docker',['rm','-f',name]);proof.push({type:'container',name,ownerChecked:true});
   }
   if(created.network){assert.equal(exec('docker',['network','inspect',network,'--format','{{index .Labels "godoo.ci.owner"}}']),owner);exec('docker',['network','rm',network]);proof.push({type:'network',name:network,ownerChecked:true});}

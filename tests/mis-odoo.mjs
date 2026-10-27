@@ -149,6 +149,11 @@ export async function misOdoo({ client, connection, root, url, database, version
     const drill = await client.call('mis.report.instance', 'drilldown', [[ids['stateman_mis.single']], { period_id: ids['stateman_mis.single.period.jan'], expr: mis.aep({ field: 'balance', mode: 'variation', accounts: [['id', 'in', accountIds]] }) }], { context });
     assert.equal(drill.res_model, 'account.move.line');
     assert.deepEqual(await client.searchRead('ir.model.fields', [['id', '=', unrelated]], { fields: ['name', 'compute', 'depends', 'store', 'readonly'], context }), unrelatedBefore);
+    // wkhtmltopdf runs inside the owned container, so assets need its internal
+    // endpoint rather than the host's randomly published loopback port.
+    const [reportUrl] = await client.searchRead('ir.config_parameter', [['key', '=', 'report.url']], { fields: [] });
+    if (reportUrl) await client.write('ir.config_parameter', [reportUrl.id], { value: 'http://127.0.0.1:8069' });
+    else await client.create('ir.config_parameter', { key: 'report.url', value: 'http://127.0.0.1:8069' });
     const auth = await fetch(url + '/web/session/authenticate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { db: database, login: 'admin', password: 'admin' }, id: 1 }) });
     assert.ok((await auth.json()).result?.uid);
     const cookie = auth.headers.getSetCookie().map(v => v.split(';')[0]).join('; ');
@@ -165,6 +170,12 @@ export async function misOdoo({ client, connection, root, url, database, version
       const text = format === 'pdf' ? execFileSync('pdftotext', [file, '-'], { encoding: 'utf8' }) : execFileSync('python3', ['-c', 'import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); print(z.read("xl/sharedStrings.xml").decode()); print(z.read("xl/styles.xml").decode())', file], { encoding: 'utf8' });
       assert.match(text, /Gross updated/); assert.doesNotMatch(text, /Hidden helper/);
       if (format === 'xlsx') assert.match(text, /<b\/>/);
+      else {
+        const boxes = execFileSync('pdftotext', ['-bbox', file, '-'], { encoding: 'utf8' });
+        const position = label => { const match = boxes.match(new RegExp(`<word xMin="([0-9.]+)" yMin="([0-9.]+)"[^>]*>${label}</word>`)); assert.ok(match, label); return match.slice(1).map(Number); };
+        const january = position('January'), february = position('February');
+        assert.ok(february[0] > january[0] + 10 && Math.abs(february[1] - january[1]) < 2, 'PDF period headers must align as columns; report assets must load');
+      }
     }
     writeFileSync(join(root, 'mis-matrices.json'), JSON.stringify({ single, group }, null, 2));
     return { passed: true, version: qualified.installed_version, singleCompanies: [a], groupCompanies: [a, b], checks: ['computed JSON runtime', 'source drift/adopt/no-op', 'monthly/YTD ratio recomputation', 'query posted/company scope', 'multi-company totals', 'styles hidden row', 'stable subset closure/scoped update', 'unmanaged preservation', 'sub-KPI expressions', 'native accounting drilldown', 'native XLSX/PDF exports', 'explicit MIS template/KPI/expression adoption', 'unsafe field transitions/base rejection'] };

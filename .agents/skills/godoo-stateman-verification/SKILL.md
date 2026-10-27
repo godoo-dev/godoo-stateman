@@ -76,7 +76,9 @@ counterexample. It also checks stable child IDs, selected closure, label-only
 updates, explicit native template/KPI/expression adoption, unmanaged preservation,
 sub-KPI expressions, hidden styles, native accounting drilldown and real XLSX/PDF
 exports. Matrices and export files remain with candidate evidence; presentation
-checks inspect hidden labels and the XLSX bold property, not general export parity.
+checks inspect hidden labels, PDF column alignment and the XLSX bold property,
+not general export parity. The fixture sets report.url to the container-internal
+endpoint so the PDF renderer can load report assets.
 The harness removes only its labelled resources, including on failure; inspect
 remaining owned state if cleanup reports a failure. Never remove unrelated state.
 
