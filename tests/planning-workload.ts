@@ -48,3 +48,37 @@ export function planningWorkload(size: number) {
   store.call = async <T = unknown>(model: string, method: string) => { schemas.push(model); return call<T>(model, method); };
   return { store, definitions, companies, ids, calls, schemas, properties, options: { context: { allowed_company_ids: companies, lang: false, custom: 'preserve' } } };
 }
+
+/** Mixed declaration signatures, three languages and a >1000-target audit
+ * universe exercise costs that the original company-heavy fixture omitted.
+ */
+export function mixedPlanningWorkload(size: number) {
+  const f = planningWorkload(size);
+  const schema = f.store.schema['catalog.product'];
+  schema.body = { type: 'html', translate: true };
+  schema.active = { type: 'boolean' };
+  const taxIds = f.store.data['catalog.tax'].map(row => row.id as number);
+  for (let i = 0; i < 1001; i++) f.store.seed('catalog.tax', { name: `Unused target ${i}`, company_id: f.companies[i % f.companies.length] });
+  for (const field of ['purchase_taxes', 'tags', 'documents', 'recoverables', 'fees']) schema[field] = { type: 'many2many', relation: 'catalog.tax', store: true };
+  for (const [i, definition] of f.definitions.entries()) {
+    const values = { ...definition.values };
+    const row = f.store.data['catalog.product'].find(row => row.id === f.ids[i])!;
+    row.active = true;
+    values.name = translated(`Product ${i}`, { es_ES: `Producto ${i}`, ca_ES: `Producte ${i}`, en_GB: `English ${i}` });
+    f.store.languages.set(`catalog.product:${row.id}:name:en_GB`, `English ${i}`);
+    if (i % 2) values.active = true;
+    else {
+      const body = `<p>Body ${i}</p>`;
+      row.body = body;
+      values.body = translated(body, { es_ES: `<p>Texto ${i}</p>`, ca_ES: `<p>Text ${i}</p>`, en_GB: `<p>English body ${i}</p>` });
+      for (const [lang, value] of [['es_ES', `<p>Texto ${i}</p>`], ['ca_ES', `<p>Text ${i}</p>`], ['en_GB', `<p>English body ${i}</p>`]]) f.store.languages.set(`catalog.product:${row.id}:body:${lang}`, value);
+    }
+    for (const [j, field] of ['purchase_taxes', 'tags', 'documents', 'recoverables', 'fees'].entries()) {
+      const ids = taxIds.slice((i + j) % 5, (i + j) % 5 + 2);
+      row[field] = ids;
+      values[field] = exact(ids.map(id => lookup('catalog.tax', { id })));
+    }
+    f.definitions[i] = resource(definition.model, definition.externalId!, values, definition.options);
+  }
+  return f;
+}

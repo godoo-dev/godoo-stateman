@@ -20,7 +20,7 @@ it('measures the fictional multi-company catalog', async () => {
     expect(result.operations).toEqual([]);
     expect(unique.size).toBe(fixture.calls.length);
     expect(companyReads).toHaveLength(9 * Math.ceil(size / 100));
-    expect(fixture.calls.length).toBeLessThanOrEqual(6 * size + 80);
+    expect(fixture.calls.length).toBeLessThanOrEqual(14 * Math.ceil(size / 100) + 40);
     expect(fixture.schemas).toHaveLength(4);
   }
   console.log(JSON.stringify(measurements));
