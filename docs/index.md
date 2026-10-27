@@ -396,3 +396,7 @@ operation shows `companyId`, record/XML ID, field, effective `before` value,
 desired `values` and full context; fresh
 company reads participate in stale checks. Partial failure uses the same retained
 create receipts and ordinary re-plan/review/retry path.
+
+## Computed fields and MIS Builder
+
+See the [computed-field and MIS guide](computed-fields-mis.md) for authoring, adoption, scope and verification limits.

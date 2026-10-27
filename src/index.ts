@@ -1,4 +1,6 @@
 export * from './dsl/index.js';
+export { computedField } from './computed-fields.js';
+export type { ComputedFieldValues } from './computed-fields.js';
 export { evaluate } from './loader.js';
 export type { EvaluationResult } from './loader.js';
 export { normalizeResources, loadResources, inspectResources } from './inspect.js';

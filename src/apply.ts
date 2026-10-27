@@ -79,6 +79,13 @@ export async function apply(reviewed: Plan, connection: StateConnection, options
           : await connection.client.write(operation.model, [id], values, operation.context);
         if (accepted !== true) fail('WRITE_REJECTED', `${operation.key}: Odoo returned a non-success result`);
       }
+      if (operation.model === 'ir.model.fields') {
+        const rows = await connection.client.searchRead('ir.model.fields', [['id', '=', id]], { fields: ['model', 'name'], context: operation.context });
+        if (rows.length !== 1) fail('FIELD_NOT_READY', `${operation.externalId}: created/updated metadata is not visible`);
+        const metadata = await connection.client.call<Record<string, { type: string; store?: boolean; readonly?: boolean }>>(String(rows[0].model), 'fields_get', [], { attributes: ['type', 'store', 'readonly'], context: operation.context });
+        const field = metadata[String(rows[0].name)];
+        if (!field || field.type !== 'json' || field.store !== false || field.readonly !== true) fail('FIELD_NOT_READY', `${operation.externalId}: fresh target-model metadata is not ready; dependent operations are blocked`);
+      }
       const result: OperationResult = { operation, status: 'committed', id };
       results.push(result); statuses.set(operation.key, result.status);
     } catch (error) {

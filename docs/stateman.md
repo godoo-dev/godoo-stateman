@@ -131,9 +131,11 @@ CLI with a reviewed fixture/configuration file and checked exit status. Python
 does not evaluate TS modules or embed a second engine; this interface does not
 promise parity with the retained Python implementation.
 
-After a consumer demonstrates a reusable cashflow pattern against real fixtures,
-consider MIS Builder authoring helpers. Application reports, business coherence
-logic and resource cleanup remain consumer work. Broad cloning,
+The [computed-field and MIS helpers](computed-fields-mis.md) lower database-defined
+fields, report templates and single/multi-company instances to the ordinary resource
+graph. Disposable fixtures qualify their native configuration and synthetic report
+results; application reports, business coherence logic and resource cleanup remain
+consumer work. Broad cloning,
 field-translation helpers and automatic addon removal remain separate scope
 choices; none is a prerequisite for the first consumer contract.
 

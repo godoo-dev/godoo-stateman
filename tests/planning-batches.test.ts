@@ -13,7 +13,7 @@ it('bounds a mixed three-language, seven-relation catalog with varying projectio
   expect(membership.length).toBeLessThanOrEqual(70);
   const translated = f.calls.filter(q => q.context.lang);
   expect(translated).toHaveLength(15); // Three name chunks and two body chunks, per language.
-});
+}, 15_000); // The request-count budget is the performance assertion; allow loaded CI hosts.
 
 it.each([99, 100, 101])('batches identities, base values and translations at the 100-record boundary: %s', async size => {
   const f = planningWorkload(size);
