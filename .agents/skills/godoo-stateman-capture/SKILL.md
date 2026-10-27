@@ -6,7 +6,7 @@ description: Capture, triage and retrieve Stateman GitHub work, incoming request
 # Retain Stateman work
 
 Use this checkout's AGENTS.md. The canonical work repository is
-https://github.com/godoo-dev/godoo-stateman. Always pass
+https://github.com/godoo-dev/godoo-stateman. For issue and PR operations, pass
 `--repo godoo-dev/godoo-stateman` to `gh`; verify `gh repo view
 godoo-dev/godoo-stateman --json nameWithOwner,url` before a write. Project-local
 ignored `.mafe-si.toml` overrides inherited categories; do not fall back to an
