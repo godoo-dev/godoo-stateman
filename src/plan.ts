@@ -331,7 +331,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       if (multiple(field) && (!Array.isArray(intended) || intended.some(v => !(typeof v === 'number' || isLookupRef(v) || isResourceRef(v))))) fail('RELATION_VALUE', `${id}.${name}: use a list of IDs/lookups/refs, not raw relation commands`);
       if (isExact(raw) && (stored.unlink ?? []).some(request => request.externalId === id && request.field === name)) fail('UNLINK_CONFLICT', `${id}.${name}: exact() cannot combine with an explicit unlink request`);
       let exactCompanies: number[] | undefined;
-      if (isExact(raw)) exactCompanies = await validateExactScope(field, context, target.uid, search);
+      if (isExact(raw)) exactCompanies = await validateExactScope(field, context, target.uid, search, { externalId: id, model: resource.model, field: name, major });
       const value = await resolveValue(intended, field.relation);
       if (field.type === 'many2one' && !(value === false || value === null || typeof value === 'number' || isResourceRef(value))) fail('RELATION_VALUE', `${id}.${name}: expected a single relation target`);
       if (multiple(field)) {

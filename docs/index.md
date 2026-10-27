@@ -262,9 +262,17 @@ Odoo 18 checks before use.
 supplied `context.allowed_company_ids` containing all companies authorized for the
 connection user. Other companies remain outside that owned scope. Planning must
 reject restricted visibility it cannot establish, including unrecognized target
-record rules and field context overrides. Apply reviews
+record rules and unqualified field context overrides. Apply reviews
 concrete positive links and enumerated unlinks; it never deletes shared targets.
 Ordinary lists remain additive and `exact([])` declares an empty owned set.
+
+Odoo 18's standard
+`account.account.tax_ids` field may declare exactly
+`{ append_type_to_tax_name: true }` targeting `account.tax`. This display-label
+context is supported for `exact([])` and nonempty sets with the same company,
+rule, domain, hidden-link and stale-plan checks. It is not a general context
+allowlist: other fields/models, values and mixed keys remain refused. Custom
+server overrides require instance-specific verification.
 
 `companyValues([{ company: lookup('res.company', { name: 'Company A' }), value }])`
 declares effective values of a company-dependent field on one resource. Companies
@@ -305,7 +313,7 @@ suppress server defaults, then ordered positive links establish the requested se
 Existing records use only enumerated link/unlink commands.
 Membership is owned across all authorized companies and shared targets;
 visible target records whose ordinary `company_id` lies outside that scope remain
-unmanaged. Company subsets are refused, as are field context overrides,
+unmanaged. Company subsets are refused, as are unqualified field context overrides,
 unsupported company partitions, incomplete relation
 reads and arbitrary target read rules. The audit requires read access to the
 user's company authorization, companies and `ir.rule`. Recognized rules are empty,

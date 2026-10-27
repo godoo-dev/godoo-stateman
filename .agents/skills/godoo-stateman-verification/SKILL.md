@@ -45,7 +45,11 @@ updates it, detects manual drift and rejects a stale reviewed plan without chang
 that drift. Fresh retry converges. Installed CLI subprocesses plan/apply/drift and
 an independent read verify actual names and identities. Scoped fixtures exercise
 product taxes (including domain-hidden links), explicit empty sets, preservation
-and stale membership; income properties cover unchanged A/undeclared C, changed B,
+and stale membership. Standard account.account.tax_ids checks retain fresh
+company_ids domain/context metadata, display-only label behavior, empty/nonempty
+sets, API/CLI zero-write repeats and preservation. Metadata/read fault adapters
+exercise rejected mixed contexts, changed schema and hidden links during apply
+revalidation; these are injected faults alongside real Odoo RPCs. Income properties cover unchanged A/undeclared C, changed B,
 translations, explicit false, real restricted-user refusal and durable recovery
 after an injected contextual RPC failure. Installed CLI saved-plan/apply/drift
 and repeated zero-write apply cover the scoped authoring path too. HTML checks cover source

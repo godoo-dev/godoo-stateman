@@ -30,6 +30,72 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
   const taxA = await client.create('account.tax', taxValues('Stateman Tax A'), context);
   const taxB = await client.create('account.tax', taxValues('Stateman Tax B'), context);
   const unrelated = await client.create('product.template', { name: 'Stateman unrelated', type: 'service', taxes_id: [[4, taxB, 0]] }, context);
+  const standardMetadata = (await client.call('account.account', 'fields_get', [['tax_ids']], { attributes: ['type', 'relation', 'store', 'readonly', 'company_dependent', 'domain', 'context'], context })).tax_ids;
+  assert.deepEqual(standardMetadata.context, { append_type_to_tax_name: true });
+  assert.equal(standardMetadata.type, 'many2many'); assert.equal(standardMetadata.relation, 'account.tax');
+  assert.equal(standardMetadata.store, true); assert.equal(standardMetadata.readonly, false); assert.equal(standardMetadata.company_dependent, false);
+  assert.match(standardMetadata.domain, /company_ids/);
+  const standardAccount = await client.create('account.account', accountValues('Stateman standard account', 'SM2001', companyB), context);
+  const standardDesired = [resource('account.account', 'stateman_scope.standard', { _ref: lookup('account.account', { id: standardAccount }), tax_ids: exact([]) })];
+  const names = async extra => (await client.searchRead('account.tax', [['id', '=', taxA]], { fields: ['name', 'display_name'], context: { ...context, ...extra } }))[0];
+  const plain = await names({ append_type_to_tax_name: false }), display = await names({ append_type_to_tax_name: true });
+  assert.equal(plain.name, display.name); assert.equal(plain.id, display.id); assert.notEqual(plain.display_name, display.display_name);
+  await client.write('account.account', [standardAccount], { tax_ids: [[4, taxA, 0]] }, { ...context, append_type_to_tax_name: true });
+  assert.deepEqual((await client.searchRead('account.account', [['id', '=', standardAccount]], { fields: ['tax_ids'], context }))[0].tax_ids, [taxA]);
+  await client.write('account.account', [standardAccount], { tax_ids: [[3, taxA, 0]] }, { ...context, append_type_to_tax_name: true });
+  const standardUnrelated = await client.create('account.account', { ...accountValues('Stateman unrelated account', 'SM2002', companyB), tax_ids: [[4, taxB, 0]] }, context);
+  const accountRead = async id => (await client.searchRead('account.account', [['id', '=', id]], { fields: ['name', 'code', 'company_ids', 'tax_ids'], context }))[0];
+  const standardBefore = await accountRead(standardAccount);
+  const standardDefinitions = ids => [resource('account.account', 'stateman_scope.standard', { _ref: lookup('account.account', { id: standardAccount }), tax_ids: exact(ids) })];
+  assert.equal((await apply(await plan(standardDesired, connection, scope), connection)).ok, true);
+  for (const ids of [[taxA, taxB], [taxA], [], [taxB]]) {
+    const reviewed = await plan(standardDefinitions(ids), connection, scope);
+    assert.equal(reviewed.digest, (await plan(standardDefinitions(ids), connection, scope)).digest);
+    assert.equal((await apply(JSON.parse(JSON.stringify(reviewed)), connection)).ok, true);
+    assert.deepEqual((await accountRead(standardAccount)).tax_ids.sort(), [...ids].sort());
+    assert.equal((await drift(standardDefinitions(ids), connection, scope)).converged, true);
+    assert.equal((await apply(await plan(standardDefinitions(ids), connection, scope), connection)).committed, 0);
+  }
+  assert.deepEqual(await accountRead(standardAccount), { ...standardBefore, tax_ids: [taxB] });
+  assert.deepEqual((await accountRead(standardUnrelated)).tax_ids, [taxB]);
+  assert.equal((await client.searchRead('account.tax', [['id', 'in', [taxA, taxB]]], { fields: [], context })).length, 2);
+  const standardReviewed = await plan(standardDefinitions([]), connection, scope);
+  await client.write('account.account', [standardAccount], { tax_ids: [[4, taxA, 0]] }, context);
+  await assert.rejects(apply(standardReviewed, connection), { code: 'STALE_PLAN' });
+  assert.deepEqual((await accountRead(standardAccount)).tax_ids.sort(), [taxA, taxB].sort());
+  // Fault adapters alter only returned metadata, retaining real RPC access. They
+  // prove revalidation refuses changed contexts/domains before an Odoo write.
+  const metadataConnection = modify => ({ ...connection, client: new Proxy(client, { get(target, key) {
+    if (key === 'call') return async (...args) => {
+      const result = await target.call(...args);
+      if (args[0] === 'account.account' && args[1] === 'fields_get') modify(result.tax_ids);
+      return result;
+    };
+    const value = Reflect.get(target, key); return typeof value === 'function' ? value.bind(target) : value;
+  } }) });
+  const freshStandard = await plan(standardDefinitions([]), connection, scope);
+  for (const rejected of [{ append_type_to_tax_name: false }, { append_type_to_tax_name: true, active_test: false }, { allowed_company_ids: companies }]) {
+    const altered = metadataConnection(field => { field.context = rejected; });
+    for (const operation of [() => plan(standardDefinitions([]), altered, scope), () => apply(freshStandard, altered)]) {
+      await assert.rejects(operation(), error => error.code === 'EXACT_VISIBILITY' && error.message.includes('stateman_scope.standard') && error.message.includes('account.account.tax_ids') && error.message.includes(Object.keys(rejected)[0]));
+    }
+  }
+  await assert.rejects(apply(freshStandard, metadataConnection(field => { field.context = {}; })), { code: 'STALE_PLAN' });
+  await assert.rejects(apply(freshStandard, metadataConnection(field => { field.domain = []; })), { code: 'STALE_PLAN' });
+  await assert.rejects(plan(standardDefinitions([]), connection, { ...scope, context: { allowed_company_ids: [companyB] } }), { code: 'EXACT_VISIBILITY' });
+  assert.deepEqual((await accountRead(standardAccount)).tax_ids.sort(), [taxA, taxB].sort());
+  const hiddenRead = { ...connection, client: new Proxy(client, { get(target, key) {
+    if (key === 'searchRead') return async (...args) => {
+      const rows = await target.searchRead(...args);
+      if (args[0] === 'account.account' && args[2]?.fields?.includes('tax_ids')) for (const row of rows) row.tax_ids = row.tax_ids.filter(id => id !== taxA);
+      return rows;
+    };
+    const value = Reflect.get(target, key); return typeof value === 'function' ? value.bind(target) : value;
+  } }) };
+  await assert.rejects(plan(standardDefinitions([]), hiddenRead, scope), error => error.code === 'EXACT_VISIBILITY' && error.message.includes('relation reads hide'));
+  await assert.rejects(apply(freshStandard, hiddenRead), { code: 'EXACT_VISIBILITY' });
+  assert.equal((await apply(freshStandard, connection)).ok, true);
+  console.log(JSON.stringify({ standardContext: { metadata: standardMetadata, plain, display, exactEmptyAndNonempty: true, preservation: true, zeroWriteRepeats: true, staleMembershipContextDomain: true, rejectedContexts: true, syntheticOnly: true } }));
   const journal = await openRecoveryJournal(join(root, 'scoped-recovery.json'));
   let journalOpen = true;
   const desired = taxes => [resource('product.template', 'stateman_scope.service', { name: 'Stateman shared service', type: 'service', taxes_id: taxes })];
@@ -111,7 +177,7 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
     assert.equal(await readAccount(companyB), false);
     const packageRoot = dirname(dirname(fileURLToPath(import.meta.resolve('@godoo-dev/stateman'))));
     const cliInput = join(root, 'scoped-resources.mjs'), cliOptions = join(root, 'scoped-options.json'), cliPlan = join(root, 'scoped-reviewed.json');
-    writeFileSync(cliInput, `import {resource,exact,companyValues} from '@godoo-dev/stateman'; export const service=resource('product.template','stateman_scope.service',{taxes_id:exact([${taxA}]),property_account_income_id:companyValues([{company:${companyB},value:false}])});`);
+    writeFileSync(cliInput, `import {resource,exact,companyValues} from '@godoo-dev/stateman'; export const service=resource('product.template','stateman_scope.service',{taxes_id:exact([${taxA}]),property_account_income_id:companyValues([{company:${companyB},value:false}])}); export const account=resource('account.account','stateman_scope.standard',{tax_ids:exact([${taxA}])});`);
     writeFileSync(cliOptions, JSON.stringify(scope));
     const shared = ['--connection', join(root, 'connection.mjs'), '--journal', join(root, 'scoped-recovery.json'), '--options', cliOptions];
     const cli = args => JSON.parse(execFileSync(process.execPath, [join(packageRoot, 'bin/stateman.js'), ...args], { cwd: root, encoding: 'utf8' }));
@@ -124,6 +190,6 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
     assert.equal(cli(['drift', cliInput, ...shared]).converged, true);
     cli(['plan', cliInput, ...shared, '--out', cliPlan]);
     assert.equal(cli(['apply', cliPlan, ...shared]).committed, 0);
-    return { exactRelations: true, companyValues: true, companies, product, accountB, checks: ['real product taxes additive/exact/empty/new-target/stale/unlink-only/preservation/no-op', 'income property A/B/C effective context and undeclared preservation', 'contextual stale refusal, translation coexistence, durable created-account retry', 'actual restricted-user refusal, explicit false and zero-write repeat', 'installed CLI scoped authoring, saved JSON plan/apply/drift and zero-write repeat'] };
+    return { standardAccountingContext: true, exactRelations: true, companyValues: true, companies, product, accountB, checks: ['real product taxes additive/exact/empty/new-target/stale/unlink-only/preservation/no-op', 'income property A/B/C effective context and undeclared preservation', 'contextual stale refusal, translation coexistence, durable created-account retry', 'actual restricted-user refusal, explicit false and zero-write repeat', 'installed CLI scoped authoring, saved JSON plan/apply/drift and zero-write repeat'] };
   } finally { if (journalOpen) await journal.close(); }
 }
