@@ -73,6 +73,7 @@ for(const [name,mutate] of [
   ['different candidate18',f=>{f.proof.candidateManifestSha256='0'.repeat(64);write(join(f.directory,'odoo18-result.json'),f.proof);} ],
   ['different18 lock',f=>{f.proof.consumerLockTemplateSha256='0'.repeat(64);write(join(f.directory,'odoo18-result.json'),f.proof);} ],
   ['unobserved18',f=>{f.proof.output=JSON.stringify({passed:true,observedVersion:'19.0'});write(join(f.directory,'odoo18-result.json'),f.proof);} ],
+  ['multiple observation payloads',f=>{f.proof.output+='\n'+JSON.stringify({passed:true,observedVersion:'18.0'});write(join(f.directory,'odoo18-result.json'),f.proof);} ],
   ['incomplete cleanup',f=>{f.proof.allOwnedResourcesAbsent=false;write(join(f.directory,'odoo18-result.json'),f.proof);} ],
   ['unchecked ownership',f=>{const p=join(f.directory,'odoo18-cleanup.json');const c=load(p);c.proof[0].ownerChecked=false;write(p,c);} ],
   ['source mutation',f=>write(join(f.root,'src/index.ts'),'changed')],

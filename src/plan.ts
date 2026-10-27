@@ -107,14 +107,27 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     observations.push({ kind: 'schema', key: model, value: copy(result) });
     return result;
   }
+  // Lifetime is exactly one plan, including in-flight reads. Apply's independent
+  // revalidation/final drift therefore never reuse a previous plan's evidence.
+  const searches = new Map<string, Promise<Row[]>>();
   async function search(model: string, criteria: any[], names: string[], limit?: number, extraContext?: Row): Promise<Row[]> {
-    const query = { model, domain: criteria, fields: [...new Set(['id', ...names])].sort(), limit, context: { ...context, ...extraContext } };
-    const rows = await connection.client.searchRead(model, criteria, { fields: query.fields, limit, order: 'id', context: query.context });
-    if (!Array.isArray(rows) || rows.some(row => !record(row))) fail('INVALID_READ', `Invalid search_read result for ${model}`);
-    for (const row of rows) assertId(row.id, model);
-    const result = copy(rows).sort((a, b) => Number(a.id) - Number(b.id));
-    observations.push({ kind: 'search', key: digest(query), value: { query: copy(query), rows: result } });
-    return result;
+    const query = copy({ model, domain: criteria, fields: [...new Set(['id', ...names])].sort(), limit, order: 'id', context: { ...context, ...extraContext } });
+    const key = digest(query);
+    let pending = searches.get(key);
+    if (!pending) {
+      pending = (async () => {
+        const rows = await connection.client.searchRead(model, query.domain, { fields: query.fields, limit, order: query.order, context: query.context });
+        if (!Array.isArray(rows) || rows.some(row => !record(row))) fail('INVALID_READ', `Invalid search_read result for ${model}`);
+        for (const row of rows) assertId(row.id, model);
+        const result = copy(rows).sort((a, b) => Number(a.id) - Number(b.id));
+        observations.push({ kind: 'search', key, value: { query: copy(query), rows: result } });
+        return result;
+      })();
+      searches.set(key, pending);
+    }
+    // Membership audits may extend their local arrays. No caller owns cached
+    // rows or the immutable observation used for stale-plan comparison.
+    return copy(await pending);
   }
   const imd = async (id: string): Promise<Row | undefined> => {
     const { module, name } = xmlid(id);
@@ -237,7 +250,8 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       const claim = `${resource.model}:${resolved}`;
       if (claims.has(claim)) fail('IDENTITY_COLLISION', `${id} and ${claims.get(claim)} claim the same record ${claim}`);
       claims.set(claim, id);
-      const rows = await search(resource.model, [['id', '=', resolved]], [...Object.keys(desired.get(id)!), ...(resource.model === 'ir.cron' ? ['active'] : [])]);
+      const baseNames = Object.keys(desired.get(id)!).filter(name => !isCompanyValues(desired.get(id)![name]));
+      const rows = await search(resource.model, [['id', '=', resolved]], [...baseNames, ...(resource.model === 'ir.cron' ? ['active'] : [])]);
       if (rows.length !== 1) fail('RECORD_UNAVAILABLE', `${id}: record ${resolved} is missing or inaccessible; refusing duplicate creation`);
       bindings[id] = resolved; actual.set(id, rows[0]);
     } else actual.set(id, {});
@@ -291,6 +305,53 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     if (!Array.isArray(visible) || !visible.length || visible.some(id => !Number.isSafeInteger(id) || !authorizedCompanies!.includes(id)) || !visible.includes(companyId) || new Set(visible).size !== visible.length) fail('COMPANY_CONTEXT', `Base allowed_company_ids must authorize and include company ${companyId}`);
     return { companyId, context: { ...context, allowed_company_ids: [companyId, ...visible.filter(id => id !== companyId)] } };
   }
+  // Group only fields actually declared for each record/company. Sharing a
+  // context is insufficient: a wider field union would observe undeclared
+  // values and could introduce extra permission requirements or false drift.
+  const effective = new Map<string, Map<number, Row>>();
+  const batches = new Map<string, { model: string; names: string[]; companyId: number; context: Row; resources: InspectedResource[] }>();
+  // Establish the complete exact-ownership scope before narrower company reads.
+  // Field-specific checks remain separate; only identical physical reads share.
+  for (const resource of resources) for (const [name, raw] of Object.entries(desired.get(resource.externalId)!)) {
+    if (isExact(raw)) await validateExactScope(schema[resource.model][name], context, target.uid, search, { externalId: resource.externalId, model: resource.model, field: name, major });
+  }
+  for (const resource of resources) {
+    if (!bindings[resource.externalId]) continue;
+    const scopes = new Map<number, { context: Row; names: string[] }>();
+    for (const [name, raw] of Object.entries(desired.get(resource.externalId)!)) {
+      if (!isCompanyValues(raw)) continue;
+      const seen = new Set<number>();
+      for (const entry of raw.entries) {
+        const scope = await companyContext(entry.company);
+        if (seen.has(scope.companyId)) fail('COMPANY_VALUE_DUPLICATE', `${resource.externalId}.${name}: duplicate company ${scope.companyId}`);
+        seen.add(scope.companyId);
+        const group = scopes.get(scope.companyId) ?? { context: scope.context, names: [] };
+        group.names.push(name); scopes.set(scope.companyId, group);
+      }
+    }
+    for (const [companyId, scope] of scopes) {
+      const names = scope.names.sort();
+      const key = digest({ model: resource.model, names, context: scope.context });
+      const batch = batches.get(key) ?? { model: resource.model, names, companyId, context: scope.context, resources: [] };
+      batch.resources.push(resource); batches.set(key, batch);
+    }
+  }
+  for (const batch of batches.values()) {
+    for (let start = 0; start < batch.resources.length; start += 100) {
+      const chunk = batch.resources.slice(start, start + 100);
+      const ids = chunk.map(r => bindings[r.externalId]).sort((a, b) => a - b);
+      const rows = await search(batch.model, [['id', 'in', ids]], batch.names, undefined, batch.context);
+      const byId = new Map(rows.map(row => [row.id, row]));
+      if (rows.length !== byId.size || rows.some(row => !ids.includes(row.id as number))) fail('INVALID_READ', `Invalid company batch for ${batch.model}`);
+      for (const resource of chunk) {
+        const row = byId.get(bindings[resource.externalId]);
+        if (!row) fail('RECORD_UNAVAILABLE', `${resource.externalId}: inaccessible in company ${batch.companyId}`);
+        if (batch.names.some(name => !(name in row))) fail('INVALID_READ', `${resource.externalId}: incomplete company field read in company ${batch.companyId}`);
+        const values = effective.get(resource.externalId) ?? new Map<number, Row>();
+        values.set(batch.companyId, row); effective.set(resource.externalId, values);
+      }
+    }
+  }
   const operations: Mutation[] = [];
   const links: Mutation[] = [];
   const exactUnlinks: Mutation[] = [];
@@ -316,7 +377,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
           entries.push({ ...scope, value });
         }
         for (const entry of entries.sort((a, b) => a.companyId - b.companyId)) {
-          const rows = bindings[id] ? await search(resource.model, [['id', '=', bindings[id]]], [name], undefined, entry.context) : [];
+          const rows = bindings[id] ? [effective.get(id)!.get(entry.companyId)!] : [];
           if (bindings[id] && rows.length !== 1) fail('RECORD_UNAVAILABLE', `${id}: inaccessible in company ${entry.companyId}`);
           if (!bindings[id] || !fieldEqual(entry.value, rows[0][name], field)) {
             const mutation = op(resource, 'update', { [name]: entry.value }, `company:${name}:${entry.companyId}`, entry.context);
@@ -507,10 +568,9 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   operations.splice(0, operations.length, ...executionOrder.map(key => operationByKey.get(key)!));
   // Parallel lookup reads may finish in any order. Preserve each query/value
   // observation while canonicalizing their order before hashing the plan.
-  observations.sort((a, b) => {
-    const left = `${a.kind}:${a.key}:${digest(a.value)}`, right = `${b.kind}:${b.key}:${digest(b.value)}`;
-    return left < right ? -1 : left > right ? 1 : 0;
-  });
+  const sorted = observations.map(value => ({ value, key: `${value.kind}:${value.key}:${digest(value.value)}` }))
+    .sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+  sorted.forEach((entry, index) => { observations[index] = entry.value; });
   const result: Omit<Plan, 'digest'> = { kind: 'stateman-plan', version: 1, target, input: complete, options: stored, resources, order, bindings,
     schema, observations, operations, diagnostics: [...new Set(diagnostics)].sort() };
   return { ...copy(result), digest: digest(result) };
