@@ -20,6 +20,11 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Install PDF observation tool
+        if: inputs.major == '18'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: stateman-candidate-${{ github.sha }}
@@ -48,4 +53,8 @@ jobs:
             ${{ runner.temp }}/stateman-candidate/odoo${{ inputs.major }}-result.json
             ${{ runner.temp }}/stateman-candidate/odoo${{ inputs.major }}-cleanup.json
             ${{ runner.temp }}/stateman-candidate/odoo${{ inputs.major }}-container.log
+            ${{ runner.temp }}/stateman-candidate/mis-prerequisites.json
+            ${{ runner.temp }}/stateman-candidate/mis-matrices.json
+            ${{ runner.temp }}/stateman-candidate/mis-example.pdf
+            ${{ runner.temp }}/stateman-candidate/mis-example.xlsx
           if-no-files-found: error

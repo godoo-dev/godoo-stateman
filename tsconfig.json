@@ -14,6 +14,9 @@
     "paths": {
       "@godoo-dev/stateman": [
         "./src/index.ts"
+      ],
+      "@godoo-dev/stateman/mis": [
+        "./src/mis.ts"
       ]
     }
   },

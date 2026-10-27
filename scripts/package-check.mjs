@@ -28,7 +28,8 @@ try {
   cpSync(join(root,'tests/fixtures/consumer'), join(consumer,'consumer'), { recursive: true });
   cpSync(join(root,'tests/installed-acceptance.mts'), join(consumer,'installed-acceptance.mts'));
   cpSync(join(root,'tests/fake-client.ts'), join(consumer,'fake-client.ts'));
-  for (const name of ['scoped-client.ts', 'scoped-acceptance.ts', 'planning-workload.ts', 'planning-acceptance.ts']) cpSync(join(root,'tests',name), join(consumer,name));
+  cpSync(join(root,'tests/fixtures/compute.py'), join(consumer,'compute.py'));
+  for (const name of ['scoped-client.ts', 'scoped-acceptance.ts', 'planning-workload.ts', 'planning-acceptance.ts', 'fields-client.ts', 'fields-mis-acceptance.mts']) cpSync(join(root,'tests',name), join(consumer,name));
   writeFileSync(join(consumer,'tsconfig.json'), JSON.stringify({compilerOptions:{target:'ES2023',module:'NodeNext',moduleResolution:'NodeNext',strict:true,noEmit:true,types:['node']},include:['*.ts','*.mts','consumer/**/*.ts','consumer/**/*.mts']}));
   const installed = join(consumer,'node_modules/@godoo-dev/stateman');
   assert.ok(realpathSync(installed).startsWith(realpathSync(consumer) + '/'), 'Package resolved outside isolated consumer');
@@ -38,6 +39,7 @@ try {
   console.log(run('node', ['node_modules/typescript/bin/tsc'], consumer));
   console.log(run('node', ['--import','tsx','installed-acceptance.mts'], consumer));
   console.log(run('node', ['--import','tsx','consumer/acceptance.mts'], consumer));
+  console.log(run('node', ['--import','tsx','fields-mis-acceptance.mts'], consumer));
   writeFileSync(join(artifactDir,'installed-dependency-tree.json'),run('npm',['ls','--all','--json'],consumer));
   cpSync(join(consumer,'package.json'),join(artifactDir,'installed-package.json'));
   cpSync(join(consumer,'package-lock.json'),join(artifactDir,'installed-package-lock.json'));

@@ -64,6 +64,21 @@ serialization/EOF completion, fresh convergence, language update and repeat appl
 with zero commits, and meaningful content/language negatives. They never render or send mail. No authoring business
 payload or live environment is loaded. Require the observed18 result, exact image
 and tarball identity, result and five-resource ownership/absence cleanup proofs.
+The same installed candidate also qualifies the computed-field/MIS API. The harness
+mounts pinned MIS Builder 18.0.1.10.0, report_xlsx and date_range test inputs, and
+installs the hash-verified openupgradelib wheel only inside its owned container.
+MIS installation is explicit fixture setup, never a product side effect. The host
+needs `tar`, Python3 and `pdftotext` for prerequisite extraction/export assertions.
+Synthetic accounting data verifies a nonstored JSON field, source drift/adoption,
+same-apply query ordering, single/multi-company totals, monthly/YTD ratios with
+unequal denominators, explicit posted-query filtering and the unfiltered-query
+counterexample. It also checks stable child IDs, selected closure, label-only
+updates, explicit native template/KPI/expression adoption, unmanaged preservation,
+sub-KPI expressions, hidden styles, native accounting drilldown and real XLSX/PDF
+exports. Matrices and export files remain with candidate evidence; presentation
+checks inspect hidden labels, PDF column alignment and the XLSX bold property,
+not general export parity. The fixture sets report.url to the container-internal
+endpoint so the PDF renderer can load report assets.
 The harness removes only its labelled resources, including on failure; inspect
 remaining owned state if cleanup reports a failure. Never remove unrelated state.
 

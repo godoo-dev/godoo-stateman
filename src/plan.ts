@@ -8,6 +8,8 @@ import { assertId, copy, digest, domain, equal, fail, identity, record, sortGrap
 import { StateError } from './state-types.js';
 import { equivalentHtml } from './html-equivalence.js';
 import { readIdentities, readMembership, readRecords } from './plan-reads.js';
+import { protectMis } from './mis-guards.js';
+import { dependencyPaths, protectComputedFields } from './computed-fields.js';
 import type { MembershipProbe, RecordRead } from './plan-reads.js';
 import type { FieldMetadata, Mutation, Observation, Plan, PlanOptions, Row, Schema, StateConnection, StateInput, StoredPlanOptions } from './state-types.js';
 
@@ -139,6 +141,41 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     if (rows.length > 1) fail('IDENTITY_COLLISION', `Multiple XML-ID bindings for ${id}`);
     return rows[0];
   };
+  async function validatePath(model: string, path: string): Promise<void> {
+    const parts = path.split('.');
+    for (const [index, name] of parts.entries()) {
+      if (name === 'id' && index === parts.length - 1) continue;
+      const meta = (await fields(model))[name];
+      if (!meta) {
+        let declared: InspectedResource | undefined;
+        for (const candidate of complete.resources.filter(r => r.model === 'ir.model.fields' && r.values.name === name)) {
+          let targetModel = candidate.values.model;
+          const modelId = candidate.values.model_id;
+          if (!targetModel && (typeof modelId === 'number' || isLookupRef(modelId) && modelId.model === 'ir.model')) {
+            const criteria = typeof modelId === 'number' ? [['id', '=', modelId]] : domain(modelId.domain);
+            await validateDomain('ir.model', criteria);
+            const rows = await search('ir.model', criteria, ['model'], 2);
+            if (rows.length === 1) targetModel = rows[0].model;
+          }
+          if (targetModel === model) { declared = candidate; break; }
+        }
+        if (declared) fail('FIELD_PENDING', `${model}.${name} requires a fresh schema: plan/apply with select: ['${declared.externalId}'] first, then make a fresh consumer plan`);
+        fail('FIELD_UNAVAILABLE', `Field ${model}.${name} is unavailable or restricted`);
+      }
+      if (name.startsWith('x_')) {
+        const rows = await search('ir.model.fields', [['model', '=', model], ['name', '=', name]], ['state', 'compute'], 2);
+        if (rows.length !== 1) fail('METADATA_INACCESSIBLE', `Cannot establish manual field metadata for ${model}.${name}`);
+        if (rows[0].state === 'manual' && rows[0].compute) fail('COMPUTED_VALUE_UNSUPPORTED', `Planning cannot read or filter computed values of ${model}.${name}`);
+      }
+      if (index < parts.length - 1) {
+        if (!meta.relation) fail('INVALID_LOOKUP', `${model}.${name} is not relational`);
+        model = meta.relation;
+      }
+    }
+  }
+  async function validateDomain(model: string, criteria: any[]): Promise<void> {
+    for (const term of criteria) if (Array.isArray(term) && typeof term[0] === 'string') await validatePath(model, term[0]);
+  }
   for (const resource of resources) {
     const meta = await fields(resource.model);
     if (resource.model === 'ir.cron') {
@@ -147,7 +184,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     }
     for (const name of Object.keys(resource.values)) {
       if (systemFields.has(name)) fail('SYSTEM_FIELD', `${resource.externalId}.${name} is not a managed field`);
-      if (!meta[name]) fail('FIELD_UNAVAILABLE', `${resource.externalId}: field ${resource.model}.${name} is unavailable or restricted`);
+      if (!meta[name] || name.startsWith('x_')) await validatePath(resource.model, name);
       const raw = resource.values[name], field = meta[name];
       if (isCompanyValues(raw)) {
         if (!field.company_dependent || field.translate || field.readonly || !['many2one', 'char', 'text', 'html', 'boolean', 'integer', 'float', 'monetary', 'selection', 'date', 'datetime'].includes(field.type)) fail('COMPANY_VALUE_UNSUPPORTED', `${resource.externalId}.${name}: companyValues() requires a writable non-translated scalar company-dependent field`);
@@ -245,6 +282,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       if (!isLookupRef(resource.ref) || resource.ref.model !== resource.model) fail('LOOKUP_MODEL', `${id}: adoption lookup model must equal ${resource.model}`);
       const scoped = resource.parentScope?.inverseField;
       const criteria = domain(resource.ref.domain);
+      await validateDomain(resource.model, criteria);
       const rows = scoped && !parentId ? [] : await search(resource.model, [...criteria, ...(scoped ? [[scoped, '=', parentId]] : [])], [], 2);
       if (rows.length > 1) fail('AMBIGUOUS_LOOKUP', `Adoption lookup for ${id} matched multiple records`);
       if (rows.length) { resolved = rows[0].id as number; needsAdoption.add(id); }
@@ -259,6 +297,8 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     resolving.delete(id);
   }
   for (const resource of resources) await bind(resource);
+  await protectComputedFields(resources, bindings, search, fields, resolveValue);
+  await protectMis(resources, bindings, search, resolveValue, diagnostics);
   const baseReads: RecordRead[] = resources.filter(resource => bindings[resource.externalId]).map(resource => ({
     key: resource.externalId, label: resource.externalId, model: resource.model, id: bindings[resource.externalId],
     names: [...Object.keys(desired.get(resource.externalId)!).filter(name => !isCompanyValues(desired.get(resource.externalId)![name])), ...(resource.model === 'ir.cron' ? ['active'] : [])],
@@ -269,6 +309,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     if (isLookupRef(value)) {
       if (expectedModel && value.model !== expectedModel) fail('RELATION_MODEL', `Lookup ${value.model} does not match relation ${expectedModel}`);
       await fields(value.model);
+      await validateDomain(value.model, domain(value.domain));
       const rows = await search(value.model, domain(value.domain), [], 2, valueContext);
       if (rows.length !== 1) fail(rows.length ? 'AMBIGUOUS_LOOKUP' : 'LOOKUP_MISSING', `Field lookup for ${value.model} requires exactly one visible record, found ${rows.length}`);
       return rows[0].id;
@@ -373,10 +414,13 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       const companyField = targetMeta.company_id;
       if (!companyField && targetMeta.company_ids) fail('EXACT_VISIBILITY', 'exact() does not support targets partitioned through company_ids');
       if (companyField && (companyField.type !== 'many2one' || companyField.relation !== 'res.company')) fail('EXACT_VISIBILITY', 'Unsupported target company partition');
+      const inCompanyScope = (row: Row): boolean => field.relation === 'res.company'
+        ? exactCompanies.includes(row.id as number)
+        : !companyField || row.company_id === false || exactCompanies.includes(normalized(row.company_id, companyField) as number);
       if (current.length) {
         const visible = await search(field.relation!, [['id', 'in', current]], companyField ? ['company_id'] : []);
         if (visible.length !== current.length) fail('EXACT_VISIBILITY', `${id}.${name}: existing relation targets are inaccessible`);
-        current = visible.filter(row => !companyField || row.company_id === false || exactCompanies!.includes(normalized(row.company_id, companyField) as number)).map(row => row.id as number);
+        current = visible.filter(inCompanyScope).map(row => row.id as number);
       }
       // Numeric-ID membership searches use Odoo 18's raw M2M EXISTS and do
       // not apply the relation field's read domain. Discover hidden links
@@ -384,7 +428,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       // audit universe; split matching batches instead of one RPC per target.
       const universe = await search(field.relation!, [], companyField ? ['company_id'] : [], 10001);
       if (universe.length > 10000) fail('EXACT_VISIBILITY', `${id}.${name}: target visibility audit exceeds 10000 records`);
-      const inScope = universe.filter(row => !companyField || row.company_id === false || exactCompanies!.includes(normalized(row.company_id, companyField) as number)).map(row => row.id as number);
+      const inScope = universe.filter(inCompanyScope).map(row => row.id as number);
       const key = exactKey(id, name);
       exactState.set(key, { current, inScope });
       const unseen = inScope.filter(target => !current.includes(target));
@@ -471,7 +515,8 @@ export async function plan(input: StateInput, connection: StateConnection, optio
         }
         const missing = (value as unknown[]).filter(v => typeof v !== 'number' || !current.includes(v));
         if (missing.length) relation[name] = missing.map(v => [4, v, 0]);
-      } else if (!bindings[id] || !fieldEqual(value, actual.get(id)![name], field)) scalar[name] = value;
+      } else if (!bindings[id] || !(resource.model === 'ir.model.fields' && name === 'depends'
+        ? equal(dependencyPaths(value), dependencyPaths(actual.get(id)![name])) : fieldEqual(value, actual.get(id)![name], field))) scalar[name] = value;
     }
     if (resource.model === 'ir.cron') {
       if (typeof desired.get(id)!.active === 'boolean') delete scalar.active;
@@ -480,7 +525,11 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     if (!bindings[id]) operations.push(op(resource, 'create', scalar, 'record'));
     else {
       if (needsAdoption.has(id)) operations.push(op(resource, 'adopt', {}, 'record'));
-      if (Object.keys(scalar).length) operations.push(op(resource, 'update', scalar));
+      if (Object.keys(scalar).length) {
+        const update = op(resource, 'update', scalar);
+        if (resource.model === 'ir.model.fields') update.before = Object.fromEntries(Object.keys(scalar).map(name => [name, actual.get(id)![name]]));
+        operations.push(update);
+      }
     }
     if (Object.keys(relation).length) links.push(op(resource, 'link', relation));
     // Contextual writes may mirror into Odoo's inactive en_US fallback. Restore
@@ -512,6 +561,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     if (ids.length) operations.push(op(resource, 'unlink', { [request.field]: ids.map(id => [3, id, 0]) }, `unlink:${request.field}`));
   }
   for (const request of [...(stored.removals ?? [])].sort((a, b) => a.externalId.localeCompare(b.externalId))) {
+    if (request.model === 'ir.model.fields') fail('FIELD_REMOVAL_UNSUPPORTED', 'Field archive/delete is unsupported; omission preserves the field');
     assertId(request.id, 'Removal target'); xmlid(request.externalId);
     if (!['archive', 'delete'].includes(request.action)) fail('REMOVAL_ACTION', 'Removal must explicitly choose archive or delete');
     if (selected.has(request.externalId)) fail('REMOVAL_CONFLICT', `Cannot remove desired resource ${request.externalId}`);

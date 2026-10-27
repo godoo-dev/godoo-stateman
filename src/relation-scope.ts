@@ -37,15 +37,17 @@ export async function validateExactScope(field: FieldMetadata, context: Row, use
   // group rule is conservative; silently missing a relevant rule is unsafe.
   const rules = await search('ir.rule', [['model_id.model', '=', field.relation], ['active', '=', true], ['perm_read', '=', true]], ['name', 'domain_force']);
   for (const rule of rules) {
-    if (!completeCompanyRule(rule.domain_force)) fail('EXACT_VISIBILITY', `Cannot prove complete relation visibility under rule ${String(rule.name)} on ${field.relation}`);
+    if (!completeCompanyRule(rule.domain_force, field.relation)) fail('EXACT_VISIBILITY', `Cannot prove complete relation visibility under rule ${String(rule.name)} on ${field.relation}`);
   }
   return [...companies].sort((a, b) => a - b);
 }
 
-function completeCompanyRule(value: unknown): boolean {
+function completeCompanyRule(value: unknown, relation?: string): boolean {
   if (typeof value !== 'string') return false;
   const expression = value.replace(/\s/g, '').replace(/"/g, "'");
   if (['[]', "[(1,'=',1)]"].includes(expression)) return true;
+  // Core res.company rules expose exactly the fully authorized set audited above.
+  if (relation === 'res.company' && expression === "[('id','in',company_ids)]") return true;
   // Core accounting uses parent_of: every authorized company is included, plus
   // ancestors. The caller preserves any ancestor outside the explicit scope.
   return ['in', 'parent_of'].some(operator => {

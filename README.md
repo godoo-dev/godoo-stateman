@@ -95,6 +95,8 @@ the caller's base context; choose it explicitly (for example `{ lang: false }`).
 See [translation write ordering](docs/index.md#translation-write-ordering).
 Separate language records are ordinary resources. Python assembly
 is an ordinary helper producing a string; Stateman never executes that Python.
+[Computed fields and MIS Builder](docs/computed-fields-mis.md) use the same
+resource graph and plan/apply/drift, including explicit multi-company report scope.
 HTML fields use bounded Odoo storage comparison, including translations;
 `equivalentHtml` exposes the same rules for read assertions. Authored strings,
 text whitespace and exact stale-plan observations remain intact. See
