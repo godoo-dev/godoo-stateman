@@ -95,7 +95,7 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
   await assert.rejects(plan(standardDefinitions([]), hiddenRead, scope), error => error.code === 'EXACT_VISIBILITY' && error.message.includes('relation reads hide'));
   await assert.rejects(apply(freshStandard, hiddenRead), { code: 'EXACT_VISIBILITY' });
   assert.equal((await apply(freshStandard, connection)).ok, true);
-  console.log(JSON.stringify({ standardContext: { metadata: standardMetadata, plain, display, exactEmptyAndNonempty: true, preservation: true, zeroWriteRepeats: true, staleMembershipContextDomain: true, rejectedContexts: true, syntheticOnly: true } }));
+  const standardContext = { metadata: standardMetadata, plain, display, exactEmptyAndNonempty: true, preservation: true, zeroWriteRepeats: true, staleMembershipContextDomain: true, rejectedContexts: true, syntheticOnly: true };
   const journal = await openRecoveryJournal(join(root, 'scoped-recovery.json'));
   let journalOpen = true;
   const desired = taxes => [resource('product.template', 'stateman_scope.service', { name: 'Stateman shared service', type: 'service', taxes_id: taxes })];
@@ -233,6 +233,6 @@ export async function scopedOdoo({ client, connection, root, url, database, vers
     assert.equal(cli(['drift', cliInput, ...shared]).converged, true);
     cli(['plan', cliInput, ...shared, '--out', cliPlan]);
     assert.equal(cli(['apply', cliPlan, ...shared]).committed, 0);
-    return { standardAccountingContext: true, exactRelations: true, companyValues: true, planningBatches: { products: 12, fields: 2, companies: 2, reads: batchReads.length }, companies, product, accountB, checks: ['real product taxes additive/exact/empty/new-target/stale/unlink-only/preservation/no-op', 'income property A/B/C effective context and undeclared preservation', '12-record two-field company batches, contextual stale mutation, undeclared-company preservation and zero-write repeat', 'contextual stale refusal, translation coexistence, durable created-account retry', 'actual restricted-user refusal, explicit false and zero-write repeat', 'installed CLI scoped authoring, saved JSON plan/apply/drift and zero-write repeat'] };
+    return { standardContext, standardAccountingContext: true, exactRelations: true, companyValues: true, planningBatches: { products: 12, fields: 2, companies: 2, reads: batchReads.length }, companies, product, accountB, checks: ['real product taxes additive/exact/empty/new-target/stale/unlink-only/preservation/no-op', 'income property A/B/C effective context and undeclared preservation', '12-record two-field company batches, contextual stale mutation, undeclared-company preservation and zero-write repeat', 'contextual stale refusal, translation coexistence, durable created-account retry', 'actual restricted-user refusal, explicit false and zero-write repeat', 'installed CLI scoped authoring, saved JSON plan/apply/drift and zero-write repeat'] };
   } finally { if (journalOpen) await journal.close(); }
 }
