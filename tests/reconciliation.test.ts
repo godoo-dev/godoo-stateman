@@ -174,6 +174,8 @@ describe('stale plans and recoverable partial RPCs', () => {
     expect(first.ok).toBe(false); expect(first.results[0]).toMatchObject({ status: 'failed', partial: true, id: 1 });
     expect(sink.receipts.get('fixture.x')).toMatchObject({ state: 'record-created', id: 1 });
     expect(client.events).toEqual(['save:pending', 'create:x', 'save:record-created', 'create:ir.model.data']);
+    await expect(plan(defs, client.connection(), { recovery: [{ ...first.recovery[0], model: 'ir.actions.server' }] }))
+      .rejects.toMatchObject({ code: 'RECOVERY_COLLISION' });
     client.failure = undefined;
     const retry = await plan(defs, client.connection(), { recovery: [...sink.receipts.values()] });
     expect(retry.operations[0].type).toBe('adopt'); expect(retry.operations.some(op => op.type === 'create')).toBe(false);

@@ -46,6 +46,12 @@ relations, protected aliases, rejected writes and non-duplicating recovery.
 The repository and its public release/PR records retain source-bound results; target
 coverage alone does not establish a passing run or publication.
 
+Managed references in Odoo Reference fields, including menu actions, use ordinary
+`ref()` authoring and preserve the target model as well as its ID. One reviewed
+plan can create an action and its menu with the existing recovery journal; fresh
+allowed-model metadata and literal-target visibility are checked before writes.
+See [Reference fields](index.md#reference-fields) for the supported input contract.
+
 The historical release account identifies `@godoo-dev/stateman@0.1.0` with
 `@godoo-dev/client@0.7.0` and `@godoo-dev/introspection@0.2.3` suppliers and reports
 registry hashes and fresh installed API/CLI, fixture, recovery and dependency

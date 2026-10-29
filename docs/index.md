@@ -81,6 +81,52 @@ for explicit M2M ownership within a validated company visibility scope (below). 
 IDs are checked for visible target records. Field metadata validates relation
 models. Ordinary lists use positive links to preserve unrelated/manual records.
 
+### Reference fields
+
+Use the same managed `ref()` for Odoo `reference` fields, including menu actions:
+
+```ts
+import { resource, ref } from '@godoo-dev/stateman';
+
+export const dashboard = resource('ir.actions.client', 'example.dashboard', {
+  name: 'Dashboard', tag: 'example.dashboard',
+});
+export const menu = resource('ir.ui.menu', 'example.dashboard_menu', {
+  name: 'Dashboard', action: ref('example.dashboard'),
+});
+```
+
+Field-aware resolution writes `ir.actions.client,<id>` using the
+target definition's model and its existing, newly created or recovered ID. Selecting
+the menu includes the action; both use one reviewed plan/apply and the ordinary
+durable recovery journal. Missing definitions and unsupported cycles fail before
+writes. Many2one and recursive JSON references continue to resolve to numeric IDs.
+External field lookups retain their explicit target model and must find exactly
+one visible record. A canonical `"model,id"` literal must contain a positive safe
+integer ID without leading zeros and identify a visible record. Nonempty targets
+require fresh, valid `selection` metadata allowing their model; missing or
+malformed metadata and disallowed models fail before writes. These observations
+are revalidated when applying a saved plan.
+
+`false` or `null` clears a Reference field; omitting it leaves the field unmanaged.
+Bare numeric IDs cannot identify a Reference target. The separate Odoo
+`many2one_reference` type is outside this feature and retains numeric resolution.
+Reference fields cannot use `translated()`; contextual Reference translation
+entries are rejected before writes.
+
+When administratively managing Odoo 18 menus that may be hidden from navigation,
+including an empty leaf menu after clearing its action, explicitly pass
+`context: { 'ir.ui.menu.full_list': true, lang: false }` in plan/drift options.
+Odoo otherwise filters such menus from searches, which can prevent fresh
+verification after a successful write. This context skips menu-tree visibility
+filtering; normal model access rights and record rules still apply. Stateman does
+not enable it automatically.
+
+Saved plans retain unresolved managed refs alongside their target resource models
+until creation commits. Apply uses those reviewed models when formatting values
+and retains ordinary dependency and recovery checks. Regenerate plans made by
+earlier planner revisions: fresh schema observations now include `selection`.
+
 ## Planning and prerequisites
 
 `Plan` contains `target`, complete `input`/`options`, selected `resources`, resource

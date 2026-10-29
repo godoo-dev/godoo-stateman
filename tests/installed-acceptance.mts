@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { apply, children, equivalentHtml, plan, drift, resource, ref, openRecoveryJournal, readRecoveryJournal } from '@godoo-dev/stateman';
+import type { Schema } from '@godoo-dev/stateman';
 import { FakeClient } from './fake-client.js';
 import { scopedAcceptance, standardContextAcceptance } from './scoped-acceptance.js';
 import { planningAcceptance } from './planning-acceptance.js';
@@ -15,19 +16,30 @@ console.log('PASS: installed exact M2M ownership and company-dependent effective
 
 const root = import.meta.dirname;
 const client = new FakeClient();
+Object.assign(client.schema, {
+  'ir.actions.client': { name: { type: 'char' }, tag: { type: 'char' } },
+  'ir.ui.menu': { action: { type: 'reference', selection: [['ir.actions.client', 'Client action']] } },
+} satisfies Schema);
 assert.equal(equivalentHtml('<t t-out="object.name"></t><br>', '<t t-out="object.name"/><br/>'), true);
 assert.equal(equivalentHtml('<p style="ma', '<p style="ma"/>'), true);
 assert.equal(equivalentHtml('<t t-out="object.name"></t>', '<t t-out="object.email"/>'), false);
 client.seed('document.page', { content: '<p>Installed<br/></p>' }, 'fixture.html');
 assert.deepEqual((await plan([resource('document.page', 'fixture.html', { content: '<p>Installed<br></p>' })], client.connection())).operations, []);
-const definitions = [resource('x', 'fixture.root', { name: 'Root' }), resource('x', 'fixture.child', { name: 'Child', parent_id: ref('fixture.root'), items: [ref('fixture.root')] })];
+const definitions = [
+  resource('x', 'fixture.root', { name: 'Root' }),
+  resource('x', 'fixture.child', { name: 'Child', parent_id: ref('fixture.root'), items: [ref('fixture.root')] }),
+  resource('ir.ui.menu', 'fixture.menu', { action: ref('fixture.dashboard') }),
+  resource('ir.actions.client', 'fixture.dashboard', { name: 'Dashboard', tag: 'fixture.dashboard' }),
+];
 const path = resolve(root, 'api-recovery.json');
 const journal = await openRecoveryJournal(path);
 try {
   const result = await apply(await plan(definitions, client.connection()), client.connection(), { journal });
   assert.equal(result.ok, true); assert.equal(result.failed, 0); assert.equal(result.drift?.operations.length, 0);
+  assert.equal(client.data['ir.ui.menu'][0].action, `ir.actions.client,${result.drift!.bindings['fixture.dashboard']}`);
+  assert.deepEqual(result.drift!.schema['ir.ui.menu'].action.selection, [['ir.actions.client', 'Client action']]);
 } finally { await journal.close(); }
-assert.equal((await readRecoveryJournal(path)).length, 2);
+assert.equal((await readRecoveryJournal(path)).length, 4);
 assert.equal((await drift(definitions, client.connection())).converged, true);
 const noOp = await apply(await plan(definitions, client.connection()), client.connection()); assert.equal(noOp.ok, true);
 

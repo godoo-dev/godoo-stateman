@@ -35,6 +35,8 @@ export interface FieldMetadata {
   store?: boolean;
   domain?: unknown;
   context?: Row;
+  /** Evaluated selection pairs; Reference values use the model keys. */
+  selection?: [string, string][];
 }
 export type Schema = Record<string, Record<string, FieldMetadata>>;
 export type StateInput = string | Inspection | readonly ResourceDefinition[];
