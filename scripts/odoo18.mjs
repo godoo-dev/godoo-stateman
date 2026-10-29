@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -68,6 +68,7 @@ try {
   copyFileSync(join(root,'tests/odoo18.mjs'),join(consumer,'live.mjs'));
   copyFileSync(join(root,'tests/scoped-odoo.mjs'),join(consumer,'scoped-odoo.mjs'));
   copyFileSync(join(root,'tests/mis-odoo.mjs'),join(consumer,'mis-odoo.mjs'));
+  copyFileSync(join(root,'tests/reference-odoo.mjs'),join(consumer,'reference-odoo.mjs'));
   writeFileSync(join(consumer,'target.json'),JSON.stringify({url,database:'stateman_ci',major}));
   if(supplier)writeFileSync(join(consumer,'suppliers.json'),JSON.stringify(supplier.manifest));
   const output=exec(process.execPath,['live.mjs'],{cwd:consumer});console.log(output);
@@ -85,5 +86,9 @@ try {
   for(const item of proof){let absent=false;try{exec('docker',[...(item.type==='container'?['inspect']: [item.type,'inspect']),item.name],{stdio:'pipe'});}catch{absent=true;}assert.ok(absent,'Owned resource remains '+item.name);item.absent=true;}
   writeFileSync(join(artifactDir,'odoo'+major+'-cleanup.json'),JSON.stringify({owner,proof,allAbsent:proof.length===5&&proof.every(item=>item.absent)},null,2)+'\n');
   try{const path=join(artifactDir,'odoo'+major+'-result.json');const result=JSON.parse(readFileSync(path,'utf8'));result.cleanupPending=false;result.allOwnedResourcesAbsent=proof.length===5&&proof.every(item=>item.absent);writeFileSync(path,JSON.stringify(result,null,2)+'\n');}catch{}
-  rmSync(consumer,{recursive:true,force:true});
+  try {
+    for (const name of ['reference-cli-create-plan.json', 'reference-cli-recovery.json', 'reference-fault-recovery.json', 'reference-fault-partial-receipts.json', 'reference-proof.json']) {
+      if (existsSync(join(consumer, name))) copyFileSync(join(consumer, name), join(artifactDir, 'odoo'+major+'-'+name));
+    }
+  } finally { rmSync(consumer,{recursive:true,force:true}); }
 }

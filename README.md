@@ -165,6 +165,9 @@ a transaction or a concurrent-writer lock. Keep an environment under one operato
   resolve to committed IDs. X2many lists are additive. Opt into owned M2M
   membership with `exact([...])`; its visibility audit requires an explicit complete
   authorized-company context. Reviewed unlinks remove only those relations.
+- Odoo Reference fields such as `ir.ui.menu.action` use the same `ref()` syntax
+  and resolve to `model,id`, including targets created in the same apply.
+  See [Reference fields](docs/index.md#reference-fields) for validation and clearing.
 - `companyValues([{ company: lookup('res.company', { name: 'Company A' }), value }])`
   manages effective values of a company-dependent field on one resource identity.
   Omitted companies stay unmanaged. See the [scoped-value contracts](docs/index.md#exact-relation-sets-and-company-dependent-values).

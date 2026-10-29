@@ -1,4 +1,5 @@
 import { plan } from './plan.js';
+import { isResourceRef } from './dsl/types.js';
 import { assertId, copy, digest, equal, fail, identity, resolveRefs, xmlid } from './state-utils.js';
 import type { ApplyOptions, ApplyResult, Mutation, OperationResult, Plan, RecoveryReceipt, Row, StateConnection } from './state-types.js';
 
@@ -12,6 +13,7 @@ export async function apply(reviewed: Plan, connection: StateConnection, options
   if (!equal(original.target, fresh.target) || fresh.digest !== original.digest) fail('STALE_PLAN', 'Target or observed state changed; produce and review a fresh plan before applying');
   if (original.operations.some(op => op.type === 'create') && !options.journal) fail('RECOVERY_JOURNAL_REQUIRED', 'Creates require a durable RecoveryJournal.save callback before any writes');
   const bindings = { ...original.bindings };
+  const models = new Map(original.resources.map(resource => [resource.externalId, resource.model]));
   const recovery = new Map((original.options.recovery ?? []).map(receipt => [receipt.externalId, copy(receipt)]));
   const results: OperationResult[] = [];
   const statuses = new Map<string, OperationResult['status']>();
@@ -46,6 +48,14 @@ export async function apply(reviewed: Plan, connection: StateConnection, options
     try {
       if (!equal(identity(await connection.identity()), original.target)) fail('TARGET_CHANGED', 'Authenticated connection identity changed during apply');
       const values = resolveRefs(operation.values, bindings) as Row;
+      // New Reference targets retain the ordinary symbolic marker in the saved
+      // operation. Its exact model lives in the reviewed resource definitions.
+      for (const [name, value] of Object.entries(operation.values)) {
+        if (original.schema[operation.model]?.[name]?.type !== 'reference' || !isResourceRef(value)) continue;
+        const model = models.get(value.externalId);
+        if (!model) fail('UNRESOLVED_REFERENCE', `No managed model for ${value.externalId}`);
+        values[name] = `${model},${values[name]}`;
+      }
       if (operation.type === 'create') {
         const receipt: RecoveryReceipt = { version: 1, target: original.target, externalId: operation.externalId,
           model: operation.model, intent: digest({ model: operation.model, values, target: original.target }), state: 'pending' };

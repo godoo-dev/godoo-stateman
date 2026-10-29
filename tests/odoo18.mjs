@@ -7,6 +7,7 @@ import { OdooClient } from '@godoo-dev/client';
 import { apply, applyModules, createConnection, createFixture, drift, equivalentHtml, inspectResources, openRecoveryJournal, parseFixture, plan, planModules, resource, seedFixture, serializeFixture, translated } from '@godoo-dev/stateman';
 import { scopedOdoo } from './scoped-odoo.mjs';
 import { misOdoo } from './mis-odoo.mjs';
+import { referenceOdoo } from './reference-odoo.mjs';
 
 const root = import.meta.dirname;
 const { url, database } = JSON.parse(readFileSync(join(root,'target.json'),'utf8'));
@@ -167,6 +168,7 @@ if (existsSync(join(root,'suppliers.json'))) {
   } finally {await projectJournal.close();}
   supplierModuleStage = true;
 }
+const reference = await referenceOdoo({ client, connection, root, versionOptions });
 const scoped = await scopedOdoo({ client, connection, root, url, database, versionOptions });
 const mis = expectedMajor === 18 ? await misOdoo({ client, connection, root, url, database, versionOptions }) : { qualified: false, reason: 'MIS fixture is pinned to Odoo 18' };
-console.log(JSON.stringify({mis,scoped,passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,supplierModuleStage,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','mail.template HTML/text active+inactive-en_US source/three-language exact reads/convergence/update/repeat committed0/content negatives','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));
+console.log(JSON.stringify({reference,mis,scoped,passed:true,observedVersion:server.version,uid:client.getSession()?.uid,binding,supplierModuleStage,checks:['installed API create/durable receipt/no-op/update','actual drift and stale refusal without writes','fresh convergence','portable fixture roundtrip/seed/repeat committed0','mail.template HTML/text active+inactive-en_US source/three-language exact reads/convergence/update/repeat committed0/content negatives','installed CLI plan/apply/fresh drift','missing-connection poison refusal'],cleanup:'owned whole disposable environment removed by caller'}));

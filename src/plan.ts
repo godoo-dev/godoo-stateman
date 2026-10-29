@@ -18,6 +18,7 @@ const systemFields = new Set(['id', 'create_uid', 'write_uid', 'create_date', 'w
 const sortedIds = (value: unknown): number[] => Array.isArray(value) ? [...new Set(value as number[])].sort((a, b) => a - b) : [];
 function normalized(value: unknown, field: FieldMetadata): unknown {
   if (field.type === 'many2one') return Array.isArray(value) ? value[0] : value === null ? false : value;
+  if (field.type === 'reference' && value === null) return false;
   if (multiple(field)) return sortedIds(value);
   return value;
 }
@@ -100,7 +101,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   async function readFields(model: string): Promise<Record<string, FieldMetadata>> {
     let result: Record<string, FieldMetadata>;
     try {
-      result = await connection.client.call(model, 'fields_get', [], { attributes: ['type', 'relation', 'relation_field', 'required', 'readonly', 'company_dependent', 'translate', 'store', 'domain', 'context'], context });
+      result = await connection.client.call(model, 'fields_get', [], { attributes: ['type', 'relation', 'relation_field', 'required', 'readonly', 'company_dependent', 'translate', 'store', 'domain', 'context', 'selection'], context });
     } catch (cause) {
       if (cause instanceof OdooAccessError) throw new StateError('METADATA_INACCESSIBLE', `Permission denied reading schema for ${model}; model/field availability is unknown`, { cause });
       if (cause instanceof OdooRpcError && cause.data?.name === 'builtins.KeyError' && Array.isArray(cause.data.arguments) && cause.data.arguments[0] === model) throw new StateError('MODEL_MISSING', `Model ${model} is unavailable`, { cause });
@@ -201,6 +202,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       nested(raw, true);
     }
     for (const entry of resource.translations?.entries ?? []) if (meta[entry.field]?.company_dependent) fail('COMPANY_VALUE_UNSUPPORTED', `${resource.externalId}.${entry.field}: translations of company-dependent fields are unsupported`);
+    for (const entry of resource.translations?.entries ?? []) if (meta[entry.field]?.type === 'reference') fail('REFERENCE_TRANSLATION_UNSUPPORTED', `${resource.externalId}.${entry.field}: Reference fields do not support contextual translations`);
   }
   // Inverse fields are metadata-backed; no generic ownership is inferred from them.
   const desired = new Map(resources.map(resource => [resource.externalId, copy(resource.values)]));
@@ -304,6 +306,27 @@ export async function plan(input: StateInput, connection: StateConnection, optio
     names: [...Object.keys(desired.get(resource.externalId)!).filter(name => !isCompanyValues(desired.get(resource.externalId)![name])), ...(resource.model === 'ir.cron' ? ['active'] : [])],
   }));
   for (const [id, row] of await readRecords(baseReads, search)) actual.set(id, row);
+
+  async function resolveReference(value: unknown, field: FieldMetadata, label: string): Promise<unknown> {
+    if (value === false || value === null) return false;
+    let model: string;
+    let target: unknown = value;
+    if (isResourceRef(value)) {
+      const resource = all.get(value.externalId);
+      if (!resource || !selected.has(value.externalId)) fail('MISSING_DEPENDENCY', `Missing managed reference ${value.externalId}`);
+      model = resource.model;
+    } else if (isLookupRef(value)) model = value.model;
+    else {
+      const match = typeof value === 'string' && /^([A-Za-z_][A-Za-z0-9_.]*),([1-9][0-9]*)$/.exec(value);
+      if (!match || !Number.isSafeInteger(Number(match[2]))) fail('REFERENCE_VALUE', `${label}: expected a managed ref, lookup, canonical "model,id" or false/null`);
+      model = match[1]; target = Number(match[2]);
+    }
+    if (!Array.isArray(field.selection) || field.selection.some(pair => !Array.isArray(pair) || pair.length !== 2 || pair.some(part => typeof part !== 'string') || !pair[0])) fail('REFERENCE_METADATA', `${label}: complete Reference selection metadata is required`);
+    if (!field.selection.some(([key]) => key === model)) fail('REFERENCE_MODEL', `${label}: target model ${model} is not allowed by Reference selection`);
+    await fields(model);
+    const resolved = await resolveValue(target, model);
+    return typeof resolved === 'number' ? `${model},${resolved}` : resolved;
+  }
 
   async function resolveValue(value: unknown, expectedModel?: string, valueContext?: Row): Promise<unknown> {
     if (isLookupRef(value)) {
@@ -495,7 +518,7 @@ export async function plan(input: StateInput, connection: StateConnection, optio
       const intended = isExact(raw) ? raw.targets : raw;
       if (multiple(field) && (!Array.isArray(intended) || intended.some(v => !(typeof v === 'number' || isLookupRef(v) || isResourceRef(v))))) fail('RELATION_VALUE', `${id}.${name}: use a list of IDs/lookups/refs, not raw relation commands`);
       if (isExact(raw) && (stored.unlink ?? []).some(request => request.externalId === id && request.field === name)) fail('UNLINK_CONFLICT', `${id}.${name}: exact() cannot combine with an explicit unlink request`);
-      const value = await resolveValue(intended, field.relation);
+      const value = field.type === 'reference' ? await resolveReference(intended, field, `${id}.${name}`) : await resolveValue(intended, field.relation);
       if (field.type === 'many2one' && !(value === false || value === null || typeof value === 'number' || isResourceRef(value))) fail('RELATION_VALUE', `${id}.${name}: expected a single relation target`);
       if (multiple(field)) {
         // Positive links preserve all unrelated/manual relationships. A removal
