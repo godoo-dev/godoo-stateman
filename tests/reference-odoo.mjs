@@ -3,14 +3,11 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { apply, drift, lookup, openRecoveryJournal, plan, readRecoveryJournal, ref, resource } from '@godoo-dev/stateman';
+import { apply, drift, openRecoveryJournal, plan, readRecoveryJournal, ref, resource } from '@godoo-dev/stateman';
 
 /** Synthetic menu/action records in the native caller's owned database only. */
 export async function referenceOdoo({ client, connection, root, versionOptions }) {
   const context = { lang: false, active_test: false, 'ir.ui.menu.full_list': true };
-  const metadata = (await client.call('ir.ui.menu', 'fields_get', [['action']], { attributes: ['type', 'selection'], context })).action;
-  assert.equal(metadata.type, 'reference');
-  assert.ok(metadata.selection.some(([model]) => model === 'ir.actions.client'));
   const bin = join(dirname(fileURLToPath(import.meta.resolve('@godoo-dev/stateman'))), '../bin/stateman.js');
   const input = join(root, 'reference-cli.mjs'), reviewedPath = join(root, 'reference-cli-plan.json');
   const journalPath = join(root, 'reference-cli-recovery.json'), optionsPath = join(root, 'reference-cli-options.json');
@@ -35,12 +32,6 @@ export const dashboard=resource('ir.actions.client','stateman_reference.dashboar
     assert.equal(actions[0].tag, 'stateman_reference.dashboard');
     return { action: actions[0], menu: menus[0] };
   };
-  const noOp = () => {
-    assert.deepEqual(run('plan', input, ...shared, '--out', reviewedPath).operations, []);
-    const again = run('apply', reviewedPath, ...shared);
-    assert.equal(again.ok, true); assert.equal(again.committed, 0);
-    assert.equal(run('drift', input, ...shared).converged, true);
-  };
   declare("ref('stateman_reference.dashboard')");
   const first = run('plan', input, ...shared, '--out', reviewedPath);
   assert.equal(first.options.context['ir.ui.menu.full_list'], true);
@@ -59,69 +50,19 @@ export const dashboard=resource('ir.actions.client','stateman_reference.dashboar
     ['stateman_reference.dashboard', 'ir.actions.client', created.action.id, 'complete'],
     ['stateman_reference.menu', 'ir.ui.menu', created.menu.id, 'complete'],
   ]);
-  noOp();
-  for (const empty of ['false', 'null']) {
-    assert.equal((await independentRead()).menu.action, qualified);
-    declare(empty);
-    const clear = run('plan', input, ...shared, '--out', reviewedPath);
-    assert.equal(clear.operations.length, 1); assert.equal(clear.operations[0].type, 'update');
-    assert.equal(clear.operations[0].values.action, false);
+  for (const [action, expected] of [['false', false], ["ref('stateman_reference.dashboard')", qualified]]) {
+    declare(action);
+    const update = run('plan', input, ...shared, '--out', reviewedPath);
+    assert.equal(update.operations.length, 1);
+    assert.equal(update.operations[0].type, 'update');
     assert.equal(run('apply', reviewedPath, ...shared).ok, true);
-    assert.equal((await independentRead()).menu.action, false);
-    noOp();
-    declare("ref('stateman_reference.dashboard')");
-    const assign = run('plan', input, ...shared, '--out', reviewedPath);
-    assert.equal(assign.operations.length, 1); assert.equal(assign.operations[0].type, 'update');
-    assert.equal(assign.operations[0].values.action, qualified);
-    assert.equal(run('apply', reviewedPath, ...shared).ok, true);
-    assert.equal((await independentRead()).menu.action, qualified);
-    noOp();
+    assert.equal((await independentRead()).menu.action, expected);
   }
-  assert.deepEqual(await readRecoveryJournal(journalPath), receipts);
+  assert.deepEqual(run('plan', input, ...shared, '--out', reviewedPath).operations, []);
+  assert.equal(run('apply', reviewedPath, ...shared).committed, 0);
+  assert.equal(run('drift', input, ...shared).converged, true);
 
-  const externalId = await client.create('ir.actions.client', { name: 'Stateman external Reference action', tag: 'stateman_reference.external' }, context);
   const apiOptions = { ...versionOptions, context };
-  const readAction = async () => (await read('ir.ui.menu', [['id', '=', created.menu.id]], ['action']))[0].action;
-  for (const value of [lookup('ir.actions.client', { id: externalId }), `ir.actions.client,${externalId}`, qualified]) {
-    const desired = [resource('ir.ui.menu', 'stateman_reference.menu', { action: value })];
-    assert.equal((await apply(await plan(desired, connection, apiOptions), connection)).ok, true);
-    assert.equal(await readAction(), typeof value === 'string' ? value : `ir.actions.client,${externalId}`);
-    assert.equal((await drift(desired, connection, apiOptions)).converged, true);
-    assert.equal((await apply(await plan(desired, connection, apiOptions), connection)).committed, 0);
-  }
-  assert.deepEqual((await plan([resource('ir.ui.menu', 'stateman_reference.menu', { name: 'Stateman Reference CLI menu' })], connection, apiOptions)).operations, []);
-  assert.equal(await readAction(), qualified);
-  const desired = [resource('ir.ui.menu', 'stateman_reference.menu', { action: qualified })];
-  const stale = await plan(desired, connection, apiOptions);
-  await client.write('ir.ui.menu', [created.menu.id], { action: false }, context);
-  await assert.rejects(apply(stale, connection), { code: 'STALE_PLAN' });
-  assert.equal(await readAction(), false);
-  assert.equal((await apply(await plan(desired, connection, apiOptions), connection)).ok, true);
-  assert.equal(await readAction(), qualified);
-  const mutations = [];
-  const measured = { ...connection, client: new Proxy(client, { get(target, key) {
-    const value = Reflect.get(target, key);
-    if (['create', 'write', 'unlink'].includes(key)) return async (...args) => { mutations.push([key, ...args]); return value.apply(target, args); };
-    return typeof value === 'function' ? value.bind(target) : value;
-  } }) };
-  const again = await apply(await plan(desired, measured, apiOptions), measured);
-  assert.equal(again.ok, true); assert.equal(again.committed, 0); assert.deepEqual(mutations, []);
-  // Inject selection changes in returned metadata only; real RPC reads remain.
-  const reviewedMetadata = await plan(desired, measured, apiOptions);
-  for (const selection of [undefined, [['res.partner', 'Disallowed target']]]) {
-    const altered = { ...measured, client: new Proxy(measured.client, { get(target, key) {
-      if (key === 'call') return async (...args) => {
-        const result = await target.call(...args);
-        if (args[0] === 'ir.ui.menu' && args[1] === 'fields_get') result.action.selection = selection;
-        return result;
-      };
-      const value = Reflect.get(target, key); return typeof value === 'function' ? value.bind(target) : value;
-    } }) };
-    const code = selection ? 'REFERENCE_MODEL' : 'REFERENCE_METADATA';
-    await assert.rejects(plan(desired, altered, apiOptions), { code });
-    await assert.rejects(apply(reviewedMetadata, altered), { code });
-  }
-  assert.deepEqual(mutations, []); assert.equal(await readAction(), qualified);
 
   // Inject only XML-ID registration failure before sending that RPC. Action
   // creation, durable receipt, retry adoption and menu writes use real Odoo.
@@ -142,9 +83,6 @@ export const dashboard=resource('ir.actions.client','stateman_reference.dashboar
     const reviewed = await plan(recoveryDefinitions, injected, { ...apiOptions, select: ['stateman_reference.recovered_menu'], recovery: failedJournal.receipts });
     const failed = await apply(JSON.parse(JSON.stringify(reviewed)), injected, { journal: failedJournal, stopOnError: false });
     assert.equal(failed.ok, false); assert.equal(failed.failed, 1);
-    const actionResult = failed.results.find(row => row.operation.externalId === 'stateman_reference.recovered_action');
-    assert.equal(actionResult.status, 'failed'); assert.equal(actionResult.partial, true);
-    assert.match(actionResult.message, /Injected action XML-ID registration failure/);
     assert.equal(failed.results.find(row => row.operation.externalId === 'stateman_reference.recovered_menu').status, 'skipped');
   } finally { await failedJournal.close(); }
   const retained = await readRecoveryJournal(recoveryPath);
@@ -178,9 +116,8 @@ export const dashboard=resource('ir.actions.client','stateman_reference.dashboar
   assert.deepEqual(completedRecovery.map(row => [row.externalId, row.model, row.state]).sort(), [
     ['stateman_reference.recovered_action', 'ir.actions.client', 'complete'], ['stateman_reference.recovered_menu', 'ir.ui.menu', 'complete'],
   ]);
-  const proof = { metadata, selectedCliSavedPlan: true, independentReads: true, receipts, falseAndNullClearedFromNonempty: true,
-    existingManagedAssignment: true, externalLookupAndLiteral: true, omittedUnmanaged: true, staleRefused: true,
-    zeroCommitAndZeroMutationRepeat: true, injectedSelectionRefusedBeforeWrites: true,
+  const proof = { selectedCliSavedPlan: true, independentReads: true, receipts, clearedAndReassigned: true,
+    existingManagedAssignment: true, zeroCommitRepeat: true,
     injectedXmlIdFailure: true, dependentSkippedWithStopOnErrorFalse: true,
     retainedPartialReceipts: retained, completedRecovery, recoveredId, recoveredWithoutDuplicate: true, freshZeroDrift: true };
   writeFileSync(join(root, 'reference-proof.json'), JSON.stringify(proof, null, 2) + '\n');

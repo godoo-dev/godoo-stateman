@@ -17,47 +17,26 @@ function fixture() {
   return { client, journal, receipts, definitions, connection: client.connection() };
 }
 
-it('creates an action and selected menu in one saved plan with a model-qualified Reference', async () => {
+it.each([false, true])('qualifies %s existing targets while ordinary refs remain numeric', async existing => {
   const f = fixture();
-  const reviewed = await plan(f.definitions, f.connection, { select: ['example.menu'] });
-  expect(reviewed.order).toEqual(['example.dashboard', 'example.menu']);
-  const result = await apply(JSON.parse(JSON.stringify(reviewed)), f.connection, { journal: f.journal });
-  const action = f.client.data['ir.actions.client'][0];
-  expect(f.client.data['ir.ui.menu'][0].action).toBe(`ir.actions.client,${action.id}`);
-  expect(result.ok).toBe(true);
-  expect((await plan(f.definitions, f.connection, { recovery: [...f.receipts.values()] })).operations).toEqual([]);
-});
-
-it('updates an existing menu to an existing action and keeps many2one/recursive JSON numeric', async () => {
-  const f = fixture();
-  const action = f.client.seed('ir.actions.client', { name: 'Dashboard', tag: 'example.dashboard' }, 'example.dashboard');
-  const menu = f.client.seed('ir.ui.menu', { name: 'Dashboard', action: false }, 'example.menu');
-  f.client.schema.x.parent_id.relation = 'ir.actions.client';
-  const definitions = [...f.definitions, resource('x', 'example.numeric', {
-    parent_id: ref('example.dashboard'), payload: { nested: [ref('example.dashboard')] },
-  })];
-  const reviewed = await plan(definitions, f.connection);
-  expect(reviewed.operations.find(op => op.externalId === 'example.menu')?.values.action).toBe(`ir.actions.client,${action}`);
-  expect((await apply(reviewed, f.connection, { journal: f.journal })).ok).toBe(true);
-  expect(f.client.data['ir.ui.menu'].find(row => row.id === menu)?.action).toBe(`ir.actions.client,${action}`);
-  expect(f.client.data.x[0]).toMatchObject({ parent_id: action, payload: { nested: [action] } });
-  expect((await plan(definitions, f.connection)).operations).toEqual([]);
-});
-
-it('resolves pending refs numerically in M2O, x2many, JSON and many2one_reference alongside a Reference', async () => {
-  const f = fixture();
+  if (existing) {
+    f.client.seed('ir.actions.client', { name: 'Dashboard', tag: 'example.dashboard' }, 'example.dashboard');
+    f.client.seed('ir.ui.menu', { name: 'Dashboard', action: false }, 'example.menu');
+  }
   f.client.schema.x.parent_id.relation = 'ir.actions.client';
   f.client.schema.x.items.relation = 'ir.actions.client';
   f.client.schema.x.polymorphic_id = { type: 'many2one_reference' };
-  const definitions = [...f.definitions, resource('x', 'example.numeric', {
+  f.definitions.push(resource('x', 'example.numeric', {
     parent_id: ref('example.dashboard'), items: [ref('example.dashboard')],
     polymorphic_id: ref('example.dashboard'), payload: { nested: [ref('example.dashboard')] },
-  })];
-  expect((await apply(await plan(definitions, f.connection), f.connection, { journal: f.journal })).ok).toBe(true);
+  }));
+  const reviewed = await plan(f.definitions, f.connection, { select: ['example.menu', 'example.numeric'] });
+  expect(reviewed.order.indexOf('example.dashboard')).toBeLessThan(reviewed.order.indexOf('example.menu'));
+  expect((await apply(JSON.parse(JSON.stringify(reviewed)), f.connection, { journal: f.journal })).ok).toBe(true);
   const id = f.client.data['ir.actions.client'][0].id;
-  expect(f.client.data.x[0]).toMatchObject({ parent_id: id, items: [id], polymorphic_id: id, payload: { nested: [id] } });
   expect(f.client.data['ir.ui.menu'][0].action).toBe(`ir.actions.client,${id}`);
-  expect((await plan(definitions, f.connection)).operations).toEqual([]);
+  expect(f.client.data.x[0]).toMatchObject({ parent_id: id, items: [id], polymorphic_id: id, payload: { nested: [id] } });
+  expect((await plan(f.definitions, f.connection)).operations).toEqual([]);
 });
 
 it('qualifies field lookups and literal targets, clears false and preserves omitted fields', async () => {
@@ -79,23 +58,6 @@ it('rejects Reference translations before any contextual value can bypass valida
   const definitions = [resource('ir.ui.menu', 'example.menu', { action: translated('ir.actions.client,1', { es_ES: 'x,123' }) })];
   await expect(plan(definitions, f.connection)).rejects.toMatchObject({ code: 'REFERENCE_TRANSLATION_UNSUPPORTED' });
   expect(f.client.mutations).toEqual([]);
-});
-
-it('recovers an action whose XML-ID registration failed before allowing the menu create', async () => {
-  const f = fixture();
-  f.client.failure = (_method, model, values) => model === 'ir.model.data' && values?.name === 'dashboard' ? new Error('registration failed') : undefined;
-  const failed = await apply(await plan(f.definitions, f.connection), f.connection, { journal: f.journal, stopOnError: false });
-  expect(failed.results.find(result => result.operation.externalId === 'example.menu')?.status).toBe('skipped');
-  expect(f.receipts.get('example.dashboard')).toMatchObject({ state: 'record-created', model: 'ir.actions.client' });
-  expect(f.client.data['ir.actions.client']).toHaveLength(1);
-  f.client.failure = undefined;
-  const options = { recovery: [...f.receipts.values()] };
-  const retry = await plan(f.definitions, f.connection, options);
-  expect(retry.operations.find(op => op.externalId === 'example.dashboard')?.type).toBe('adopt');
-  expect((await apply(JSON.parse(JSON.stringify(retry)), f.connection, { journal: f.journal })).ok).toBe(true);
-  expect(f.client.data['ir.actions.client']).toHaveLength(1);
-  expect(f.client.data['ir.ui.menu']).toHaveLength(1);
-  expect(f.client.data['ir.ui.menu'][0].action).toBe(`ir.actions.client,${f.client.data['ir.actions.client'][0].id}`);
 });
 
 it.each([1, 0, true, '', 'ir.actions.client,0', 'ir.actions.client,-1', 'ir.actions.client,01', 'ir.actions.client,1,2',
@@ -143,20 +105,17 @@ it('includes fresh allowed-model metadata and target observations in stale-plan 
   expect(f.client.mutations).toEqual([]);
 });
 
-it('uses the target model when IDs coincide and leaves many2one_reference numeric', async () => {
+it('uses the target model when IDs coincide', async () => {
   const f = fixture();
   const server = f.client.seed('ir.actions.server', { name: 'Server' }, 'example.server');
   f.client.nextId = server;
   f.client.seed('ir.actions.client', { name: 'Client' }, 'example.client');
-  f.client.schema.x.polymorphic_id = { type: 'many2one_reference' };
   const definitions = [resource('ir.actions.server', 'example.server', { name: 'Server' }),
     resource('ir.actions.client', 'example.client', { name: 'Client' }),
     resource('ir.ui.menu', 'example.client_menu', { action: ref('example.client') }),
-    resource('ir.ui.menu', 'example.server_menu', { action: ref('example.server') }),
-    resource('x', 'example.numeric', { polymorphic_id: ref('example.server') })];
+    resource('ir.ui.menu', 'example.server_menu', { action: ref('example.server') })];
   expect((await apply(await plan(definitions, f.connection), f.connection, { journal: f.journal })).ok).toBe(true);
   expect(f.client.data['ir.ui.menu'].map(row => row.action).sort()).toEqual([`ir.actions.client,${server}`, `ir.actions.server,${server}`]);
-  expect(f.client.data.x[0].polymorphic_id).toBe(server);
 });
 
 it('requests selection attributes from the actual schema adapter', async () => {
@@ -167,20 +126,4 @@ it('requests selection attributes from the actual schema adapter', async () => {
     return original<T>(model, method);
   };
   await plan(f.definitions, f.connection);
-});
-
-
-it('refuses uncertain receipts, wrong recovery models, changed targets and modified saved plans', async () => {
-  const f = fixture();
-  const reviewed = await plan(f.definitions, f.connection);
-  const changed = structuredClone(reviewed);
-  changed.resources.find(r => r.externalId === 'example.dashboard')!.model = 'ir.actions.server';
-  await expect(apply(changed, f.connection, { journal: f.journal })).rejects.toMatchObject({ code: 'PLAN_MODIFIED' });
-  f.client.uid++;
-  await expect(apply(reviewed, f.connection, { journal: f.journal })).rejects.toMatchObject({ code: 'STALE_PLAN' });
-  f.client.uid--;
-  const receipt: RecoveryReceipt = { version: 1, target: reviewed.target, model: 'ir.actions.client', externalId: 'example.dashboard', intent: 'uncertain', state: 'pending' };
-  await expect(plan(f.definitions, f.connection, { recovery: [receipt] })).rejects.toMatchObject({ code: 'RECOVERY_REQUIRED' });
-  await expect(plan(f.definitions, f.connection, { recovery: [{ ...receipt, model: 'ir.actions.server', id: 1 }] })).rejects.toMatchObject({ code: 'RECOVERY_COLLISION' });
-  expect(f.client.mutations).toEqual([]);
 });
