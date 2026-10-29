@@ -114,6 +114,14 @@ Bare numeric IDs cannot identify a Reference target. The separate Odoo
 Reference fields cannot use `translated()`; contextual Reference translation
 entries are rejected before writes.
 
+When administratively managing Odoo 18 menus that may be hidden from navigation,
+including an empty leaf menu after clearing its action, explicitly pass
+`context: { 'ir.ui.menu.full_list': true, lang: false }` in plan/drift options.
+Odoo otherwise filters such menus from searches, which can prevent fresh
+verification after a successful write. This context skips menu-tree visibility
+filtering; normal model access rights and record rules still apply. Stateman does
+not enable it automatically.
+
 Saved plans retain unresolved managed refs alongside their target resource models
 until creation commits. Apply uses those reviewed models when formatting values
 and retains ordinary dependency and recovery checks. Regenerate plans made by

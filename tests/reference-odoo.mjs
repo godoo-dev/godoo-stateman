@@ -7,14 +7,14 @@ import { apply, drift, lookup, openRecoveryJournal, plan, readRecoveryJournal, r
 
 /** Synthetic menu/action records in the native caller's owned database only. */
 export async function referenceOdoo({ client, connection, root, versionOptions }) {
-  const context = { lang: false, active_test: false };
+  const context = { lang: false, active_test: false, 'ir.ui.menu.full_list': true };
   const metadata = (await client.call('ir.ui.menu', 'fields_get', [['action']], { attributes: ['type', 'selection'], context })).action;
   assert.equal(metadata.type, 'reference');
   assert.ok(metadata.selection.some(([model]) => model === 'ir.actions.client'));
   const bin = join(dirname(fileURLToPath(import.meta.resolve('@godoo-dev/stateman'))), '../bin/stateman.js');
   const input = join(root, 'reference-cli.mjs'), reviewedPath = join(root, 'reference-cli-plan.json');
   const journalPath = join(root, 'reference-cli-recovery.json'), optionsPath = join(root, 'reference-cli-options.json');
-  writeFileSync(optionsPath, JSON.stringify({ ...versionOptions, select: ['stateman_reference.menu'], context: { lang: false } }));
+  writeFileSync(optionsPath, JSON.stringify({ ...versionOptions, select: ['stateman_reference.menu'], context: { lang: false, 'ir.ui.menu.full_list': true } }));
   const shared = ['--connection', join(root, 'connection.mjs'), '--journal', journalPath, '--options', optionsPath];
   const run = (...args) => JSON.parse(execFileSync(process.execPath, [bin, ...args], { encoding: 'utf8' }));
   const declare = action => writeFileSync(input, `
@@ -43,6 +43,7 @@ export const dashboard=resource('ir.actions.client','stateman_reference.dashboar
   };
   declare("ref('stateman_reference.dashboard')");
   const first = run('plan', input, ...shared, '--out', reviewedPath);
+  assert.equal(first.options.context['ir.ui.menu.full_list'], true);
   writeFileSync(join(root, 'reference-cli-create-plan.json'), JSON.stringify(first, null, 2) + '\n');
   assert.deepEqual(first.order, ['stateman_reference.dashboard', 'stateman_reference.menu']);
   assert.deepEqual(first.resources.map(row => row.externalId).sort(), ['stateman_reference.dashboard', 'stateman_reference.menu']);
