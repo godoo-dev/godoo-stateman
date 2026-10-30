@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0
+
+Prepared next public npm release; publication and registry-consumer acceptance
+remain subject to the native release gates.
+
+- Adopt production client 0.8.0 and introspection 0.2.4 as the runtime baseline.
+  The resolved tree shares client 0.8.0 without an older nested client.
+- Add exact relation-set ownership and effective company-dependent values, with
+  fresh scope checks, contextual observations and durable recovery.
+- Converge multilingual HTML storage and restore authored defaults after
+  contextual translation writes.
+- Batch identity, translation, relation-membership and effective company reads
+  while retaining fresh apply revalidation.
+- Add computed-field and multi-company MIS resource graphs through the public
+  `@godoo-dev/stateman/mis` entry point.
+- Support managed references and explicit clearing in Odoo Reference fields.
+- Use main for integration and exact-archive native release qualification; retain
+  Node 24+, Odoo 18 and all LGPL notices and corresponding source.
+
 ## 0.1.0
 
 First prepared public npm baseline for the standalone TypeScript package.

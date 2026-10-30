@@ -25,15 +25,13 @@ npm pack --pack-destination /absolute/path/to/artifacts
 Install that tarball in a separate Node 24 ESM project:
 
 ```sh
-npm install /absolute/path/to/artifacts/godoo-dev-stateman-0.1.0.tgz
+npm install /absolute/path/to/artifacts/godoo-dev-stateman-0.2.0.tgz
 ```
 
-The lock uses published client 0.6.1 and introspection 0.2.2. Compatibility ranges
-also accept client 0.7.x and introspection 0.2.x; selected unreleased suppliers need
-the separate installed-candidate proof below. Testcontainers is an optional
-application test supplier, not a Stateman dependency. The addon-inspection seam
-requires a structural adapter from the selected supplier; the published baseline
-does not provide the newer lifecycle seam. No sibling source import is required.
+The 0.2.0 candidate adopts published client 0.8.0 and introspection 0.2.4 in
+both runtime ranges and the resolved lock. Testcontainers is an optional application
+test supplier, not a Stateman dependency. The addon-inspection seam requires a
+structural adapter from the selected supplier. No sibling source import is required.
 Public npm distribution retains LGPL-3.0-only, source attribution and corresponding
 TypeScript source in the archive. See [release preparation](docs/releasing.md).
 
@@ -206,7 +204,7 @@ flag accepts bounded JSON for load/inspect/plan/drift. Broad live clone/export/i
 is outside this path.
 
 [Explicit addon stages](docs/modules.md) use `planModules`/`applyModules` with the
-new local client lifecycle API. Review the addon preview, apply only the selected
+published client lifecycle API. Review the addon preview, apply only the selected
 install/upgrade requests, invalidate introspection and make a fresh resource plan.
 Record planning does not install addons. Testcontainers remains independent: call
 Stateman seeding after the chosen disposable environment is ready.
