@@ -110,7 +110,7 @@ claim registry publication. Preserve the baseline and candidate rounds separatel
 CI test.yml requires offline, installed package and disposable18, plus requested19.
 Its stable required aggregate rejects mandatory missing/skipped/cancelled/failed
 results. Controlled local checks do not establish remote branch protection. Public npm release preparation is routed through docs/releasing.md and the manual
-Release workflow on develop. It reuses the complete CI candidate, validates frozen
+Release workflow on main. It reuses the complete CI candidate, validates frozen
 consumer locks/observed18/cleanup and never rebuilds for promotion. Run
 `GODOO_ARTIFACT_DIR=... npm run release:check` after qualification; offline checks
 include refusal/recovery controls. Registry publication, trusted-publisher setup and

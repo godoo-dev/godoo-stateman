@@ -13,15 +13,15 @@ const git = (root, ...args) => execFileSync('git', args, { cwd: root, encoding: 
 
 export function requireReleaseSource(root = defaultRoot, env = process.env) {
   assert.equal(env.GITHUB_EVENT_NAME, 'workflow_dispatch', 'Manual Release dispatch required');
-  assert.equal(env.GITHUB_REF, 'refs/heads/develop', 'Release must run from existing develop');
+  assert.equal(env.GITHUB_REF, 'refs/heads/main', 'Release must run from existing main');
   assert.equal(env.GITHUB_REPOSITORY, 'godoo-dev/godoo-stateman', 'Unexpected release repository');
   assert.equal(git(root, 'status', '--porcelain'), '', 'Release source must be clean');
   const sha = git(root, 'rev-parse', 'HEAD');
   const remote = env.GITHUB_ACTIONS === 'true'
-    ? execFileSync('gh', ['api', 'repos/godoo-dev/godoo-stateman/git/ref/heads/develop', '--jq', '.object.sha'], { encoding: 'utf8', env }).trim()
-    : git(root, 'ls-remote', '--exit-code', 'origin', 'refs/heads/develop').split(/\s+/)[0];
+    ? execFileSync('gh', ['api', 'repos/godoo-dev/godoo-stateman/git/ref/heads/main', '--jq', '.object.sha'], { encoding: 'utf8', env }).trim()
+    : git(root, 'ls-remote', '--exit-code', 'origin', 'refs/heads/main').split(/\s+/)[0];
   if (env.GITHUB_ACTIONS === 'true') assert.equal(sha, env.GITHUB_SHA, 'Workflow source changed');
-  assert.equal(remote, sha, 'Release source is no longer the remote develop head');
+  assert.equal(remote, sha, 'Release source is no longer the remote main head');
   return sha;
 }
 

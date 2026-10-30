@@ -16,12 +16,12 @@ function fixture(t) {
   const root=join(area,'source'), directory=join(area,'candidate'), unpack=join(area,'unpack/package');
   mkdirSync(directory,{recursive:true}); mkdirSync(root);
   const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
-  git('init','-b','develop');git('config','user.email','control@example.invalid');git('config','user.name','Release control');
+  git('init','-b','main');git('config','user.email','control@example.invalid');git('config','user.name','Release control');
   const pkg={name:'@godoo-dev/stateman',version:'0.1.0',license:'LGPL-3.0-only',publishConfig:{access:'public',registry:'https://registry.npmjs.org'},dependencies:{debug:'^4.4.3'}};
   write(join(root,'package.json'),pkg); write(join(root,'package-lock.json'),{lockfileVersion:3});write(join(root,'.gitignore'),'dist/\n');
   for(const name of ['LICENSE','COPYING','NOTICE.md','src/index.ts','dist/index.js','dist/index.d.ts','bin/stateman.js'])write(join(root,name),'fixture '+name+'\n');
   git('add','.');git('commit','-m','fixture');
-  const origin=join(area,'origin.git');execFileSync('git',['init','--bare',origin],{stdio:'ignore'});git('remote','add','origin',origin);git('push','origin','develop');
+  const origin=join(area,'origin.git');execFileSync('git',['init','--bare',origin],{stdio:'ignore'});git('remote','add','origin',origin);git('push','origin','main');
   const names=['package.json','LICENSE','COPYING','NOTICE.md','src/index.ts','dist/index.js','dist/index.d.ts','bin/stateman.js'];
   for(const name of names){mkdirSync(dirname(join(unpack,name)),{recursive:true});cpSync(join(root,name),join(unpack,name));}
   const filename='godoo-dev-stateman-0.1.0.tgz';
@@ -35,15 +35,15 @@ function fixture(t) {
   const proof={passed:true,sourceHead:manifest.sourceHead,candidateManifestSha256:hash(join(directory,'manifest.json')),artifact,consumerLockTemplateSha256:manifest.proofHashes['installed-package-lock.json'],cleanupPending:false,allOwnedResourcesAbsent:true,owner:'control-owner',output:JSON.stringify({passed:true,observedVersion:'18.0'})};
   write(join(directory,'odoo18-result.json'),proof);
   write(join(directory,'odoo18-cleanup.json'),{owner:'control-owner',allAbsent:true,proof:Array.from({length:5},(_,i)=>({name:'owned-'+i,absent:true,ownerChecked:true}))});
-  const env={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/develop',GITHUB_REPOSITORY:'godoo-dev/godoo-stateman'};
+  const env={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_REPOSITORY:'godoo-dev/godoo-stateman'};
   return {root,directory,git,env,manifest,artifact,proof,archive:join(directory,filename)};
 }
 
-test('clean current develop may qualify; manual/ref/repository, dirty and stale eligibility fail closed',t=>{
+test('clean current main may qualify; manual/ref/repository, dirty and stale eligibility fail closed',t=>{
   const f=fixture(t);assert.equal(requireReleaseSource(f.root,f.env),f.manifest.sourceHead);
-  for(const [key,value] of Object.entries({GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/main',GITHUB_REPOSITORY:'other/repo'}))assert.throws(()=>requireReleaseSource(f.root,{...f.env,[key]:value}));
+  for(const [key,value] of Object.entries({GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/develop',GITHUB_REPOSITORY:'other/repo'}))assert.throws(()=>requireReleaseSource(f.root,{...f.env,[key]:value}));
   write(join(f.root,'unreviewed.txt'),'dirty');assert.throws(()=>requireReleaseSource(f.root,f.env),/clean/);rmSync(join(f.root,'unreviewed.txt'));
-  f.git('commit','--allow-empty','-m','newer local');assert.throws(()=>requireReleaseSource(f.root,f.env),/remote develop/);
+  f.git('commit','--allow-empty','-m','newer local');assert.throws(()=>requireReleaseSource(f.root,f.env),/remote main/);
 });
 
 test('promotion checks exact retained archive, consumer and18 evidence without rebuilding dist',t=>{
