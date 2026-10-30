@@ -19,11 +19,10 @@ if (!outcome.ok) throw new Error('Addon stage incomplete; inspect outcome.result
 const records = await plan(desired, connection, { requiredAddons: ['project'] });
 ```
 
-The adapter requires the new local client lifecycle API; the previously released
-client does not provide its verified postconditions or catalog revision. Use the
-exact supplied local artifacts and transitive-resolution recipe until a release
-is separately commissioned. Odoo installs dependencies and may update its registry,
-catalog and dependent addons during an upgrade. Preview is limited to visible
+The adapter uses the published client 0.8.0 lifecycle API, adopted by the Stateman
+0.2.0 candidate, including its verified postconditions and catalog revision. Odoo
+installs dependencies and may update its registry, catalog and dependent addons
+during an upgrade. Preview is limited to visible
 registered addon facts; it does not prove filesystem/external prerequisites or
 enumerate every internal upgrade effect.
 
@@ -37,7 +36,7 @@ error. No whole-stage rollback, automatic removal or concurrent-writer lock is
 promised. Recover the actual addon state and produce fresh previews/plans after
 failure; do not reuse a previous resource plan.
 
-The module-stage seam requires the newer local client lifecycle API. Its selected
-immutable supplier qualification is separate from the required resource18 lane.
+The module-stage seam uses the published client lifecycle API. Supplier
+qualification remains separate from the required Stateman resource18 lane.
 Resource reconciliation checks do not establish addon-stage, managed-addon or
 application staging acceptance.

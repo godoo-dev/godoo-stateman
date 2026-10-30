@@ -184,11 +184,10 @@ batched-read completeness, contextual separation and apply revalidation.
 Required addons use a structural adapter compatible with godoo-ts
 `inspectModulePrerequisites`: `{modules,closureComplete,diagnostics}`. Every requested
 addon and its visible closure must report installed; inaccessible, missing,
-transitional, unknown or incomplete metadata blocks planning. The released 0.6.1
-client has no new inspection export, so inject an adapter from an explicitly
-selected newer local artifact. No fake publication or source-relative dependency
-is assumed. An empty `requiredAddons` checks models/fields but asserts no addon
-closure. Source availability, catalog freshness, unfiltered visibility and
+transitional, unknown or incomplete metadata blocks planning. The 0.2.0 candidate
+adopts published client 0.8.0; inject its inspection API through this structural
+adapter. No source-relative dependency is required. An empty `requiredAddons`
+checks models/fields but asserts no addon closure. Source availability, catalog freshness, unfiltered visibility and
 Python/system prerequisites remain unknown even with complete registered edges.
 No module refresh/install/upgrade or action execution occurs in this core.
 
