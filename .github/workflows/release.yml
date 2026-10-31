@@ -6,8 +6,16 @@ on:
         description: 'Publish the same verified archive (requires native npm setup)'
         type: boolean
         default: false
+      recovery:
+        description: 'Original source/run/attempt/artifact IDs and hashes as JSON; empty qualifies a new candidate'
+        type: string
+        default: ''
 permissions:
   contents: read
+  actions: read
+defaults:
+  run:
+    working-directory: publisher
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -19,16 +27,26 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          path: publisher
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
       - run: node scripts/release.mjs guard
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Validate recovery request
+        if: inputs.recovery != ''
+        run: node scripts/recover-release.mjs guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GODOO_RECOVERY: ${{ inputs.recovery }}
   validation:
+    if: inputs.recovery == ''
     needs: eligibility
     uses: ./.github/workflows/test.yml
   preflight:
+    if: always() && needs.eligibility.result == 'success' && ((inputs.recovery == '' && needs.validation.result == 'success') || (inputs.recovery != '' && needs.validation.result == 'skipped'))
     needs: [eligibility, validation]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -36,26 +54,46 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          path: publisher
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - if: inputs.recovery == ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: stateman-candidate-${{ github.sha }}
           path: ${{ runner.temp }}/stateman-candidate
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - if: inputs.recovery == ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: stateman-odoo18-${{ github.sha }}
           path: ${{ runner.temp }}/stateman-candidate
-      - run: node scripts/release.mjs verify
+      - if: inputs.recovery == ''
+        run: node scripts/release.mjs verify
         env:
           GODOO_ARTIFACT_DIR: ${{ runner.temp }}/stateman-candidate
+      - name: Read original candidate source
+        if: inputs.recovery != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ fromJSON(inputs.recovery).source }}
+          path: candidate-source
+          persist-credentials: false
+      - name: Verify original recovery candidate
+        if: inputs.recovery != ''
+        run: node scripts/recover-release.mjs verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GODOO_RECOVERY: ${{ inputs.recovery }}
+          GODOO_RECOVERY_SOURCE_DIR: ${{ github.workspace }}/candidate-source
   publish:
-    if: inputs.publish == true
+    if: always() && inputs.publish == true && needs.eligibility.result == 'success' && needs.preflight.result == 'success' && ((inputs.recovery == '' && needs.validation.result == 'success') || (inputs.recovery != '' && needs.validation.result == 'skipped'))
     needs: [eligibility, validation, preflight]
     environment: npm-release
     permissions:
       contents: read
+      actions: read
       id-token: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -63,22 +101,42 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          path: publisher
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
           registry-url: https://registry.npmjs.org
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - if: inputs.recovery == ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: stateman-candidate-${{ github.sha }}
           path: ${{ runner.temp }}/stateman-candidate
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - if: inputs.recovery == ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: stateman-odoo18-${{ github.sha }}
           path: ${{ runner.temp }}/stateman-candidate
       - name: Require npm trusted-publisher support
         run: node -e "const v=require('node:child_process').execFileSync('npm',['--version'],{encoding:'utf8'}).trim().split('.').map(Number);if(v[0]<11||(v[0]===11&&v[1]<5))process.exit(1)"
-      - run: node scripts/release.mjs publish
+      - if: inputs.recovery == ''
+        run: node scripts/release.mjs publish
         env:
           GODOO_ARTIFACT_DIR: ${{ runner.temp }}/stateman-candidate
           GODOO_PUBLISH: 'true'
           GH_TOKEN: ${{ github.token }}
+      - name: Read original candidate source
+        if: inputs.recovery != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ fromJSON(inputs.recovery).source }}
+          path: candidate-source
+          persist-credentials: false
+      - name: Publish original recovery candidate
+        if: inputs.recovery != ''
+        run: node scripts/recover-release.mjs publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GODOO_RECOVERY: ${{ inputs.recovery }}
+          GODOO_RECOVERY_SOURCE_DIR: ${{ github.workspace }}/candidate-source
+          GODOO_PUBLISH: 'true'

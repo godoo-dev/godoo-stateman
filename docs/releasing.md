@@ -36,6 +36,83 @@ After upload, verify registry bytes, install in a fresh consumer and run API/CLI
 acceptance before recording the release complete. Local checks and a dry run do
 not establish publisher access or registry-consumer acceptance.
 
+## Recover an original publication candidate
+
+Use recovery only after diagnosing the original upload failure and establishing
+publisher authorization. This source capability does not change npm settings or
+GitHub environment policy. Do not blindly rerun the original failed job: ordinary
+promotion still requires its own run/attempt identity.
+
+Supply `recovery` JSON to the existing manual Release workflow on current `main`.
+All seven fields are required; IDs and attempts are decimal strings, and hashes
+are complete lowercase SHA256 values. For the original failed 0.2.0 publication,
+the reviewed identity is:
+
+```json
+{
+  "source": "ee5739ca5020af09c03bb0f0b1e1a8016dbcc12b",
+  "runId": "41146741948",
+  "attempt": "1",
+  "packageArtifactId": "13021082870",
+  "odooArtifactId": "13020963197",
+  "archiveSha256": "d608e7e1402e46e2ad6dde58d3af99c1b67d680da944eacdb02c8b58aab239f6",
+  "manifestSha256": "c3f195f0669fdbb1c56f8b515cbcb111766db377e4db7387856a68dd7ea78c17"
+}
+```
+
+Save the selected JSON as `recovery.json`. After this capability is merged, an
+authorized operator can request a verification-only recovery:
+
+```sh
+gh workflow run release.yml --repo godoo-dev/godoo-stateman --ref main \
+  -f publish=false -f recovery="$(cat recovery.json)"
+```
+
+With no `recovery` input, Release retains the ordinary full qualification path.
+Recovery skips rebuilding and Docker qualification. Instead it queries GitHub for
+the exact original run/attempt and requires successful eligibility, offline,
+package, Odoo18, required aggregate and preflight jobs, plus a failed publish job.
+Both runs must belong to this repository's manual `release.yml` on main; the
+original source must be an ancestor of the current publisher source. The current
+publisher checkout must still be the remote main head. Artifacts must be unexpired,
+have the selected immutable IDs, expected names, matching repository/run/source
+metadata and creation times within the selected attempt's successful producer jobs.
+GitHub ZIP digests are checked before extracting approved flat filenames into a
+fresh directory; there is no local-file or operator-testimony fallback.
+
+Current publisher code verifies the downloaded archive against a separate clean
+checkout of the original source. The original manifest/installed proofs and
+Odoo18 source, archive, consumer-lock, run/attempt and owned-cleanup bindings remain
+required. Recovery does not execute the original publisher scripts. Its summary
+separates the original candidate identity from the current recovery source,
+run/attempt and workflow identity. Verification-only mode makes no registry write
+and does not establish registry availability or authorization.
+
+After reviewing the verification summary, an authorized operator can use the same
+command with `-f publish=true`. This requests a fresh `npm-release` environment
+review; the protected job independently downloads and verifies everything again
+after approval. The same `release.yml`/`npm-release` trusted-publisher identity and
+main release concurrency group are retained. No publication occurs merely by
+merging this capability or running its local tests.
+
+An absent registry version (HTTP 404) permits one upload of the original archive
+with scripts disabled. An existing version is accepted only after exact downloaded
+byte equality; different reserved bytes, unavailable metadata/archives, authentication
+errors and network/server errors fail closed. An upload failure propagates without
+automatic retry, even if its remote effect is unknown. Expired/deleted original
+artifacts, missing jobs or unavailable GitHub evidence stop recovery. Resolve unknown
+effects before a separately reviewed recovery attempt. This capability cannot repair
+registry authorization. After acknowledged upload, the independent registry-byte,
+installed-consumer, tag and release-note obligations above still apply.
+
+Run `node --test scripts/release.test.mjs scripts/recover-release.test.mjs` for the
+no-network/no-publication controls, also included in `npm run check`. They exercise
+identity/proof tampering, same-byte recovery, reservations and failure propagation.
+These local simulations do not establish hosted environment enforcement, npm
+provenance for an older-source archive, publisher access or registry acceptance.
+The recovery provenance identifies the current publisher workflow commit; the
+summary retains the distinct original archive qualification identity.
+
 ## Release finish and cleanup
 
 After recording the accepted release and its registry/consumer evidence, assess
