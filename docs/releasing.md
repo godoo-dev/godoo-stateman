@@ -32,9 +32,20 @@ main. Inspect its candidate/preflight before selecting `publish: true`.
 Promotion rechecks source eligibility and proof, then publishes the same tested
 tarball with scripts disabled and public access. An existing version is accepted
 only when downloaded bytes match; collisions and registry failures stop promotion.
-After upload, verify registry bytes, install in a fresh consumer and run API/CLI
-acceptance before recording the release complete. Local checks and a dry run do
-not establish publisher access or registry-consumer acceptance.
+
+The native publishing job accepts `npm publish` exit success as acknowledged
+upload and finishes immediately, without registry polling, waits or sleeps in
+CI/CD. Successful upload may precede metadata or tarball availability while npm
+processes the package; a later HTTP 404 does not invalidate that acknowledgment,
+establish an absent publication or justify another upload. This differs from
+`npm publish` exiting nonzero with `E404` before acknowledgment, which remains an
+upload failure subject to the recovery rules below. Any separately commissioned
+registry-byte or installed-consumer verification is a distinct later activity,
+not a publishing-job gate; no fixed processing duration is guaranteed.
+
+Record successful upload as completed publication and move on. Record any
+separately requested registry-byte or installed API/CLI checks only when performed;
+upload acknowledgment alone does not establish their results.
 
 ## Recover an original publication candidate
 
@@ -102,8 +113,9 @@ errors and network/server errors fail closed. An upload failure propagates witho
 automatic retry, even if its remote effect is unknown. Expired/deleted original
 artifacts, missing jobs or unavailable GitHub evidence stop recovery. Resolve unknown
 effects before a separately reviewed recovery attempt. This capability cannot repair
-registry authorization. After acknowledged upload, the independent registry-byte,
-installed-consumer, tag and release-note obligations above still apply.
+registry authorization. After acknowledged upload, record completed publication
+without waiting for registry availability. Keep any separately requested
+registry-byte or installed-consumer checks distinct from that result.
 
 Run `node --test scripts/release.test.mjs scripts/recover-release.test.mjs` for the
 no-network/no-publication controls, also included in `npm run check`. They exercise
@@ -115,8 +127,8 @@ summary retains the distinct original archive qualification identity.
 
 ## Release finish and cleanup
 
-After recording the accepted release and its registry/consumer evidence, assess
-completed disposable worktrees and local/remote feature branches for retirement.
+After recording completed publication and any separately collected evidence,
+assess completed disposable worktrees and local/remote feature branches for retirement.
 Check current ownership, thread activity, process/container use, clean status and
 full integration into `main`; age or patch equivalence alone does not establish
 completion. Remove only authorized, clean, completed, integrated and unused
