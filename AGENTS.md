@@ -26,8 +26,8 @@ Preserve unrelated edits. Check status, branch, worktree ownership and active us
 before changes; do not switch/reset the primary branch or alter another worker's
 checkout. Use owner-paths for notes and evidence outside source. Report actual
 cross-project dependencies or ownership conflicts to Marc in the current
-conversation. Do not contact agents, coordinators, threads or mailboxes,
-launch delegates, or use shared files/tracker comments as agent messages.
+conversation. Do not contact unrelated project agents or coordinators, poll their mailboxes,
+or use shared files/tracker comments as cross-project message relays.
 
 The selected delivery is standalone TypeScript Stateman for application consumers. The local
 package supports authoring, inspection and explicit plan/apply/drift on Node 24+.
