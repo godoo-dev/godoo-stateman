@@ -1,131 +1,125 @@
 ---
 name: godoo-stateman-verification
-description: Verify Stateman's offline DSL, installed API/CLI and owned disposable Odoo reconciliation with explicit candidate hashes, durable recovery and cleanup. Use for Stateman changes and bounded verification upkeep.
+description: Check a Stateman change with its native commands, from the offline check to the installed-package and disposable Odoo 18 tiers. Use when changing Stateman's TypeScript source, tests, check callers, CI or release scripts.
 ---
 
-# Verify TypeScript Stateman
+# Verify a Stateman change
 
-Select the actual checkout and read README.md and docs/index.md. Node24+ is
-required. Capture HEAD, dirty state, lock SHA256 and tool versions with evidence
-outside source using owner-paths. Preserved Python is a reference implementation;
-its tests do not qualify the current TypeScript package.
+Stateman is a TypeScript package for Node 24 or later. The Python source under
+`src/godoo_stateman` is a retained reference implementation; its tests do not
+check the TypeScript package and CI does not run them.
 
-## Native proof path
+## Default check
 
-Run `npm ci --ignore-scripts` and `npm run check`. This checks source/tests and
-executes the maintained fake-RPC regressions before building. Simulation is not
-live Odoo. For an installed candidate, create a fresh external artifact directory,
-set `GODOO_ARTIFACT_DIR` to its absolute path and run `npm run check:package`.
-Keep the same directory for later integration. A candidate manifest cannot be
-overwritten: create a fresh directory for a new candidate.
+```sh
+npm ci --ignore-scripts
+npm run check
+```
 
-The package caller packs once, records SHA256/source/lock identity, then installs
-that exact tarball into an owned OS-temp consumer using runtime registry baseline
-dependencies. It copies maintained acceptance fixtures outside source, typechecks
-without paths aliases, drives public API/CLI creation/no-op/update/drift, durable
-journal/replay refusal, full parent/child readiness, exact relation ownership, contextual company values
-and offline content/children. The installed catalog fixture also checks physical
-request budgets, per-company compatible batches, mixed three-language/seven-relation
-read batching and fresh apply revalidation.
-It rejects missing-connection commands before poison-module evaluation. Require
-all commands to pass, installed file integrity and dependency-origin proof. Its
-manifest says supplier qualification is false for this registry baseline. Runtime source/rights notices must remain in the tarball.
-The consumer is removed in finally; artifact bytes, lock and proof remain external.
+`npm run check` runs the release-script tests, `tsc --noEmit` over source and
+tests, the Vitest suite against a fake Odoo RPC client, and the build. Its exit
+status is the result. Fake-RPC tests are simulation, not live Odoo.
 
-With Docker reachable, run `npm run check:odoo18` with the same artifact directory.
-Missing Docker/artifact/ref/version/hash is failure, never a skipped required test.
-The harness reuses the package acceptance consumer lock with npm ci, relocating
-only the verified Stateman file archive path. It pulls Odoo18/Postgres15 images, creates uniquely labelled containers,
-network and two volumes, binds only random loopback HTTP and disables cron workers.
-It initializes synthetic base data; the scoped-value fixtures explicitly install
-account and create fictional companies, accounts, taxes and shared products. It also installs mail for synthetic
-mail.template HTML checks. Readiness requires HTTP login and
-an authenticated observed-major read, not just a listening port.
+Focused commands while iterating:
 
-The installed API creates a res.partner with durable receipt, checks fresh no-op,
-updates it, detects manual drift and rejects a stale reviewed plan without changing
-that drift. Fresh retry converges. Installed CLI subprocesses plan/apply/drift and
-an independent read verify actual names and identities. Scoped fixtures exercise
-product taxes (including domain-hidden links), explicit empty sets, preservation
-and stale membership. Standard account.account.tax_ids checks retain fresh
-company_ids domain/context metadata, display-only label behavior, empty/nonempty
-sets, API/CLI zero-write repeats and preservation. Metadata/read fault adapters
-exercise rejected mixed contexts, changed schema and hidden links during apply
-revalidation; these are injected faults alongside real Odoo RPCs. Income properties cover unchanged A/undeclared C, changed B,
-translations, explicit false, real restricted-user refusal and durable recovery
-after an injected contextual RPC failure. Twelve-product/two-field company batches verify effective ORM reads, one changed
-middle record, undeclared-company preservation and zero-write convergence. The same
-twelve records verify identity/base/translation/membership batching, a changed
-translation, and a hidden purchase-tax link on only one source in a batch.
-Installed CLI saved-plan/apply/drift and repeated zero-write apply cover the scoped authoring path too. HTML checks cover source
-and ca_ES/en_GB/es_ES exact reads for text and HTML, with en_US both active
-and inactive, explicit default restoration after translation writes, bounded
-serialization/EOF completion, fresh convergence, language update and repeat apply
-with zero commits, and meaningful content/language negatives. They never render or send mail. No authoring business
-payload or live environment is loaded. Require the observed18 result, exact image
-and tarball identity, result and five-resource ownership/absence cleanup proofs.
-The same installed candidate also qualifies the computed-field/MIS API. The harness
-mounts pinned MIS Builder 18.0.1.10.0, report_xlsx and date_range test inputs, and
-installs the hash-verified openupgradelib wheel only inside its owned container.
-MIS installation is explicit fixture setup, never a product side effect. The host
-needs `tar`, Python3 and `pdftotext` for prerequisite extraction/export assertions.
-Synthetic accounting data verifies a nonstored JSON field, source drift/adoption,
-same-apply query ordering, single/multi-company totals, monthly/YTD ratios with
-unequal denominators, explicit posted-query filtering and the unfiltered-query
-counterexample. It also checks stable child IDs, selected closure, label-only
-updates, explicit native template/KPI/expression adoption, unmanaged preservation,
-sub-KPI expressions, hidden styles, native accounting drilldown and real XLSX/PDF
-exports. Matrices and export files remain with candidate evidence; presentation
-checks inspect hidden labels, PDF column alignment and the XLSX bold property,
-not general export parity. The fixture sets report.url to the container-internal
-endpoint so the PDF renderer can load report assets.
-The harness removes only its labelled resources, including on failure; inspect
-remaining owned state if cleanup reports a failure. Never remove unrelated state.
+```sh
+npm run typecheck
+npx vitest run tests/translation-ordering.test.ts
+npm run build
+```
 
-## Later majors and supplier candidates
+CI (`.github/workflows/test.yml`, GitHub-hosted `ubuntu-latest`) runs the check
+on every pull request to `main` and every push to `main`, followed by the
+package and Odoo 18 tiers below. The `required` job fails unless each mandatory
+job succeeded. Let CI run the full set on the PR; run the slow tiers locally
+only when the trigger below applies and you need the answer before CI.
 
-The engine rejects majors below18, even with a caller override. Later majors need
-explicit caller opt-in and instance-specific verification. The optional
-`GODOO_ENABLE_ODOO19=1 npm run check:odoo19` requires retained successful18 proof for
-the SHA256 of this complete candidate manifest, including supplier identities;
-never fabricate it. Legacy results without that binding require fresh18 proof. CI schedules19 only on explicit dispatch
-and after18. An unexecuted19 lane is configured capability, not qualification.
+There is no lint, formatter or complexity rule yet; adding one awaits an owner
+decision in [issue #27](https://github.com/godoo-dev/godoo-stateman/issues/27).
+Until then, keep new functions small and do not add suppressions.
 
-For a parent-selected local supplier trial, set `GODOO_SUPPLIER_MANIFEST` to the
-sealed TS manifest in both `check:package` and `check:odoo18` calls, with a fresh
-artifact directory. The callers verify all three hashes and every installed shipped
-file, record the selected manifest and reject mismatched package/live suppliers.
-The live supplier branch installs project through planModules/applyModules, checks
-cache invalidation and fresh model discovery, repeated-install no-op, upgrade and
-fresh resource creation/convergence. Registry baseline results remain separate.
+Changes to docs or skills alone need only `git diff --check` and a link check,
+not the product or container tiers.
 
-Parent-selected local supplier tarballs are a separate installed-consumer trial.
-Verify each manifest hash/version/source, install all selected packages directly
-with both client/introspection overrides, inspect npm ls/lock origins, and rerun
-the affected installed public seam. Never use sibling editable/source aliases or
-claim registry publication. Preserve the baseline and candidate rounds separately.
+## Installed package tier
 
-## Integration, failure and upkeep
+Run when a change touches the public API, CLI, package contents, `exports`,
+dependencies or the check callers:
 
-CI test.yml requires offline, installed package and disposable18, plus requested19.
-Its stable required aggregate rejects mandatory missing/skipped/cancelled/failed
-results. Controlled local checks do not establish remote branch protection. Public npm release preparation is routed through docs/releasing.md and the manual
-Release workflow on main. It reuses the complete CI candidate, validates frozen
-consumer locks/observed18/cleanup and never rebuilds for promotion. Run
-`GODOO_ARTIFACT_DIR=... npm run release:check` after qualification; offline checks
-include refusal/recovery controls. Registry publication, trusted-publisher setup and
-GitHub environment enforcement require separate evidence. Retired Python
-publication/docs deployment do not run.
+```sh
+export GODOO_ARTIFACT_DIR="$(mktemp -d -t stateman-candidate-XXXXXX)"
+npm run check:package
+```
 
-For changes to check callers, exercise a real invalid type/test fixture in an
-isolated copy and invalid command mode; verify nonzero propagation. For candidate
-loading, mutate a copied manifest/hash and observe refusal before Docker resources
-are created. Retain failure evidence and cleanup. Never weaken the expected plan,
-receipt/dependency/security contract to make a regression pass.
+The artifact directory must be outside the checkout and must not already hold
+a manifest; without the variable the caller creates a temporary one, but the
+Odoo tier then has no directory to reuse.
 
-When API paths, fixtures, runtime assumptions or commands change, compare these
-instructions and their actual callers, repair driving/observation gaps, then rerun
-the affected public interface. Route product failures through
-[project capture](../godoo-stateman-capture/SKILL.md) into this repository’s GitHub issues.
-Cloud/business/staging/human acceptance remains application-owned. No service,
-registry, deployment or credential authority follows from this verifier.
+It packs the tarball once into `GODOO_ARTIFACT_DIR`, installs it into a
+temporary consumer outside the checkout without path aliases, and drives the
+public API and CLI through create, no-op, update, drift, journal recovery and
+missing-connection refusal. The consumer is removed when it finishes; the
+artifact directory keeps the tarball for the Odoo tier. Remove it afterwards.
+
+## Disposable Odoo 18 tier
+
+Run when a change touches planning, apply, drift, recovery, relation or
+company-value handling, HTML or translation comparison, MIS support, or the
+Odoo harness. Needs Docker, `tar`, Python 3 and `pdftotext`, and the same
+`GODOO_ARTIFACT_DIR` as the package tier (it fails without it):
+
+```sh
+npm run check:odoo18
+```
+
+It starts uniquely labelled Odoo 18 and Postgres 15 containers (images pinned by
+digest in `scripts/images/*.Dockerfile`, updated by Dependabot), a network and
+two volumes on random loopback ports with cron workers disabled, installs the
+tarball from the package tier and runs the installed API and CLI against
+synthetic data (partners, accounting and taxes, mail templates, MIS Builder
+reports). It removes only its own labelled resources, also on failure; if it
+reports a cleanup failure, remove the labelled leftovers it names and nothing
+else. A missing prerequisite fails the run; it is never a skip.
+
+Odoo 18 is the supported baseline; majors below 18 are rejected. Odoo 19 is
+opt-in: `GODOO_ENABLE_ODOO19=1 npm run check:odoo19` after a passing Odoo 18
+run of the same tarball, and in CI only through a manual dispatch with
+`odoo19: true`. An unexecuted 19 lane is not support.
+
+## Unreleased supplier packages
+
+To trial unreleased `@godoo-dev/client` or `@godoo-dev/introspection` tarballs,
+set `GODOO_SUPPLIER_MANIFEST` to the supplier manifest for both
+`check:package` and `check:odoo18`, with a fresh artifact directory. The callers
+install the supplied tarballs directly with dependency overrides. Keep these
+results separate from the registry baseline; a trial is not publication.
+
+## Changing the check callers
+
+When editing `scripts/check.mjs`, `scripts/package-check.mjs`, `scripts/odoo18.mjs`
+or the workflows, confirm a failing type error or test makes the caller exit
+nonzero, and that an invalid mode prints usage. Never weaken an expected plan,
+receipt, dependency or safety assertion to make a test pass; fix the product
+code or raise it with Marc.
+
+## Release
+
+Releases use the manual `release.yml` workflow on `main`, which reuses the CI
+tarball rather than rebuilding; see `docs/releasing.md`. `npm run release:check`
+validates a qualified artifact directory. Running checks grants no publication,
+deployment or credential authority.
+
+## Product invariants
+
+Plan, apply and drift take an explicitly supplied connection; Stateman never
+selects an environment, authenticates or reads credentials. Keep the fail-closed
+validation for unsupported policies, stale plans, unresolved dependencies,
+ownership and removal, and recovery. Creates keep durable caller-owned receipts;
+a retry never discards them. Do not weaken client safety guards.
+
+## Scope limits
+
+These tiers check Stateman against synthetic data on disposable Odoo. They do
+not establish a live environment, an application's business acceptance or
+custom addons. Route product failures through
+[godoo-stateman-capture](../godoo-stateman-capture/SKILL.md).

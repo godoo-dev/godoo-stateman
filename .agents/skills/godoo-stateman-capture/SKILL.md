@@ -1,109 +1,131 @@
 ---
 name: godoo-stateman-capture
-description: Capture, triage and retrieve Stateman GitHub work, incoming requests, work breakdowns and deferred observations; reconcile consequential delivery updates.
+description: Capture, triage and retrieve Stateman work in its GitHub issues, including incoming requests, work breakdowns and deferred observations, and route knowledge Stateman does not own to its owner. Use when work, a decision or a finding about Stateman or its Odoo dependencies needs a home.
 ---
 
-# Retain Stateman work
+# Capture Stateman work
 
-Use this checkout's AGENTS.md. The canonical work repository is
-https://github.com/godoo-dev/godoo-stateman. For issue and PR operations, pass
-`--repo godoo-dev/godoo-stateman` to `gh`; verify `gh repo view
-godoo-dev/godoo-stateman --json nameWithOwner,url` before a write. Project-local
-ignored `.mafe-si.toml` overrides inherited categories; do not fall back to an
-ancestor's tracker or documentation store. Missing local config does not change
-the public repository default. Authentication failure blocks only provider work;
-retain a private draft with owner-paths and report the gap to Marc.
+Stateman's work records are the public GitHub issues of
+`godoo-dev/godoo-stateman`. Pass `--repo godoo-dev/godoo-stateman` to every `gh`
+call. The project's local, untracked `.mafe-si.toml` names this tracker; inherited
+HQ or shared-tracker bindings do not apply to ordinary Stateman work. If `gh` is
+not authenticated, keep a draft in `.scratch/` and tell Marc.
 
-## Choose the home and authority
+## Decide whether to write
 
-Retain actionable requests and open decisions early in GitHub issues. Canonical
-usage, product targets and engineering explanations belong in this repository's
-README and docs through [godoo-stateman-docs](../godoo-stateman-docs/SKILL.md).
-Provisional designs, raw reports, private crosswalks and detailed evidence use
-owner-paths outside source. Keep an issue self-contained when readers cannot
-access that evidence; a private path is not a public evidence link. An explicitly
-selected detailed design discussion may live in the issue body or a substantive
-issue comment; do not force a duplicate document. Keep session progress here.
+Create, update, reuse or make no write:
 
-Public payloads include titles, bodies, comments, labels, links and attachments.
-Remove private company/consumer/supplier identities, local paths, thread IDs,
-credentials and raw archival source keys before any write. Keep essential
-qualified meaning. For imported private sources, compute SHA256 over UTF-8
-`provenance + "\n" + source_ref` with no trailing newline. Retain that original
-pair and digest privately. Publish only `Source-ID: sha256:<digest>` in the body.
-The complete deduplication key is repository plus that exact marker, across open
-and closed issues. Distinct corrections/split outcomes get distinct stable source
-identities and link the original; retries retain the same identity.
+- **Create** when an outcome needs follow-through later, a decision is open, or
+  Marc asks for a record. Work finished in the conversation or an open PR needs
+  no separate issue; a merge, a passing check or a handback is no trigger.
+- **Update** when a reader-facing fact changes: outcome, acceptance, needed
+  decision, blocker or next actor.
+- **Reuse** existing coverage for the same outcome, open or closed. Closed
+  coverage stays closed unless the outcome was not actually delivered.
+- **No write** for read-only requests, routine progress and session history.
 
-Capture does not accept, schedule or execute work, release holdings, request
-credentials or grant publication authority. Attribute owner requirements and
-separate optional suggestions. Record known supplier dependencies and uncertainty
-locally; do not contact other agents/projects. Actual cross-project decisions go
-to Marc in the current conversation. No dispatch, mailbox or periodic pickup is
-implemented by this procedure.
+Saving a record does not accept, schedule or execute the work, and grants no
+release, credential or publication authority.
 
-## Find coverage, capture and retrieve
+## Route each kind of knowledge to its owner
 
-Open a supplied issue with `gh issue view NUMBER --repo godoo-dev/godoo-stateman
---json number,title,body,state,labels,assignees,url,comments`. Otherwise list both
-states with `gh issue list --repo godoo-dev/godoo-stateman --state all --limit 100
---json number,title,body,state,url,labels`; paginate with `gh api --paginate
-'repos/godoo-dev/godoo-stateman/issues?state=all&per_page=100'` when needed (exclude
-objects with `pull_request`). Search meaning as well as exact Source-ID; inspect
-relevant PRs/source before deciding a delivery is still open. Closed coverage
-stays closed unless an authorized actual reopen is warranted.
+Every claim has one canonical home; other places reflect it in their own words
+and point at the owner. Classify a finding before retaining it.
 
-Before any create or uncertain retry, search the complete marker in all retrieved
-bodies, including closed records. A lost receipt requires lookup, not blind retry;
-if completeness/access is uncertain, stop that write and report the limitation.
-No atomic GitHub source-key uniqueness is promised: recheck immediately before
-create and do not race another writer.
+| Kind | Owner and destination |
+| --- | --- |
+| Stateman requests, decisions, remaining work | This repository's issues (this skill) |
+| Stateman behaviour: DSL, plan/apply/drift, recovery, policies, CLI | This repository's docs, through [godoo-stateman-docs](../godoo-stateman-docs/SKILL.md) |
+| How to work on Stateman: check, release, capture | This repository's `.agents/skills/` |
+| What the Odoo server does, by version, edition and module | Atlas, as a fact with an executable check (see below) |
+| `@godoo-dev/client` or `@godoo-dev/introspection` behaviour | The `godoo-ts` project |
+| Python client libraries | The `godoo-py` project |
+| How an agent should use an MCP tool | The `godoo-mcp-server` project |
+| Decisions spanning several Godoo components | Marc, for the Godoo HQ project |
 
-Use reporting-for-humans when available to compose for a fresh maintainer;
-otherwise state the problem/result, evidence and limits, remaining acceptance,
-decisions and next actor/action directly. New intake stays GitHub OPEN with
-`Triage: untriaged` in its body (and priority when supplied); OPEN is not accepted
-implementation. Preserve imported lifecycle meaning explicitly: needs-info,
-deferred, in-progress or testing are body dispositions, not invented labels.
-Use existing labels only for content; inspect `gh label list` first.
+Atlas holds only claims about Odoo itself. Stateman behaviour, client-library
+behaviour and MCP conventions are never Atlas facts, even when they were learned
+while checking Odoo.
 
-Write a sanitized body file outside source, then use `gh issue create --repo
-godoo-dev/godoo-stateman --title 'Concrete outcome' --body-file BODYFILE`.
-Read it back with the view command above, including comments, labels and assignees.
-Confirm repository, state, exact identity and public privacy before returning its
-URL and disposition. Do not attach a raw packet for durability.
+**Odoo behaviour learned during Stateman work** (an observed serialization,
+domain, access or version difference that Stateman code or docs rely on):
 
-Reuse existing coverage for the same outcome. Delivery/planning owns breakdown;
-retain its outcome, checklist or linked pieces, open decisions and real
-dependencies in the canonical issue. A tiny settled task needs only the short
-checklist path. Separate issues are useful for independently owned outcomes;
-completion of pieces does not complete integrated acceptance. Retrieve linked
-remaining work when resuming. For a deferred observation, search coverage, retain
-the actionable gap and qualified source, read back, then resume the original task.
-A read-only request or warning without an actual observation produces no write.
+1. Send it to Atlas intake through `mafe-si:coordinate-projects`: a fresh
+   invocation in the Atlas project runs Atlas's own capture. Give the Odoo
+   version and edition, modules, the observation, how it was observed and what
+   Stateman relies on. Do not write into Atlas's records from this session. If
+   the host cannot bind the Atlas project, tell Marc.
+2. Atlas returns a fact ID. Then add Stateman's reflection, in Stateman's words,
+   with an `atlas:<fact-id>` marker, through
+   [godoo-stateman-docs](../godoo-stateman-docs/SKILL.md).
+3. If the reflection is needed before the fact exists, open a Stateman issue
+   that names the pending marker so it is not forgotten.
 
-## Reconcile meaningful changes
+Findings for another Godoo project follow the same route: an independent intake
+in that project through `mafe-si:coordinate-projects`, never a write into its
+tracker from here. A proposal sends nothing. Cross-project decisions go to Marc
+in the current conversation.
 
-Read the current body and relevant known active parent/related summaries before
-editing. Recompose current meaning with `gh issue edit NUMBER --repo
-godoo-dev/godoo-stateman --body-file BODYFILE`: outcome, material decision or
-blocker, remaining acceptance and next actor. Reconcile contradictory active
-summaries, including decisions in linked discussions; preserve dated proposals
-and closed deliveries as history. Keep useful tradeoffs and sources without
-growing a run log. Routine unchanged progress requires no write. Re-read before
-editing to detect concurrent changes; GitHub CLI body replacement is not a CAS.
-On a detected conflict, preserve the newer body and resolve with Marc.
+Existing knowledge that sits in the wrong home is a relocation candidate. Until
+Marc starts the relocation, capture it as an issue that names the claim, its
+current location and its owner; do not move it.
 
-Use `gh issue comment NUMBER --repo godoo-dev/godoo-stateman --body-file BODYFILE`
-only for a substantive selected discussion or required audit, never agent messages,
-migration chatter or completion notices. Retain detailed private history outside
-source. Corrections in the same open PR and separately justified post-merge work
-must preserve linked remaining acceptance; no PR quota follows.
+## Public content
 
-Close with `gh issue close NUMBER --repo godoo-dev/godoo-stateman --reason completed`
-only on supported completion; use `--reason 'not planned'` for authorized
-non-delivery dispositions, explaining them in the current body first. Never claim
-problem fixed when only tracking migrated. Read every changed record back.
-For an incoming owner-context request, return the project, canonical URLs,
-created/updated/already-covered disposition, actual status and unresolved gaps
-through that same invocation only. No acknowledgment or follow-up is sent.
+The repository and its issues are public. Titles, bodies, comments, labels and
+links must not contain private company, consumer or supplier names, local paths,
+thread IDs, credentials, private repository paths or Atlas fact text. Atlas fact
+IDs are public and may be cited. A private source is summarized in the issue so
+the issue stands alone.
+
+For imported private sources, publish only `Source-ID: sha256:<digest>` in the
+body, where the digest is SHA-256 over UTF-8 `provenance + "\n" + source_ref`
+with no trailing newline. The deduplication key is the repository plus that
+marker, across open and closed issues; retries reuse the same identity.
+
+## Find existing coverage
+
+```sh
+gh issue view NUMBER --repo godoo-dev/godoo-stateman --json number,title,body,state,labels,url,comments
+gh issue list --repo godoo-dev/godoo-stateman --state all --limit 100 --json number,title,body,state,url,labels
+gh issue list --repo godoo-dev/godoo-stateman --state all --search 'WORDS in:title,body'
+```
+
+Search meaning as well as exact words or a Source-ID. Check relevant PRs and
+source before deciding a delivery is still open. Follow an explicit reference
+first and only the links the task needs; do not scan the whole backlog.
+
+## Create or update
+
+Compose with `mafe-si:reporting-for-humans`: the problem or outcome, what is
+known and its limits, remaining acceptance, open decisions and the next actor.
+Keep the body current and short; link supporting material rather than copying it.
+
+New intake stays open with `Triage: untriaged` in the body (and a priority when
+one was supplied); open is not accepted. States such as needs-info, deferred or
+in-progress are written in the body, not invented labels. Use only existing
+labels (`gh label list --repo godoo-dev/godoo-stateman`).
+
+Run `mafe-si:pre-post` before each create, edit, comment or close, and post
+through its reviewed-posting helper with `"repo": "github.com/godoo-dev/godoo-stateman"`.
+Write once; read the record only if the tool reported an error, because the
+write may have succeeded.
+
+- **Breakdowns:** keep a checklist or links to child issues in the parent issue.
+  A separate issue needs its own outcome or owner; finishing the pieces does not
+  finish the integrated acceptance.
+- **Deferred observations:** search coverage, record the actionable gap briefly,
+  then return to the task.
+- **Updates:** rewrite the body to say what holds now; keep decisions and
+  active scope, drop resolved detours. Comment only when the change needs
+  someone's attention.
+- **Close** with `--reason completed` only on supported completion, or
+  `--reason "not planned"` for an authorized non-delivery explained in the body.
+
+## Incoming requests
+
+A fresh intake invocation from another session runs this skill. Keep the
+original request, its source identity and authority limits; treat coordinator
+suggestions as suggestions. Search coverage, then return the issue URLs, whether
+each was created, updated or already covered, and any gaps. Intake does not
+start implementation.

@@ -48,3 +48,6 @@ Thumbs.db
 node_modules/
 *.tgz
 .serena/
+
+# Agent working material
+.scratch/

@@ -61,9 +61,15 @@ incomplete prior-product obligations to reevaluate against the TS contract.
 
 ## Working with the reference source
 
-Python >=3.14 and uv are required. `pyproject.toml` points editable dependencies at
-individual packages in sibling `godoo-py`; a fresh checkout without that sibling
-cannot resolve this development environment unchanged.
+The Python DSL evaluator executes trusted author code. Its restricted builtins
+prevent accidental I/O but are not a security sandbox: object-graph traversal can
+reach imports and arbitrary I/O. Do not evaluate configurations from untrusted
+authors without a separate security boundary.
+
+Python >=3.14 and uv are required. The `godoo-py` libraries resolve from PyPI;
+`uv.lock` keeps the versions the reference was written against, and Dependabot
+proposes updates. To try unreleased `godoo-py` source, install it editable
+into the environment with `uv pip install -e PATH`.
 
 ```sh
 uv sync --locked --group dev

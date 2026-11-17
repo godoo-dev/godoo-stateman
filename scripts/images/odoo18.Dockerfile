@@ -1,0 +1,1 @@
+FROM odoo:18.0@sha256:d0b20aa4ec8a4d97ca096ada36275d77963d571c1cb1cceca69faf6098326c83
