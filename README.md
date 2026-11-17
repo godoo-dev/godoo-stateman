@@ -260,3 +260,17 @@ issues and routing findings to their owners, the
 canonical docs and Atlas markers, and the
 [verifier](.agents/skills/godoo-stateman-verification/SKILL.md) for the checks
 above. Changes are delivered as pull requests to `main`.
+
+## Semantic navigation
+
+`npm ci` installs `typescript-language-server` as a dev dependency.
+
+- **Claude Code:** `.claude/settings.json` enables the official
+  `typescript-lsp@claude-plugins-official` plugin. Install it once with
+  `claude plugin install typescript-lsp@claude-plugins-official --scope project`.
+  The plugin starts `typescript-language-server` from `PATH`, so launch Claude
+  Code with the project's binaries on it, for example `npm exec -- claude`.
+- **Codex:** `.codex/config.toml` registers Serena 2.1.0 through `uvx`, using the
+  committed `.serena/project.yml` (TypeScript); Codex loads it once the project is
+  trusted. Check it with
+  `uvx --from serena-agent==2.1.0 serena project health-check .`.
