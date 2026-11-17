@@ -107,25 +107,29 @@ export function normalizeResources(resources: readonly ResourceDefinition[]): In
 
   const canonical = new Map<ResourceDefinition, { externalId: string; parentScope?: ParentScope }>();
   const identities = new Map<string, ResourceDefinition>();
+  function ownerOf(definition: ResourceDefinition, rawId: string | undefined): Context | undefined {
+    const declared = declarations.get(definition) ?? [];
+    if (declared.length) {
+      const owner = declared[0];
+      if (declared.some(context => context.parent !== owner.parent || context.path !== owner.path || context.inverseField !== owner.inverseField)) throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
+      if (rawId === undefined) throw new Error(`Resource ${definition.model} needs a stable externalId; unnamed list members are unsupported`);
+      return owner;
+    }
+    if (rawId?.includes('.')) return undefined;
+    // Without an explicit children() declaration, preserve the legacy inline
+    // form only when its defining parent (and unnamed scalar field) is unique.
+    // Never pick a parent from export order or a first reference.
+    const candidates = (usages.get(definition) ?? []).filter(context => rawId !== undefined || context.field !== undefined);
+    const owner = candidates[0];
+    if (owner && candidates.some(context => context.parent !== owner.parent || (rawId === undefined && context.path !== owner.path))) throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
+    return owner;
+  }
   function identity(definition: ResourceDefinition): { externalId: string; parentScope?: ParentScope } {
     const existing = canonical.get(definition);
     if (existing) return existing;
     const rawId = definition.externalId;
     if (rawId !== undefined && !validId(rawId)) throw new Error(`Resource ${definition.model} needs a stable externalId`);
-    const declared = declarations.get(definition) ?? [];
-    let owner: Context | undefined;
-    if (declared.length) {
-      owner = declared[0];
-      if (declared.some(context => context.parent !== owner!.parent || context.path !== owner!.path || context.inverseField !== owner!.inverseField)) throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
-      if (rawId === undefined) throw new Error(`Resource ${definition.model} needs a stable externalId; unnamed list members are unsupported`);
-    } else if (!rawId?.includes('.')) {
-      // Without an explicit children() declaration, preserve the legacy inline
-      // form only when its defining parent (and unnamed scalar field) is unique.
-      // Never pick a parent from export order or a first reference.
-      const candidates = (usages.get(definition) ?? []).filter(context => rawId !== undefined || context.field !== undefined);
-      owner = candidates[0];
-      if (owner && candidates.some(context => context.parent !== owner!.parent || (rawId === undefined && context.path !== owner!.path))) throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
-    }
+    const owner = ownerOf(definition, rawId);
     const localId = rawId ?? owner?.field;
     if (!validId(localId)) throw new Error(`Resource ${definition.model} needs a stable externalId; unnamed list members are unsupported`);
     const parentId = owner ? identity(owner.parent).externalId : undefined;

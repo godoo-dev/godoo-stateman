@@ -119,6 +119,29 @@ export type PeriodValues = PeriodBase & ({ source: 'actuals'; dates: PeriodDates
 export const period = (id: string, values: PeriodValues, options?: ResourceOptions): Item<'period', PeriodValues> => item('period', id, values, options);
 export interface InstanceValues { _ref?: LookupRef; name: string; template: Target; company?: Target; companies?: readonly Target[]; currency?: Target; targetMove: 'posted' | 'all'; pivotDate?: string; periods: readonly ReturnType<typeof period>[] }
 const date = (s: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s;
+type Operand = (operand: string, source: string) => ResourceRef;
+type CompareValues = Extract<PeriodValues, { source: 'compare' }>;
+type SumValues = Extract<PeriodValues, { source: 'sum' }>;
+function actualsSource(periodKey: string, d: PeriodDates): Record<string, unknown> {
+  if (d.mode === 'fixed') {
+    if (!date(d.from) || !date(d.to) || d.from > d.to || 'ytd' in d) fail('MIS_PERIOD_DATES', `${periodKey}: ordered fixed dates required; YTD uses relative mode`);
+    return { source: 'actuals', mode: 'fix', manual_date_from: d.from, manual_date_to: d.to, is_ytd: false };
+  }
+  const unit = { day: 'd', week: 'w', month: 'm', year: 'y', dateRange: 'date_range' }[d.unit];
+  if (d.mode !== 'relative' || !unit || !Number.isSafeInteger(d.offset) || !Number.isSafeInteger(d.duration) || d.duration < 1) fail('MIS_PERIOD_DATES', `${periodKey}: valid unit, integer offset and positive duration required`);
+  return { source: 'actuals', mode: 'relative', type: unit, offset: d.offset, duration: d.duration, is_ytd: d.ytd ?? false, manual_date_from: false, manual_date_to: false, ...(d.unit === 'dateRange' ? { date_range_type_id: d.rangeType } : {}) };
+}
+function compareSource(periodKey: string, v: CompareValues, actual: Operand): Record<string, unknown> {
+  if (v.from === v.to || !Number.isSafeInteger(v.normalizeFactor ?? 1) || (v.normalizeFactor ?? 1) <= 0) fail('MIS_PERIOD_OPERAND', `${periodKey}: different operands and positive integer normalizeFactor required`);
+  return { source: 'cmpcol', mode: 'none', source_cmpcol_from_id: actual(v.from, periodKey), source_cmpcol_to_id: actual(v.to, periodKey), normalize_factor: v.normalizeFactor ?? 1 };
+}
+function sumSource(periodKey: string, periodId: string, v: SumValues, actual: Operand): Record<string, unknown> {
+  if (!v.terms.length || new Set(v.terms.map(t => key(t.key))).size !== v.terms.length || new Set(v.terms.map(t => t.period)).size !== v.terms.length) fail('MIS_SUM_INVALID', `${periodKey}: nonempty uniquely keyed operands required`);
+  return { source: 'sumcol', mode: 'none', source_sumcol_ids: children('mis.report.instance.period.sum', 'period_id', v.terms.map(t => {
+    if (!['+', '-'].includes(t.sign)) fail('MIS_SUM_INVALID', `${periodKey}: sign must be + or -`);
+    return resource('mis.report.instance.period.sum', `${periodId}.term.${t.key}`, { _ref: t._ref, period_to_sum_id: actual(t.period, periodKey), sign: t.sign }, t.options);
+  })) };
+}
 export function instance(id: string, values: InstanceValues, options?: ResourceOptions): ResourceDefinition {
   xmlid(id);
   const { template: report, company, companies, currency, targetMove, pivotDate, periods, ...native } = values;
@@ -135,27 +158,10 @@ export function instance(id: string, values: InstanceValues, options?: ResourceO
     if (!Number.isSafeInteger(v.sequence)) fail('MIS_SEQUENCE_INVALID', `${p.key}: sequence must be an integer`);
     const base = { _ref: v._ref, name: v.label, sequence: v.sequence };
     // Undefined _ref is removed by resource(), all persisted values are concrete.
-    let extra: Record<string, unknown>;
-    if (v.source === 'actuals') {
-      const d = v.dates;
-      if (d.mode === 'fixed') {
-        if (!date(d.from) || !date(d.to) || d.from > d.to || 'ytd' in d) fail('MIS_PERIOD_DATES', `${p.key}: ordered fixed dates required; YTD uses relative mode`);
-        extra = { source: 'actuals', mode: 'fix', manual_date_from: d.from, manual_date_to: d.to, is_ytd: false };
-      } else {
-        const unit = { day: 'd', week: 'w', month: 'm', year: 'y', dateRange: 'date_range' }[d.unit];
-        if (d.mode !== 'relative' || !unit || !Number.isSafeInteger(d.offset) || !Number.isSafeInteger(d.duration) || d.duration < 1) fail('MIS_PERIOD_DATES', `${p.key}: valid unit, integer offset and positive duration required`);
-        extra = { source: 'actuals', mode: 'relative', type: unit, offset: d.offset, duration: d.duration, is_ytd: d.ytd ?? false, manual_date_from: false, manual_date_to: false, ...(d.unit === 'dateRange' ? { date_range_type_id: d.rangeType } : {}) };
-      }
-    } else if (v.source === 'compare') {
-      if (v.from === v.to || !Number.isSafeInteger(v.normalizeFactor ?? 1) || (v.normalizeFactor ?? 1) <= 0) fail('MIS_PERIOD_OPERAND', `${p.key}: different operands and positive integer normalizeFactor required`);
-      extra = { source: 'cmpcol', mode: 'none', source_cmpcol_from_id: actual(v.from, p.key), source_cmpcol_to_id: actual(v.to, p.key), normalize_factor: v.normalizeFactor ?? 1 };
-    } else if (v.source === 'sum') {
-      if (!v.terms.length || new Set(v.terms.map(t => key(t.key))).size !== v.terms.length || new Set(v.terms.map(t => t.period)).size !== v.terms.length) fail('MIS_SUM_INVALID', `${p.key}: nonempty uniquely keyed operands required`);
-      extra = { source: 'sumcol', mode: 'none', source_sumcol_ids: children('mis.report.instance.period.sum', 'period_id', v.terms.map(t => {
-        if (!['+', '-'].includes(t.sign)) fail('MIS_SUM_INVALID', `${p.key}: sign must be + or -`);
-        return resource('mis.report.instance.period.sum', `${periodId}.term.${t.key}`, { _ref: t._ref, period_to_sum_id: actual(t.period, p.key), sign: t.sign }, t.options);
-      })) };
-    } else fail('MIS_PERIOD_SOURCE', `${p.key}: unsupported source`);
+    const extra = v.source === 'actuals' ? actualsSource(p.key, v.dates)
+      : v.source === 'compare' ? compareSource(p.key, v, actual)
+      : v.source === 'sum' ? sumSource(p.key, periodId, v, actual)
+      : fail('MIS_PERIOD_SOURCE', `${p.key}: unsupported source`);
     return resource('mis.report.instance.period', periodId, { ...base, ...extra }, p.options);
   });
   return resource('mis.report.instance', id, { ...native, report_id: report, target_move: targetMove,

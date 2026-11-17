@@ -45,6 +45,19 @@ function xmlid(value: unknown, path: string): string {
   return value;
 }
 
+function checkMarker(input: Record<string, unknown>, path: string): void {
+  if (typeof input.__type === 'string' && contentTypes.has(input.__type)) fail(`${path} has unrendered authoring content`);
+  if (input.__type === 'resourceRef') {
+    keys(input, ['__type', 'externalId'], path);
+    xmlid(input.externalId, path);
+  }
+  if (input.__type === 'lookup') {
+    keys(input, ['__type', 'model', 'domain'], path);
+    if (typeof input.model !== 'string' || !modelName.test(input.model)) fail(`${path} has an invalid lookup model`);
+    if (!input.domain || typeof input.domain !== 'object') fail(`${path} has an invalid lookup domain`);
+  }
+}
+
 /** Validate and clone JSON with bounded recursion, without evaluating any code. */
 function clone(value: unknown, maxDepth: number, path: string, depth = 0, active = new Set<object>()): unknown {
   if (depth > maxDepth) fail(`${path} exceeds maxDepth`);
@@ -56,16 +69,7 @@ function clone(value: unknown, maxDepth: number, path: string, depth = 0, active
   try {
     if (Array.isArray(value)) return value.map((item, i) => clone(item, maxDepth, `${path}[${i}]`, depth + 1, active));
     const input = object(value, path);
-    if (typeof input.__type === 'string' && contentTypes.has(input.__type)) fail(`${path} has unrendered authoring content`);
-    if (input.__type === 'resourceRef') {
-      keys(input, ['__type', 'externalId'], path);
-      xmlid(input.externalId, path);
-    }
-    if (input.__type === 'lookup') {
-      keys(input, ['__type', 'model', 'domain'], path);
-      if (typeof input.model !== 'string' || !modelName.test(input.model)) fail(`${path} has an invalid lookup model`);
-      if (!input.domain || typeof input.domain !== 'object') fail(`${path} has an invalid lookup domain`);
-    }
+    checkMarker(input, path);
     const result: Record<string, unknown> = {};
     for (const key of Object.keys(input).sort()) {
       if (unsafe.has(key)) fail(`${path}.${key} is unsafe`);
