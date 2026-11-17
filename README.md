@@ -250,3 +250,13 @@ docs deployment workflows are retired. npm publication is an explicit manual
 operation; see [release preparation](docs/releasing.md) and the
 [concrete verifier](.agents/skills/godoo-stateman-verification/SKILL.md) for proof,
 isolation, installed supplier qualification and coverage limits.
+
+## Project procedures
+
+Maintainer procedures live in `.agents/skills`: the
+[capture procedure](.agents/skills/godoo-stateman-capture/SKILL.md) for GitHub
+issues and routing findings to their owners, the
+[documentation procedure](.agents/skills/godoo-stateman-docs/SKILL.md) for
+canonical docs and Atlas markers, and the
+[verifier](.agents/skills/godoo-stateman-verification/SKILL.md) for the checks
+above. Changes are delivered as pull requests to `main`.
