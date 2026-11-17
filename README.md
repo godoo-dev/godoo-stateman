@@ -16,6 +16,8 @@ workflows and deployed-instance acceptance remain with each application owner.
 
 ```sh
 npm ci --ignore-scripts
+npm run lint
+npm run format:check
 npm run typecheck
 npm test
 npm run build
@@ -228,8 +230,9 @@ disposable Odoo verification and consumer acceptance are distinct evidence.
 
 ## Required checks
 
-`npm run check` checks all TypeScript source/tests, runs maintained regressions and
-builds. Create a fresh external directory, set `GODOO_ARTIFACT_DIR` to it, then run
+`npm run check` lints (ESLint with typescript-eslint and a blocking complexity limit
+of 20), checks Prettier formatting, type-checks all TypeScript source/tests, runs
+maintained regressions and builds. `npm run format` applies the formatting. Create a fresh external directory, set `GODOO_ARTIFACT_DIR` to it, then run
 `npm run check:package` followed by `npm run check:odoo18`. CI runs
 `npm run check:ci` instead of the first two: the same source checks and package
 check in one job, building once through `npm pack`. It expects a clean checkout
