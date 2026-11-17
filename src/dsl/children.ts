@@ -26,7 +26,7 @@ export interface ChildrenRef {
 }
 
 export function isChildrenRef(v: unknown): v is ChildrenRef {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'children';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'children';
 }
 
 export function children(model: string, resources: ResourceDefinition[]): ChildrenRef;

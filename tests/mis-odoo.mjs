@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
-import { apply, computedField, drift, inspectResources, lookup, openRecoveryJournal, plan, resource } from '@godoo-dev/stateman';
+import { apply, computedField, drift, lookup, openRecoveryJournal, plan, resource } from '@godoo-dev/stateman';
 import * as mis from '@godoo-dev/stateman/mis';
 
 /** Entire database is owned by the disposable verifier; no application inputs. */

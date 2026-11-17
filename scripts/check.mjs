@@ -8,7 +8,7 @@ if (!modes.includes(mode) || process.argv.length !== 3) {
   console.error(`Usage: node scripts/check.mjs ${modes.join('|')}`);
   process.exit(2);
 }
-const sourceChecks = [[process.execPath, ['--test', 'scripts/release.test.mjs', 'scripts/recover-release.test.mjs']], ['npm', ['run', 'typecheck']], ['npm', ['test']]];
+const sourceChecks = [['npm', ['run', 'lint']], ['npm', ['run', 'format:check']], [process.execPath, ['--test', 'scripts/release.test.mjs', 'scripts/recover-release.test.mjs']], ['npm', ['run', 'typecheck']], ['npm', ['test']]];
 const packageCheck = [process.execPath, ['scripts/package-check.mjs']];
 // CI builds once: npm pack's prepack build inside the package check replaces the offline build.
 const commands = {

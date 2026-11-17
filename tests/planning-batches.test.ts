@@ -125,7 +125,7 @@ it('preserves field permissions and fresh translation/base/identity evidence', a
   const input = [resource('x', 'batch.a', { name: translated('A', { es_ES: 'A' }), body: '<p>A</p>' }), resource('x', 'batch.b', { name: translated('B', { es_ES: 'B' }) })];
   const read = store.searchRead.bind(store);
   store.searchRead = async (model, domain, options) => {
-    if (model === 'x' && domain?.[0]?.[2]?.includes?.(b) && options?.fields?.includes('body')) throw new Error('undeclared field permission');
+    if (model === 'x' && (domain?.[0]?.[2] as unknown[] | undefined)?.includes?.(b) && options?.fields?.includes('body')) throw new Error('undeclared field permission');
     return (await read(model, domain, options)).reverse();
   };
   const first = await plan(input, store.connection(), { context: { lang: false } });

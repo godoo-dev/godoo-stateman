@@ -38,7 +38,7 @@ export function planningWorkload(size: number) {
   for (const [i, id] of ids.entries()) for (const [lang, prefix] of [['es_ES', 'Producto'], ['ca_ES', 'Producte']]) {
     store.languages.set(`catalog.product:${id}:name:${lang}`, `${prefix} ${i}`);
   }
-  const calls: { model: string; domain: any[]; fields: string[]; context: Row; limit?: number; order?: string }[] = [];
+  const calls: { model: string; domain: unknown[][]; fields: string[]; context: Row; limit?: number; order?: string }[] = [];
   const schemas: string[] = [];
   const read = store.searchRead.bind(store), call = store.call.bind(store);
   store.searchRead = async (model, domain = [], options = {}) => {

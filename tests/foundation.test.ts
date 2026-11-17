@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolve } from 'node:path';
 import { OdooClient } from '@godoo-dev/client';
-import { apply, children, createSchemaContext, drift, loadResources, lookup, normalizeResources, plan, resource } from '../src/index.js';
+import { apply, children, createSchemaContext, loadResources, lookup, normalizeResources, resource } from '../src/index.js';
 const fixture = resolve(import.meta.dirname, 'fixtures/consumer/resources');
 
 describe('representative offline consumer', () => {

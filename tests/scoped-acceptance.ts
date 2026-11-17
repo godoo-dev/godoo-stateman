@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { apply, companyValues, drift, exact, lookup, plan, ref, resource, translated } from '@godoo-dev/stateman';
-import type { RecoveryReceipt } from '@godoo-dev/stateman';
+import type { RecoveryReceipt, Row } from '@godoo-dev/stateman';
 import { scopedStore } from './scoped-client.js';
 
 /** Also executed unchanged against the tarball in an isolated typed consumer. */
@@ -130,7 +130,7 @@ export async function standardContextAcceptance() {
   await assert.rejects(plan([resource('x', 'scope.wrong', { tax_ids: exact([]) })], store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
   const beforeRefusals = store.mutations.length;
   for (const malformed of ['append_type_to_tax_name', ['append_type_to_tax_name']]) {
-    field.context = malformed as any;
+    field.context = malformed as unknown as Row; // deliberately malformed metadata
     await assert.rejects(plan(desired([]), store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
   }
   assert.equal(store.mutations.length, beforeRefusals);

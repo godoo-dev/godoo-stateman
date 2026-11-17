@@ -10,7 +10,7 @@ export async function planningAcceptance() {
   assert.equal(new Set(f.calls.map(q => JSON.stringify(q))).size, f.calls.length, 'duplicate physical requests');
   const effectiveReads = f.calls.filter(q => q.model === 'catalog.product' && q.fields.some(n => n.startsWith('property_')) && q.fields.every(n => n === 'id' || n.startsWith('property_')));
   assert.equal(effectiveReads.length, 9, 'one compatible batch per company');
-  assert.ok(effectiveReads.every(q => q.fields.length === 8 && q.domain[0][1] === 'in' && q.domain[0][2].length === 30));
+  assert.ok(effectiveReads.every(q => q.fields.length === 8 && q.domain[0][1] === 'in' && (q.domain[0][2] as unknown[]).length === 30));
   assert.ok(f.calls.length <= 60, `30-record physical request budget: ${f.calls.length}`);
   assert.equal(f.calls.filter(q => q.model === 'ir.model.data').length, 1, 'one module identity batch');
   assert.equal(f.calls.filter(q => q.model === 'catalog.product' && q.context.lang).length, 2, 'one translation batch per language');
@@ -29,5 +29,5 @@ export async function planningAcceptance() {
   const mixedPlan = await plan(mixed.definitions, mixed.store.connection(), mixed.options);
   assert.equal(mixedPlan.operations.length, 0);
   assert.ok(mixed.calls.length <= 150, `mixed request budget: ${mixed.calls.length}`);
-  assert.ok(mixed.calls.some(q => q.domain[1]?.[1] === 'in' && q.domain[1][2].length === 1000), 'large membership candidate chunk');
+  assert.ok(mixed.calls.some(q => q.domain[1]?.[1] === 'in' && (q.domain[1][2] as unknown[]).length === 1000), 'large membership candidate chunk');
 }

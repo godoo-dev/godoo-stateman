@@ -11,7 +11,7 @@ class InactiveFallbackClient extends FakeClient {
   constructor() {
     super(); this.schema.x.description = { type: 'text' }; this.schema.x.body = { type: 'html' };
   }
-  override async searchRead(model: string, criteria: any[] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
+  override async searchRead(model: string, criteria: unknown[][] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
     const rows = await super.searchRead(model, criteria, options);
     const lang = options.context?.lang;
     if (model === 'x' && typeof lang === 'string' && lang !== 'en_US') for (const row of rows) {

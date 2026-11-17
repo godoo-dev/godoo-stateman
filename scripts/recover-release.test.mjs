@@ -210,7 +210,7 @@ test('workflow requires eligibility, mode-specific validation and preflight befo
       assert.equal(publish(inputs, { ...needs, validation: { result } }, () => true), false);
     }
   }
-  assert.match(workflow, /  publish:[\s\S]*?environment: npm-release/);
+  assert.match(workflow, / {2}publish:[\s\S]*?environment: npm-release/);
 });
 
 

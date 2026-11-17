@@ -4,7 +4,7 @@ import { isResourceRef } from './dsl/types.js';
 import type { Row } from './state-types.js';
 import { fail } from './state-utils.js';
 
-type Search = (model: string, criteria: any[], names: string[], limit?: number) => Promise<Row[]>;
+type Search = (model: string, criteria: unknown[], names: string[], limit?: number) => Promise<Row[]>;
 type Resolve = (value: unknown, model?: string) => Promise<unknown>;
 interface MisGuard {
   byId: Map<string, InspectedResource>;

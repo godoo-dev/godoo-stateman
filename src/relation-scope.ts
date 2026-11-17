@@ -1,7 +1,7 @@
 import { assertId, equal, fail, record } from './state-utils.js';
 import type { FieldMetadata, Row } from './state-types.js';
 
-export type ObservedSearch = (model: string, domain: any[], fields: string[], limit?: number, context?: Row) => Promise<Row[]>;
+export type ObservedSearch = (model: string, domain: unknown[], fields: string[], limit?: number, context?: Row) => Promise<Row[]>;
 
 /** Conservative read-only audit: arbitrary record rules cannot prove exact membership.
  * Odoo 18 Many2many.read applies target rules and field domains. The caller

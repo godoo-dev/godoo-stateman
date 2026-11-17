@@ -57,7 +57,7 @@ it('coalesces concurrent repeated lookups into one observation', async () => {
   const result = await plan([resource('x', 'scope.root', { items: Array.from({ length: 50 }, () => lookup('x', { name: 'Target' })) })], store.connection());
   expect(reads).toBe(1);
   expect(result.operations[0].values.items).toHaveLength(50);
-  expect(result.observations.filter(o => o.kind === 'search' && (o.value as any).query.domain[0]?.[0] === 'name')).toHaveLength(1);
+  expect(result.observations.filter(o => o.kind === 'search' && (o.value as { query: { domain: unknown[][] } }).query.domain[0]?.[0] === 'name')).toHaveLength(1);
   expect(target).toBeGreaterThan(0);
 });
 

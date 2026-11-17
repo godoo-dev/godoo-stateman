@@ -1,4 +1,3 @@
-import type { Row } from '@godoo-dev/stateman';
 import { FakeClient } from './fake-client.js';
 
 export function fieldFixture(): FakeClient {

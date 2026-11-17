@@ -4,8 +4,8 @@ import type { ResourceDefinition } from './dsl/types.js';
 export type Row = Record<string, unknown>;
 /** Structural seam supported by the released godoo client; guards remain on that client. */
 export interface StateClient {
-  searchRead(model: string, domain?: any[], options?: { fields?: string[]; limit?: number; order?: string; context?: Row }): Promise<Row[]>;
-  call<T = unknown>(model: string, method: string, args?: any[], kwargs?: Row): Promise<T>;
+  searchRead(model: string, domain?: unknown[], options?: { fields?: string[]; limit?: number; order?: string; context?: Row }): Promise<Row[]>;
+  call<T = unknown>(model: string, method: string, args?: unknown[], kwargs?: Row): Promise<T>;
   create(model: string, values: Row, context?: Row): Promise<number>;
   write(model: string, ids: number | number[], values: Row, context?: Row): Promise<boolean>;
   unlink(model: string, ids: number | number[]): Promise<boolean>;

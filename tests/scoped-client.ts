@@ -20,7 +20,7 @@ export class ScopedClient extends FakeClient {
     this.schema.x.description = { type: 'text', translate: true };
     this.schema['ir.rule'] = { name: { type: 'char' }, 'model_id.model': { type: 'char' }, active: { type: 'boolean' }, perm_read: { type: 'boolean' }, domain_force: { type: 'text' } };
   }
-  async searchRead(model: string, criteria: any[] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
+  async searchRead(model: string, criteria: unknown[][] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
     const rows = await super.searchRead(model, criteria, options);
     const company = (options.context?.allowed_company_ids as number[] | undefined)?.[0] ?? 1;
     if (company === this.hiddenCompany && model === 'x') return [];

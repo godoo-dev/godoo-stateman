@@ -2,7 +2,7 @@
 // builder and apply() fail-closed paths, pinned before splitting them for the
 // complexity limit. A snapshot change means a behaviour change.
 import { describe, expect, it } from 'vitest';
-import { apply, plan, ref, resource } from '@godoo-dev/stateman';
+import { apply, plan, resource } from '@godoo-dev/stateman';
 import type { FieldMetadata, InspectedResource, Row } from '@godoo-dev/stateman';
 import { protectMis } from '../src/mis-guards.js';
 import { protectComputedFields } from '../src/computed-fields.js';

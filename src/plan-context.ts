@@ -24,9 +24,9 @@ export interface PlanContext {
   bindings: Record<string, number>;
   authorizedCompanies?: number[];
   fields(model: string): Promise<Record<string, FieldMetadata>>;
-  search(model: string, criteria: any[], names: string[], limit?: number, extraContext?: Row): Promise<Row[]>;
+  search(model: string, criteria: unknown[], names: string[], limit?: number, extraContext?: Row): Promise<Row[]>;
   imd(id: string): Promise<Row | undefined>;
-  validateDomain(model: string, criteria: any[]): Promise<void>;
+  validateDomain(model: string, criteria: unknown[]): Promise<void>;
   resolveValue(value: unknown, expectedModel?: string, valueContext?: Row): Promise<unknown>;
 }
 

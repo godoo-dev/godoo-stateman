@@ -1,7 +1,7 @@
 import { assertId, digest, fail, xmlid } from './state-utils.js';
 import type { Row } from './state-types.js';
 
-export type Search = (model: string, domain: any[], names: string[], limit?: number, context?: Row) => Promise<Row[]>;
+export type Search = (model: string, domain: unknown[], names: string[], limit?: number, context?: Row) => Promise<Row[]>;
 export interface RecordRead {
   key: string;
   label: string;

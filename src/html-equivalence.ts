@@ -38,7 +38,7 @@ function scanComment(scan: Scan): Step {
 // Observed Odoo 18 EOF completion: only an empty final p with one
 // double-quoted literal style. No expressions, URLs or other truncation.
 function scanTail(scan: Scan): Step | undefined {
-  const tail = scan.source.slice(scan.offset).match(/^<p style="([A-Za-z0-9 .:;#%_+\-]*)$/);
+  const tail = scan.source.slice(scan.offset).match(/^<p style="([A-Za-z0-9 .:;#%_+-]*)$/);
   if (!tail || tail[0].length !== scan.source.length - scan.offset || !scan.balanced || scan.stack.length !== 0) return undefined;
   scan.result.push(`<p style="${tail[1]}"/>`);
   return 'done';

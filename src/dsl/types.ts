@@ -60,16 +60,16 @@ export type Definition = ResourceDefinition | ModelPolicy;
 
 // Type guards
 export function isLookupRef(v: unknown): v is LookupRef {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'lookup';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'lookup';
 }
 export function isResourceDefinition(v: unknown): v is ResourceDefinition {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'resource';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'resource';
 }
 export function isModelPolicy(v: unknown): v is ModelPolicy {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'model';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'model';
 }
 export function isResourceRef(v: unknown): v is ResourceRef {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'resourceRef';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'resourceRef';
 }
 
 // Re-export marker type guards for convenience

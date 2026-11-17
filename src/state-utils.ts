@@ -31,7 +31,7 @@ export function identity(value: ConnectionIdentity): ConnectionIdentity {
   assertId(value.uid, 'Authenticated user');
   return { url: url.toString().replace(/\/$/, ''), database: value.database, uid: value.uid };
 }
-export function domain(value: LookupDomain): any[] {
+export function domain(value: LookupDomain): unknown[] {
   if (!value || typeof value !== 'object') fail('INVALID_LOOKUP', 'Lookup needs an explicit domain');
   return Array.isArray(value) ? copy(value) : Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, '=', v]);
 }

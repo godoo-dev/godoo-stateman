@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { apply, companyValues, exact, inspectResources, lookup, plan, ref, resource, translated } from '@godoo-dev/stateman';
+import type { CompanyValue, RecoveryReceipt } from '@godoo-dev/stateman';
 import { scopedAcceptance, standardContextAcceptance } from './scoped-acceptance.js';
 import { scopedStore } from './scoped-client.js';
 
@@ -38,10 +39,10 @@ describe('scoped relation and company values', () => {
     const { store, companies, context } = scopedStore();
     const target = store.seed('x', {});
     store.seed('x', { property: target }, 'scope.root');
-    let company: unknown = companies[1], value: unknown = target;
+    let company: CompanyValue['company'] = companies[1], value: unknown = target;
     let field = 'property';
-    let entries: { company: any; value: unknown }[];
-    let definitions = [];
+    const entries: CompanyValue[] = [];
+    const definitions = [];
     if (kind === 'not-dependent') field = 'parent_id';
     if (kind === 'translated') store.schema.x.property.translate = true;
     if (kind === 'unauthorized') store.data['res.users'][0].company_ids = [companies[0]];
@@ -53,7 +54,7 @@ describe('scoped relation and company values', () => {
     if (kind === 'null') value = null;
     if (kind === 'context') Object.assign(context, { force_company: companies[0] });
     if (kind === 'required-create') { store.schema.x.property.required = true; store.data['ir.model.data'] = []; }
-    entries = [{ company, value }];
+    entries.push({ company, value });
     if (kind === 'duplicate') entries.push({ company, value });
     definitions.push(resource('x', 'scope.root', { [field]: companyValues(entries) }));
     await expect(plan(definitions, store.connection(), { context })).rejects.toBeInstanceOf(Error);
@@ -75,7 +76,7 @@ describe('scoped relation and company values', () => {
     expect(reviewed.resources).toHaveLength(4);
     const dependent = reviewed.operations.find(op => op.externalId === 'scope.dependent')!;
     expect(dependent.dependsOn).toContain(`scope.root:company:property:${managedCompany}`);
-    const receipts: any[] = [];
+    const receipts: RecoveryReceipt[] = [];
     store.failure = (_method, _model, values) => values?.property ? new Error('denied') : undefined;
     const failed = await apply(reviewed, store.connection(), { journal: { save: async receipt => { receipts.push(receipt); } }, stopOnError: false });
     expect(failed.results.find(result => result.operation.externalId === 'scope.dependent')?.status).toBe('skipped');
@@ -125,8 +126,8 @@ it('suppresses server M2M defaults only for exact creates', async () => {
   const defaultTarget = store.seed('x', { name: 'Server default' });
   const seed = store.seed.bind(store);
   store.seed = (model, values, externalId) => seed(model, model === 'x' ? { items: [defaultTarget], ...values } : values, externalId);
-  const receipts: any[] = [];
-  const journal = { save: async (receipt: any) => { receipts.push(receipt); } };
+  const receipts: RecoveryReceipt[] = [];
+  const journal = { save: async (receipt: RecoveryReceipt) => { receipts.push(receipt); } };
   for (const [id, value, expected] of [['scope.exact', exact([]), []], ['scope.additive', [], [defaultTarget]]] as const) {
     const result = await apply(await plan([resource('x', id, { items: value })], store.connection(), { context }), store.connection(), { journal });
     expect(result.ok).toBe(true);

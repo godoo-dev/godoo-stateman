@@ -56,7 +56,7 @@ class TemplateClient extends FakeClient {
   constructor() {
     super(); this.schema['mail.template'] = { body_html: { type: 'html' }, subject: { type: 'char' } };
   }
-  override async searchRead(model: string, criteria: any[] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
+  override async searchRead(model: string, criteria: unknown[][] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
     const rows = await super.searchRead(model, criteria, options);
     const language = options.context?.lang;
     if (model === 'mail.template' && typeof language === 'string' && options.fields?.includes('body_html')) {

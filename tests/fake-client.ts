@@ -47,11 +47,11 @@ export class FakeClient implements StateClient {
     if (!this.schema[model]) throw new Error(`Unknown model ${model}`);
     return clone(this.schema[model]) as T;
   }
-  async searchRead(model: string, criteria: any[] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
-    const rows = (this.data[model] ?? []).filter(row => criteria.every(([field, operator, expected]) => {
+  async searchRead(model: string, criteria: unknown[][] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
+    const rows = (this.data[model] ?? []).filter(row => (criteria as [string, string, unknown][]).every(([field, operator, expected]) => {
       const actual = row[field];
       if (operator === '=') return Array.isArray(actual) ? actual.includes(expected) : actual === expected;
-      if (operator === 'in') return Array.isArray(actual) ? actual.some(value => expected.includes(value)) : expected.includes(actual);
+      if (operator === 'in') return Array.isArray(actual) ? actual.some(value => (expected as unknown[]).includes(value)) : (expected as unknown[]).includes(actual);
       throw new Error(`Unsupported fake domain ${operator}`);
     })).slice(0, options.limit);
     return rows.map(row => Object.fromEntries(['id', ...(options.fields ?? Object.keys(row))].map(name => [name, clone(row[name] ?? false)])));

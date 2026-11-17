@@ -121,7 +121,7 @@ it('uses the target model when IDs coincide', async () => {
 it('requests selection attributes from the actual schema adapter', async () => {
   const f = fixture();
   const original = f.client.call.bind(f.client);
-  f.client.call = async <T>(model: string, method: string, _args?: any[], kwargs?: Record<string, unknown>): Promise<T> => {
+  f.client.call = async <T>(model: string, method: string, _args?: unknown[], kwargs?: Record<string, unknown>): Promise<T> => {
     expect(kwargs?.attributes).toContain('selection');
     return original<T>(model, method);
   };

@@ -25,7 +25,7 @@ export function computedField(model: string, externalId: string, values: Compute
 }
 export const dependencyPaths = (value: unknown): string[] => typeof value === 'string' ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
 export const fieldGuardNames = ['model', 'model_id', 'name', 'state', 'modules', 'ttype', 'store', 'readonly', 'compute', 'depends', 'relation', 'related', 'company_dependent', 'translate'] as const;
-type Search = (model: string, criteria: any[], names: string[], limit?: number) => Promise<Row[]>;
+type Search = (model: string, criteria: unknown[], names: string[], limit?: number) => Promise<Row[]>;
 type Fields = (model: string) => Promise<Record<string, FieldMetadata>>;
 function hasSupportedComputeShape(field: Row): boolean {
   return field.ttype === 'json' && field.store === false && field.readonly === true
