@@ -25,7 +25,7 @@ for (const [command, args] of commands) {
 if (mode === 'ci') {
   const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
   if (status.status !== 0 || status.stdout.trim()) {
-    console.error('Checks left the checkout dirty; release refuses a dirty candidate:\n' + status.stdout);
+    console.error('The checkout is dirty after the checks (uncommitted work or files the checks wrote); release refuses a dirty candidate:\n' + status.stdout);
     process.exit(1);
   }
 }

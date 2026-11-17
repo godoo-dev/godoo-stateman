@@ -232,8 +232,8 @@ disposable Odoo verification and consumer acceptance are distinct evidence.
 builds. Create a fresh external directory, set `GODOO_ARTIFACT_DIR` to it, then run
 `npm run check:package` followed by `npm run check:odoo18`. CI runs
 `npm run check:ci` instead of the first two: the same source checks and package
-check in one job, building once through `npm pack`, and failing if the checks
-leave the checkout dirty. The package caller
+check in one job, building once through `npm pack`. It expects a clean checkout
+and fails if the tree is dirty afterwards. The package caller
 retains the exact tarball/manifest and verifies it in an isolated consumer; the
 Docker caller consumes those same bytes with owned Odoo18/Postgres15 resources,
 synthetic base-addon records and cron scheduling disabled. It records observed
