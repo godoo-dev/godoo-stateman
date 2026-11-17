@@ -19,27 +19,92 @@ export interface ComputedFieldValues {
 /** Plain source bytes become an ordinary, protected ir.model.fields resource. */
 export function computedField(model: string, externalId: string, values: ComputedFieldValues, options?: ResourceOptions): ResourceDefinition {
   const { label, type, depends, ...native } = values;
-  if (!model || !/^x_[a-zA-Z0-9_]+$/.test(values.name) || type !== 'json' || values.store !== false || values.readonly !== true || !values.compute?.trim() || !Array.isArray(depends)) fail('FIELD_SHAPE_UNSUPPORTED', 'computedField requires an x_ JSON, readonly, nonstored compute with explicit depends');
-  return resource('ir.model.fields', externalId, { ...native, field_description: label, ttype: type,
-    depends: depends.join(','), state: 'manual', model_id: lookup('ir.model', { model }) }, options);
+  if (
+    !model ||
+    !/^x_[a-zA-Z0-9_]+$/.test(values.name) ||
+    type !== 'json' ||
+    values.store !== false ||
+    values.readonly !== true ||
+    !values.compute?.trim() ||
+    !Array.isArray(depends)
+  )
+    fail('FIELD_SHAPE_UNSUPPORTED', 'computedField requires an x_ JSON, readonly, nonstored compute with explicit depends');
+  return resource(
+    'ir.model.fields',
+    externalId,
+    { ...native, field_description: label, ttype: type, depends: depends.join(','), state: 'manual', model_id: lookup('ir.model', { model }) },
+    options,
+  );
 }
-export const dependencyPaths = (value: unknown): string[] => typeof value === 'string' ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
-export const fieldGuardNames = ['model', 'model_id', 'name', 'state', 'modules', 'ttype', 'store', 'readonly', 'compute', 'depends', 'relation', 'related', 'company_dependent', 'translate'] as const;
+export const dependencyPaths = (value: unknown): string[] =>
+  typeof value === 'string'
+    ? value
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : [];
+export const fieldGuardNames = [
+  'model',
+  'model_id',
+  'name',
+  'state',
+  'modules',
+  'ttype',
+  'store',
+  'readonly',
+  'compute',
+  'depends',
+  'relation',
+  'related',
+  'company_dependent',
+  'translate',
+] as const;
 type Search = (model: string, criteria: unknown[], names: string[], limit?: number) => Promise<Row[]>;
 type Fields = (model: string) => Promise<Record<string, FieldMetadata>>;
 function hasSupportedComputeShape(field: Row): boolean {
-  return field.ttype === 'json' && field.store === false && field.readonly === true
-    && typeof field.compute === 'string' && !!field.compute.trim()
-    && !field.relation && !field.related && !field.company_dependent && !field.translate;
+  return (
+    field.ttype === 'json' &&
+    field.store === false &&
+    field.readonly === true &&
+    typeof field.compute === 'string' &&
+    !!field.compute.trim() &&
+    !field.relation &&
+    !field.related &&
+    !field.company_dependent &&
+    !field.translate
+  );
 }
 type Resolve = (value: unknown, model?: string) => Promise<unknown>;
-const m2o = (v: unknown): unknown => Array.isArray(v) ? v[0] : v;
-const allowedFieldValues = new Set(['model', 'model_id', 'name', 'state', 'ttype', 'store', 'readonly', 'compute', 'depends', 'field_description', 'help', 'relation', 'related', 'company_dependent', 'translate']);
+const m2o = (v: unknown): unknown => (Array.isArray(v) ? v[0] : v);
+const allowedFieldValues = new Set([
+  'model',
+  'model_id',
+  'name',
+  'state',
+  'ttype',
+  'store',
+  'readonly',
+  'compute',
+  'depends',
+  'field_description',
+  'help',
+  'relation',
+  'related',
+  'company_dependent',
+  'translate',
+]);
 
 /** Guard all binding paths, including XML IDs and recovered IDs, before authored-field reads. */
-export async function protectComputedFields(resources: InspectedResource[], bindings: Record<string, number>, search: Search, fields: Fields, resolve: Resolve): Promise<void> {
+export async function protectComputedFields(
+  resources: InspectedResource[],
+  bindings: Record<string, number>,
+  search: Search,
+  fields: Fields,
+  resolve: Resolve,
+): Promise<void> {
   for (const resource of resources.filter(r => r.model === 'ir.model.fields')) {
-    const id = resource.externalId, values = resource.values;
+    const id = resource.externalId,
+      values = resource.values;
     const current = await currentField(resource, bindings, search, fields);
     const resolved: Row = { ...values };
     if ('model_id' in values) resolved.model_id = await resolve(values.model_id, 'ir.model');
@@ -47,10 +112,18 @@ export async function protectComputedFields(resources: InspectedResource[], bind
     // Permit partial updates, but the effective field must always satisfy v1.
     const effective: Row = { state: 'manual', ...current, ...resolved };
     if (!current) await checkNewField(id, effective, search);
-    if (Object.keys(values).some(name => !allowedFieldValues.has(name)) || effective.state !== 'manual' || typeof effective.name !== 'string' || !/^x_[a-zA-Z0-9_]+$/.test(effective.name) || !hasSupportedComputeShape(effective)) fail('FIELD_SHAPE_UNSUPPORTED', `${id}: only manual x_ readonly nonstored JSON computed fields are supported`);
+    if (
+      Object.keys(values).some(name => !allowedFieldValues.has(name)) ||
+      effective.state !== 'manual' ||
+      typeof effective.name !== 'string' ||
+      !/^x_[a-zA-Z0-9_]+$/.test(effective.name) ||
+      !hasSupportedComputeShape(effective)
+    )
+      fail('FIELD_SHAPE_UNSUPPORTED', `${id}: only manual x_ readonly nonstored JSON computed fields are supported`);
     if (current) {
       const live = (await fields(String(effective.model)))[String(effective.name)];
-      if (!live || live.type !== 'json' || live.store !== false || live.readonly !== true) fail('FIELD_NOT_READY', `${id}: fresh target-model metadata does not match the protected field`);
+      if (!live || live.type !== 'json' || live.store !== false || live.readonly !== true)
+        fail('FIELD_NOT_READY', `${id}: fresh target-model metadata does not match the protected field`);
     }
     if ('depends' in values && typeof values.depends !== 'string') fail('FIELD_DEPENDS_INVALID', `${id}: depends must be comma-separated paths`);
     for (const path of dependencyPaths(effective.depends)) await checkDependency(id, effective, path, fields);
@@ -67,7 +140,8 @@ async function currentField(resource: InspectedResource, bindings: Record<string
   if (!current) return undefined;
   if (fieldGuardNames.some(name => !(name in current))) fail('METADATA_INACCESSIBLE', `${id}: incomplete compatibility metadata`);
   if (current.state !== 'manual' || current.modules) fail('FIELD_BASE_PROTECTED', `${id}: base/module-defined fields cannot be managed`);
-  if (!hasSupportedComputeShape(current)) fail('FIELD_INCOMPATIBLE', `${id}: existing field is not a readonly nonstored JSON compute; adoption and aliases cannot convert it`);
+  if (!hasSupportedComputeShape(current))
+    fail('FIELD_INCOMPATIBLE', `${id}: existing field is not a readonly nonstored JSON compute; adoption and aliases cannot convert it`);
   return current;
 }
 
@@ -83,15 +157,30 @@ async function checkNewField(id: string, effective: Row, search: Search): Promis
   if (models.length !== 1) fail('METADATA_INACCESSIBLE', `${id}: target model unavailable`);
   if (effective.model && effective.model !== models[0].model) fail('FIELD_TRANSITION_UNSUPPORTED', `${id}: conflicting model/model_id`);
   effective.model = models[0].model;
-  if ((await search('ir.model.fields', [['model', '=', effective.model], ['name', '=', effective.name]], [], 2)).length) fail('FIELD_NAME_TAKEN', `${id}: ${effective.model}.${effective.name} already exists; use explicit _ref adoption`);
+  if (
+    (
+      await search(
+        'ir.model.fields',
+        [
+          ['model', '=', effective.model],
+          ['name', '=', effective.name],
+        ],
+        [],
+        2,
+      )
+    ).length
+  )
+    fail('FIELD_NAME_TAKEN', `${id}: ${effective.model}.${effective.name} already exists; use explicit _ref adoption`);
 }
 
 async function checkDependency(id: string, effective: Row, path: string, fields: Fields): Promise<void> {
   let model = String(effective.model);
   const parts = path.split('.');
   for (let index = 0; index < parts.length; index++) {
-    const name = parts[index], field = (await fields(model))[name];
-    if (!field || name === effective.name && model === effective.model) fail('FIELD_DEPENDS_INVALID', `${id}: invalid dependency ${path} at ${model}.${name}`);
+    const name = parts[index],
+      field = (await fields(model))[name];
+    if (!field || (name === effective.name && model === effective.model))
+      fail('FIELD_DEPENDS_INVALID', `${id}: invalid dependency ${path} at ${model}.${name}`);
     if (index < parts.length - 1) {
       if (!field.relation) fail('FIELD_DEPENDS_INVALID', `${id}: ${model}.${name} is not relational`);
       model = field.relation;

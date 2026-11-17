@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only. See NOTICE.md.
 import type { ModelPolicy } from './types.js';
 
-export function model(
-  modelName: string,
-  policy: { removeOrphans?: boolean; archiveOrphans?: boolean }
-): ModelPolicy {
+export function model(modelName: string, policy: { removeOrphans?: boolean; archiveOrphans?: boolean }): ModelPolicy {
   return Object.freeze({
     __type: 'model' as const,
     model: modelName,

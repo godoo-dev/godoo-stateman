@@ -10,7 +10,11 @@ export interface StateClient {
   write(model: string, ids: number | number[], values: Row, context?: Row): Promise<boolean>;
   unlink(model: string, ids: number | number[]): Promise<boolean>;
 }
-export interface ConnectionIdentity { url: string; database: string; uid: number; }
+export interface ConnectionIdentity {
+  url: string;
+  database: string;
+  uid: number;
+}
 /** Compatible with the generic godoo-ts inspectModulePrerequisites result. */
 export interface AddonInspection {
   modules: { name: string; status: string; state?: string | null; dependencies: string[] | null }[];
@@ -40,10 +44,20 @@ export interface FieldMetadata {
 }
 export type Schema = Record<string, Record<string, FieldMetadata>>;
 export type StateInput = string | Inspection | readonly ResourceDefinition[];
-export interface OwnedRecord { externalId: string; model: string; id: number; }
-export interface Removal extends OwnedRecord { action: 'archive' | 'delete'; }
+export interface OwnedRecord {
+  externalId: string;
+  model: string;
+  id: number;
+}
+export interface Removal extends OwnedRecord {
+  action: 'archive' | 'delete';
+}
 /** Unlink the enumerated links only. Targets are never deleted; M2M only. */
-export interface RelationUnlink { externalId: string; field: string; ids: number[]; }
+export interface RelationUnlink {
+  externalId: string;
+  field: string;
+  ids: number[];
+}
 export interface PlanOptions extends LoadOptions {
   /** Subsets include their managed dependency closure; missing definitions are errors. */
   select?: string[];
@@ -57,7 +71,11 @@ export interface PlanOptions extends LoadOptions {
   recovery?: RecoveryReceipt[];
 }
 export interface StoredPlanOptions extends Omit<PlanOptions, 'contentRoot' | 'readFile'> {}
-export interface Observation { kind: 'search' | 'schema' | 'addons' | 'server'; key: string; value: unknown; }
+export interface Observation {
+  kind: 'search' | 'schema' | 'addons' | 'server';
+  key: string;
+  value: unknown;
+}
 export interface Mutation {
   key: string;
   type: 'create' | 'adopt' | 'update' | 'link' | 'unlink' | 'archive' | 'delete' | 'activate' | 'deactivate';
@@ -129,7 +147,12 @@ export interface ApplyResult {
   verificationError?: unknown;
 }
 export class StateError extends Error {
-  constructor(readonly code: string, message: string, options?: ErrorOptions) {
-    super(message, options); this.name = 'StateError';
+  constructor(
+    readonly code: string,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = 'StateError';
   }
 }

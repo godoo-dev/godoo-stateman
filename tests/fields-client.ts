@@ -3,8 +3,19 @@ import { FakeClient } from './fake-client.js';
 export function fieldFixture(): FakeClient {
   const fake = new FakeClient();
   fake.schema['ir.model'] = { model: { type: 'char' } };
-  fake.schema['ir.model.fields'] = Object.fromEntries(['model', 'name', 'state', 'modules', 'ttype', 'compute', 'depends', 'relation', 'related', 'field_description', 'help'].map(name => [name, { type: 'char' }]));
-  Object.assign(fake.schema['ir.model.fields'], { model_id: { type: 'many2one', relation: 'ir.model' }, store: { type: 'boolean' }, readonly: { type: 'boolean' }, company_dependent: { type: 'boolean' }, translate: { type: 'boolean' } });
+  fake.schema['ir.model.fields'] = Object.fromEntries(
+    ['model', 'name', 'state', 'modules', 'ttype', 'compute', 'depends', 'relation', 'related', 'field_description', 'help'].map(name => [
+      name,
+      { type: 'char' },
+    ]),
+  );
+  Object.assign(fake.schema['ir.model.fields'], {
+    model_id: { type: 'many2one', relation: 'ir.model' },
+    store: { type: 'boolean' },
+    readonly: { type: 'boolean' },
+    company_dependent: { type: 'boolean' },
+    translate: { type: 'boolean' },
+  });
   fake.seed('ir.model', { model: 'x' });
   const originalCreate = fake.create.bind(fake);
   fake.create = async (model, values) => {

@@ -28,11 +28,8 @@ describe('checkSanitization', () => {
   });
 
   it('does not warn about <style> when sanitize_tags=false', () => {
-    const warnings = checkSanitization(
-      '<style>h1{}</style>',
-      makeFieldAttrs({ sanitize_tags: false })
-    );
-    expect(warnings.find((w) => w.pattern === 'style')).toBeUndefined();
+    const warnings = checkSanitization('<style>h1{}</style>', makeFieldAttrs({ sanitize_tags: false }));
+    expect(warnings.find(w => w.pattern === 'style')).toBeUndefined();
   });
 
   it('warns about event handlers when sanitize_attributes=true', () => {
@@ -51,18 +48,12 @@ describe('checkSanitization', () => {
   });
 
   it('warns about inline style attrs when strip_style=true', () => {
-    const warnings = checkSanitization(
-      '<p style="color:red">Hi</p>',
-      makeFieldAttrs({ strip_style: true })
-    );
+    const warnings = checkSanitization('<p style="color:red">Hi</p>', makeFieldAttrs({ strip_style: true }));
     expect(warnings).toContainEqual(expect.objectContaining({ pattern: 'inline_style' }));
   });
 
   it('warns about class attrs when strip_classes=true', () => {
-    const warnings = checkSanitization(
-      '<p class="foo">Hi</p>',
-      makeFieldAttrs({ strip_classes: true })
-    );
+    const warnings = checkSanitization('<p class="foo">Hi</p>', makeFieldAttrs({ strip_classes: true }));
     expect(warnings).toContainEqual(expect.objectContaining({ pattern: 'class' }));
   });
 

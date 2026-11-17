@@ -73,11 +73,4 @@ export function isResourceRef(v: unknown): v is ResourceRef {
 }
 
 // Re-export marker type guards for convenience
-export {
-  isMdMarker,
-  isMdFileMarker,
-  isTranslatedMarker,
-  isCssMarker,
-  isHtmlMarker,
-  isContentMarker,
-} from './markers.js';
+export { isMdMarker, isMdFileMarker, isTranslatedMarker, isCssMarker, isHtmlMarker, isContentMarker } from './markers.js';

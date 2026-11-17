@@ -18,7 +18,13 @@ export class ScopedClient extends FakeClient {
     this.schema.x.property = { type: 'many2one', relation: 'x', company_dependent: true };
     this.schema.x.body = { type: 'html', translate: true };
     this.schema.x.description = { type: 'text', translate: true };
-    this.schema['ir.rule'] = { name: { type: 'char' }, 'model_id.model': { type: 'char' }, active: { type: 'boolean' }, perm_read: { type: 'boolean' }, domain_force: { type: 'text' } };
+    this.schema['ir.rule'] = {
+      name: { type: 'char' },
+      'model_id.model': { type: 'char' },
+      active: { type: 'boolean' },
+      perm_read: { type: 'boolean' },
+      domain_force: { type: 'text' },
+    };
   }
   async searchRead(model: string, criteria: unknown[][] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
     const rows = await super.searchRead(model, criteria, options);
@@ -37,7 +43,9 @@ export class ScopedClient extends FakeClient {
   async write(model: string, ids: number | number[], values: Row, context: Row = {}): Promise<boolean> {
     const contextual = Object.entries(values).filter(([name]) => this.schema[model][name].company_dependent || context.lang);
     if (!contextual.length) return super.write(model, ids, values);
-    const error = this.failure?.('write', model, values); if (error === false) return false; if (error) throw error;
+    const error = this.failure?.('write', model, values);
+    if (error === false) return false;
+    if (error) throw error;
     const company = (context.allowed_company_ids as number[] | undefined)?.[0] ?? 1;
     for (const id of Array.isArray(ids) ? ids : [ids]) {
       for (const [name, value] of contextual) {
@@ -58,7 +66,11 @@ export class ScopedClient extends FakeClient {
 
 export function scopedStore() {
   const store = new ScopedClient();
-  const companies = [store.seed('res.company', { name: 'Company A' }), store.seed('res.company', { name: 'Company B' }), store.seed('res.company', { name: 'Company C' })];
+  const companies = [
+    store.seed('res.company', { name: 'Company A' }),
+    store.seed('res.company', { name: 'Company B' }),
+    store.seed('res.company', { name: 'Company C' }),
+  ];
   store.uid = store.seed('res.users', { company_ids: companies });
   return { store, companies, context: { allowed_company_ids: companies, custom: 'base' } };
 }

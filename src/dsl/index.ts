@@ -9,19 +9,5 @@ export type { ExactRelation, CompanyValue, CompanyValues, RelationTarget } from 
 export type { ChildrenRef } from './children.js';
 export * from './types.js';
 export { md, mdFile, translated, withCss, html } from './markers.js';
-export type {
-  MdMarker,
-  MdFileMarker,
-  TranslatedMarker,
-  CssMarker,
-  HtmlMarker,
-  ContentMarker,
-} from './markers.js';
-export {
-  isMdMarker,
-  isMdFileMarker,
-  isTranslatedMarker,
-  isCssMarker,
-  isHtmlMarker,
-  isContentMarker,
-} from './markers.js';
+export type { MdMarker, MdFileMarker, TranslatedMarker, CssMarker, HtmlMarker, ContentMarker } from './markers.js';
+export { isMdMarker, isMdFileMarker, isTranslatedMarker, isCssMarker, isHtmlMarker, isContentMarker } from './markers.js';

@@ -39,7 +39,10 @@ describe('canonical shared definition identity', () => {
     const task = resource('task', 'fixture.task', { stage_id: leaf, group_id: branch });
     const res = normalizeResources([task, leaf, branch, root]);
     expect(res.find(r => r.externalId === 'fixture.task')?.values).toEqual({ stage_id: ref('fixture.root.branch.leaf'), group_id: ref('fixture.root.branch') });
-    expect(res.find(r => r.externalId === 'fixture.root.branch.leaf')?.parentScope).toEqual({ parentExternalId: 'fixture.root.branch', inverseField: 'group_id' });
+    expect(res.find(r => r.externalId === 'fixture.root.branch.leaf')?.parentScope).toEqual({
+      parentExternalId: 'fixture.root.branch',
+      inverseField: 'group_id',
+    });
   });
   it('reuses an implicit local inline child within its one declaring parent', () => {
     const child = resource('stage', 'ready', {});
@@ -51,7 +54,11 @@ describe('canonical shared definition identity', () => {
   it('rejects distinct definitions claiming the canonical child identity', () => {
     const { project } = graph('ready');
     const duplicate = resource('stage', 'fixture.project.ready', { name: 'Other' });
-    for (const input of [[project, duplicate], [duplicate, project]]) expect(() => normalizeResources(input)).toThrow('Duplicate resource identity: fixture.project.ready');
+    for (const input of [
+      [project, duplicate],
+      [duplicate, project],
+    ])
+      expect(() => normalizeResources(input)).toThrow('Duplicate resource identity: fixture.project.ready');
   });
   it('rejects distinct definitions with the same local identity under one owner', () => {
     const a = resource('stage', 'ready', {});
@@ -64,13 +71,18 @@ describe('canonical shared definition identity', () => {
       const child = resource('stage', id, {});
       const a = resource('project', 'fixture.a', { stages: children('stage', 'project_ids', [child]) });
       const b = resource('project', 'fixture.b', { stages: children('stage', 'project_ids', [child]) });
-      for (const input of [[a, b], [b, a]]) expect(() => normalizeResources(input)).toThrow('Ambiguous ownership');
+      for (const input of [
+        [a, b],
+        [b, a],
+      ])
+        expect(() => normalizeResources(input)).toThrow('Ambiguous ownership');
     });
   }
   it('rejects conflicting inverse declarations and ambiguous implicit local ownership', () => {
     const child = resource('stage', 'ready', {});
     const owner = resource('project', 'fixture.project', {
-      stages: children('stage', 'first_id', [child]), other: children('stage', 'second_id', [child]),
+      stages: children('stage', 'first_id', [child]),
+      other: children('stage', 'second_id', [child]),
     });
     expect(() => normalizeResources([owner])).toThrow('Ambiguous ownership');
     const a = resource('project', 'fixture.a', { stage: child });

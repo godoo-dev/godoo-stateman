@@ -21,7 +21,7 @@ for (const shape of ['short', 'long', 'diamond'] as const) {
     ];
     const reviewed = await plan(definitions, client.connection());
     expect(reviewed.operations.some(op => op.externalId.startsWith('review.b_'))).toBe(false);
-    client.failure = (_method, _model, values) => values?.items ? new Error('relation refused') : undefined;
+    client.failure = (_method, _model, values) => (values?.items ? new Error('relation refused') : undefined);
     const result = await apply(reviewed, client.connection(), { stopOnError });
     expect(result.ok).toBe(false);
     expect(result.results.find(r => r.operation.externalId === 'review.c_prerequisite')?.status).toBe('failed');
@@ -43,7 +43,7 @@ it('propagates readiness through an unchanged many2one reference', async () => {
     resource('x', 'review.a_dependent', { parent_id: ref('review.b_bridge'), name: 'After' }),
   ];
   const reviewed = await plan(definitions, client.connection());
-  client.failure = (_method, _model, values) => values?.items ? new Error('relation refused') : undefined;
+  client.failure = (_method, _model, values) => (values?.items ? new Error('relation refused') : undefined);
   const result = await apply(reviewed, client.connection(), { stopOnError: false });
   expect(result.results.find(r => r.operation.externalId === 'review.a_dependent')?.status).toBe('skipped');
   expect(client.data.x.find(row => row.id === dependent)?.name).toBe('Before');
@@ -83,7 +83,7 @@ it.each([false, true])('keeps child inverse identity separate from explicit pare
   ];
   const reviewed = await plan(definitions, client.connection());
   expect(reviewed.operations.some(op => op.externalId === 'review.z_parent.child')).toBe(false);
-  client.failure = (_method, _model, values) => values?.name === 'Refused' ? new Error('parent update refused') : undefined;
+  client.failure = (_method, _model, values) => (values?.name === 'Refused' ? new Error('parent update refused') : undefined);
   const result = await apply(reviewed, client.connection(), { stopOnError: false });
   expect(result.results.find(r => r.operation.externalId === 'review.z_parent')?.status).toBe('failed');
   expect(result.results.find(r => r.operation.externalId === 'review.a_dependent')?.status).toBe(explicit ? 'skipped' : 'committed');
@@ -107,7 +107,7 @@ it('skips a child update when its transitive prerequisite fails without cycling 
   ];
   const reviewed = await plan(definitions, client.connection());
   expect(reviewed.operations.some(op => op.externalId === 'review.parent')).toBe(false);
-  client.failure = (_method, _model, values) => values?.items ? new Error('relation refused') : undefined;
+  client.failure = (_method, _model, values) => (values?.items ? new Error('relation refused') : undefined);
   const result = await apply(reviewed, client.connection(), { stopOnError: false });
   expect(result.results.find(r => r.operation.externalId === 'review.z_prerequisite')?.status).toBe('failed');
   expect(result.results.find(r => r.operation.externalId === 'review.parent.child')?.status).toBe('skipped');

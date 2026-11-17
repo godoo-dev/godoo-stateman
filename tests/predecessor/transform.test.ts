@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only. See NOTICE.md.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolve as resolvePath } from 'path';
-import {
-  renderMarkerValue,
-  applyCss,
-  extractTranslations,
-} from '../../src/content.js';
+import { renderMarkerValue, applyCss, extractTranslations } from '../../src/content.js';
 import { md, mdFile, withCss, translated } from '../../src/dsl/markers.js';
 
 describe('renderMarkerValue', () => {
@@ -122,11 +118,7 @@ describe('frontmatter stripping', () => {
 
   it('preserves frontmatter when stripFrontmatter: false', async () => {
     readFile.mockResolvedValue('---\ntitle: Test\n---\n# Hello');
-    const result = await renderMarkerValue(
-      mdFile('./t.md', { stripFrontmatter: false }),
-      '/project',
-      readFile
-    );
+    const result = await renderMarkerValue(mdFile('./t.md', { stripFrontmatter: false }), '/project', readFile);
     expect(result).toContain('title');
   });
 
@@ -157,11 +149,7 @@ describe('extractTranslations', () => {
       active: true,
     };
 
-    const { resolvedValues, translations } = await extractTranslations(
-      values,
-      '/project',
-      readFile
-    );
+    const { resolvedValues, translations } = await extractTranslations(values, '/project', readFile);
 
     expect(resolvedValues.name).toBe('Hola');
     expect(resolvedValues.active).toBe(true);
@@ -177,11 +165,7 @@ describe('extractTranslations', () => {
       body: translated(md('# Hola'), { en_UK: md('# Hello') }),
     };
 
-    const { resolvedValues, translations } = await extractTranslations(
-      values,
-      '/project',
-      readFile
-    );
+    const { resolvedValues, translations } = await extractTranslations(values, '/project', readFile);
 
     expect(resolvedValues.body as string).toContain('<h1>');
     expect(translations.entries[0].value as string).toContain('<h1>');
@@ -190,11 +174,7 @@ describe('extractTranslations', () => {
 
   it('returns empty translations when no translated() markers', async () => {
     const values = { name: 'plain', active: true };
-    const { resolvedValues, translations } = await extractTranslations(
-      values,
-      '/project',
-      readFile
-    );
+    const { resolvedValues, translations } = await extractTranslations(values, '/project', readFile);
     expect(resolvedValues).toEqual({ name: 'plain', active: true });
     expect(translations.entries).toEqual([]);
   });
@@ -210,14 +190,9 @@ describe('extractTranslations', () => {
       body: translated(mdFile('./es.md', { css: './s.css' }), { en_UK: mdFile('./en.md') }),
     };
 
-    const { resolvedValues, translations } = await extractTranslations(
-      values,
-      '/project',
-      readFile
-    );
+    const { resolvedValues, translations } = await extractTranslations(values, '/project', readFile);
 
     expect(resolvedValues.body as string).toContain('color');
     expect(translations.entries[0].value as string).toContain('<strong>');
   });
 });
-

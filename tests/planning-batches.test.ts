@@ -95,7 +95,10 @@ it('finds a hidden link on one owner among 101 and refuses a reviewed plan befor
     return rows;
   };
   f.store.data['catalog.product'].find(row => row.id === f.ids[100])!.suggestions = [target];
-  await expect(plan(f.definitions, f.store.connection(), f.options)).rejects.toMatchObject({ code: 'EXACT_VISIBILITY', message: expect.stringContaining(String(target)) });
+  await expect(plan(f.definitions, f.store.connection(), f.options)).rejects.toMatchObject({
+    code: 'EXACT_VISIBILITY',
+    message: expect.stringContaining(String(target)),
+  });
   await expect(apply(first, f.store.connection())).rejects.toMatchObject({ code: 'EXACT_VISIBILITY' });
   expect(f.store.mutations).toEqual([]);
 });
@@ -114,7 +117,10 @@ it('keeps different owner-visible sets and candidate chunks independent', async 
     return rows;
   };
   store.data.x.find(row => row.id === b)!.items = [targets[1], targets.at(-1)!];
-  await expect(plan(input, store.connection(), { context })).rejects.toMatchObject({ code: 'EXACT_VISIBILITY', message: expect.stringContaining(String(targets.at(-1))) });
+  await expect(plan(input, store.connection(), { context })).rejects.toMatchObject({
+    code: 'EXACT_VISIBILITY',
+    message: expect.stringContaining(String(targets.at(-1))),
+  });
 });
 
 it('preserves field permissions and fresh translation/base/identity evidence', async () => {
@@ -122,10 +128,14 @@ it('preserves field permissions and fresh translation/base/identity evidence', a
   store.schema.x.name.translate = true;
   const a = store.seed('x', { name: 'A', body: '<p>A</p>' }, 'batch.a');
   const b = store.seed('x', { name: 'B' }, 'batch.b');
-  const input = [resource('x', 'batch.a', { name: translated('A', { es_ES: 'A' }), body: '<p>A</p>' }), resource('x', 'batch.b', { name: translated('B', { es_ES: 'B' }) })];
+  const input = [
+    resource('x', 'batch.a', { name: translated('A', { es_ES: 'A' }), body: '<p>A</p>' }),
+    resource('x', 'batch.b', { name: translated('B', { es_ES: 'B' }) }),
+  ];
   const read = store.searchRead.bind(store);
   store.searchRead = async (model, domain, options) => {
-    if (model === 'x' && (domain?.[0]?.[2] as unknown[] | undefined)?.includes?.(b) && options?.fields?.includes('body')) throw new Error('undeclared field permission');
+    if (model === 'x' && (domain?.[0]?.[2] as unknown[] | undefined)?.includes?.(b) && options?.fields?.includes('body'))
+      throw new Error('undeclared field permission');
     return (await read(model, domain, options)).reverse();
   };
   const first = await plan(input, store.connection(), { context: { lang: false } });

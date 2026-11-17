@@ -57,7 +57,14 @@ export function normalizeResources(resources: readonly ResourceDefinition[]): In
   // is an explicit declaration; an ordinary relation is a use of that definition.
   function discover(definition: ResourceDefinition): void {
     if (definitions.has(definition)) return;
-    if (!isResourceDefinition(definition) || typeof definition.model !== 'string' || !definition.model || !definition.values || typeof definition.values !== 'object') throw new Error('Malformed resource definition');
+    if (
+      !isResourceDefinition(definition) ||
+      typeof definition.model !== 'string' ||
+      !definition.model ||
+      !definition.values ||
+      typeof definition.values !== 'object'
+    )
+      throw new Error('Malformed resource definition');
     definitions.add(definition);
     const targets = new Set<ResourceDefinition>();
     edges.set(definition, targets);
@@ -111,7 +118,8 @@ export function normalizeResources(resources: readonly ResourceDefinition[]): In
     const declared = declarations.get(definition) ?? [];
     if (declared.length) {
       const owner = declared[0];
-      if (declared.some(context => context.parent !== owner.parent || context.path !== owner.path || context.inverseField !== owner.inverseField)) throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
+      if (declared.some(context => context.parent !== owner.parent || context.path !== owner.path || context.inverseField !== owner.inverseField))
+        throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
       if (rawId === undefined) throw new Error(`Resource ${definition.model} needs a stable externalId; unnamed list members are unsupported`);
       return owner;
     }
@@ -121,7 +129,8 @@ export function normalizeResources(resources: readonly ResourceDefinition[]): In
     // Never pick a parent from export order or a first reference.
     const candidates = (usages.get(definition) ?? []).filter(context => rawId !== undefined || context.field !== undefined);
     const owner = candidates[0];
-    if (owner && candidates.some(context => context.parent !== owner.parent || (rawId === undefined && context.path !== owner.path))) throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
+    if (owner && candidates.some(context => context.parent !== owner.parent || (rawId === undefined && context.path !== owner.path)))
+      throw new Error(`Ambiguous ownership for ${rawId ?? definition.model}`);
     return owner;
   }
   function identity(definition: ResourceDefinition): { externalId: string; parentScope?: ParentScope } {
@@ -158,19 +167,32 @@ export function normalizeResources(resources: readonly ResourceDefinition[]): In
       if (Array.isArray(value)) return value.map(walk);
       return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, walk(item)]));
     }
-    if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint' || value === undefined || (typeof value === 'number' && !Number.isFinite(value))) throw new Error('Unsupported field value');
+    if (
+      typeof value === 'function' ||
+      typeof value === 'symbol' ||
+      typeof value === 'bigint' ||
+      value === undefined ||
+      (typeof value === 'number' && !Number.isFinite(value))
+    )
+      throw new Error('Unsupported field value');
     return value;
   }
-  return [...definitions].map(definition => ({
-    ...identity(definition), model: definition.model,
-    values: Object.fromEntries(Object.entries(definition.values).map(([key, value]) => [key, walk(value)])),
-    ...(definition.ref ? { ref: definition.ref } : {}),
-    ...(definition.options ? { options: definition.options } : {}),
-    ...(definition.removeUnmanaged ? { removeUnmanaged: definition.removeUnmanaged } : {}),
-  })).sort((a, b) => a.externalId < b.externalId ? -1 : a.externalId > b.externalId ? 1 : 0);
+  return [...definitions]
+    .map(definition => ({
+      ...identity(definition),
+      model: definition.model,
+      values: Object.fromEntries(Object.entries(definition.values).map(([key, value]) => [key, walk(value)])),
+      ...(definition.ref ? { ref: definition.ref } : {}),
+      ...(definition.options ? { options: definition.options } : {}),
+      ...(definition.removeUnmanaged ? { removeUnmanaged: definition.removeUnmanaged } : {}),
+    }))
+    .sort((a, b) => (a.externalId < b.externalId ? -1 : a.externalId > b.externalId ? 1 : 0));
 }
 
-export interface LoadOptions { contentRoot?: string; readFile?: FileReader; }
+export interface LoadOptions {
+  contentRoot?: string;
+  readFile?: FileReader;
+}
 /** Render in-memory definitions through the same offline pipeline as file loading. */
 export async function inspectResources(definitions: readonly ResourceDefinition[], options: LoadOptions = {}): Promise<Inspection> {
   const resources = normalizeResources(definitions);
@@ -183,12 +205,13 @@ async function renderResources(resources: InspectedResource[], contentRoot: stri
     if (isTranslatedMarker(value)) throw new Error('translated() must be a direct resource field');
     if (isContentMarker(value)) return renderMarkerValue(value, contentRoot, readFile);
     if (Array.isArray(value)) return Promise.all(value.map(render));
-    if (value && typeof value === 'object') return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([key, item]) => [key, await render(item)])));
+    if (value && typeof value === 'object')
+      return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([key, item]) => [key, await render(item)])));
     return value;
   }
   for (const resource of resources) {
     const content = await extractTranslations(resource.values, contentRoot, readFile);
-    resource.values = await render(content.resolvedValues) as Record<string, unknown>;
+    resource.values = (await render(content.resolvedValues)) as Record<string, unknown>;
     if (content.translations.entries.length) resource.translations = content.translations;
   }
 }
@@ -200,11 +223,16 @@ export async function loadResources(path: string, options: LoadOptions = {}): Pr
   const resources = normalizeResources(evaluation.resources);
   await renderResources(resources, contentRoot, options.readFile ?? defaultReadFile);
   return {
-    kind: 'offline-inspection', resources, policies: evaluation.policies, files: evaluation.files,
+    kind: 'offline-inspection',
+    resources,
+    policies: evaluation.policies,
+    files: evaluation.files,
     diagnostics: [
       'Offline inspection only: identities and relations are symbolic, not validated against Odoo.',
       'Use plan with an explicit connection for schema, identity, dependency and prerequisite validation.',
-      ...(evaluation.policies.length || resources.some(r => r.removeUnmanaged) ? ['Legacy removal policies are preserved as declarations only and grant no deletion authority.'] : []),
+      ...(evaluation.policies.length || resources.some(r => r.removeUnmanaged)
+        ? ['Legacy removal policies are preserved as declarations only and grant no deletion authority.']
+        : []),
     ],
   };
 }

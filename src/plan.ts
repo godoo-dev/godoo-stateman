@@ -27,10 +27,13 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   const { contentRoot: _root, readFile: _reader, ...serializable } = options;
   const stored: StoredPlanOptions = copy(serializable);
   const context: Row = { ...stored.context, active_test: false };
-  const diagnostics = ['Read access does not establish write permission. RPC writes retain client safety guards.',
+  const diagnostics = [
+    'Read access does not establish write permission. RPC writes retain client safety guards.',
     'Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock.',
-    'Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.'];
-  if (complete.policies.some(p => p.removeOrphans || p.archiveOrphans)) fail('BROAD_REMOVAL_UNSUPPORTED', 'Model-wide removal is unsupported; enumerate owned removals');
+    'Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.',
+  ];
+  if (complete.policies.some(p => p.removeOrphans || p.archiveOrphans))
+    fail('BROAD_REMOVAL_UNSUPPORTED', 'Model-wide removal is unsupported; enumerate owned removals');
   const all = indexResources(complete, diagnostics);
   const selected = selectionClosure(all, stored);
   const resources = [...selected].sort().map(id => all.get(id)!);
@@ -39,7 +42,10 @@ export async function plan(input: StateInput, connection: StateConnection, optio
   const major = await checkServer(connection, stored, observations);
   const ctx = createPlanContext({ connection, complete, stored, context, observations, diagnostics, all, selected, target, major });
   await checkAddons(ctx);
-  ctx.identities = await readIdentities(resources.map(resource => resource.externalId), ctx.search);
+  ctx.identities = await readIdentities(
+    resources.map(resource => resource.externalId),
+    ctx.search,
+  );
   for (const resource of resources) await validateResource(ctx, resource);
   const desired = withInverses(ctx, resources);
   const state = await observe(ctx, resources, desired);
@@ -53,9 +59,10 @@ export async function drift(input: StateInput, connection: StateConnection, opti
 }
 
 async function renderedInput(input: StateInput, options: PlanOptions): Promise<Inspection> {
-  const loaded = typeof input === 'string' ? await loadResources(input, options)
-    : Array.isArray(input) ? await inspectResources(input, options) : input as Inspection;
-  if (!record(loaded) || loaded.kind !== 'offline-inspection' || !Array.isArray(loaded.resources) || !Array.isArray(loaded.policies)) fail('INVALID_INPUT', 'Expected a rendered Inspection or resource definitions');
+  const loaded =
+    typeof input === 'string' ? await loadResources(input, options) : Array.isArray(input) ? await inspectResources(input, options) : (input as Inspection);
+  if (!record(loaded) || loaded.kind !== 'offline-inspection' || !Array.isArray(loaded.resources) || !Array.isArray(loaded.policies))
+    fail('INVALID_INPUT', 'Expected a rendered Inspection or resource definitions');
   return copy(loaded);
 }
 
@@ -65,10 +72,13 @@ function indexResources(complete: Inspection, diagnostics: string[]): Map<string
     xmlid(resource.externalId);
     if (!resource.model || !record(resource.values)) fail('INVALID_RESOURCE', `Malformed resource ${resource.externalId}`);
     if (all.has(resource.externalId)) fail('IDENTITY_COLLISION', `Duplicate XML ID ${resource.externalId}`);
-    if (resource.options?.onMissing && !['create', 'error'].includes(resource.options.onMissing)) fail('INVALID_POLICY', `Invalid onMissing for ${resource.externalId}`);
+    if (resource.options?.onMissing && !['create', 'error'].includes(resource.options.onMissing))
+      fail('INVALID_POLICY', `Invalid onMissing for ${resource.externalId}`);
     all.set(resource.externalId, resource);
-    if (resource.removeUnmanaged && Object.values(resource.removeUnmanaged).some(Boolean)) diagnostics.push(`${resource.externalId}: legacy removeUnmanaged ignored; no relation or record removal authorized.`);
-    if (resource.model === 'ir.module.module') fail('MODULE_MUTATION_UNSUPPORTED', 'Addon changes need a separate approved module stage and fresh record planning');
+    if (resource.removeUnmanaged && Object.values(resource.removeUnmanaged).some(Boolean))
+      diagnostics.push(`${resource.externalId}: legacy removeUnmanaged ignored; no relation or record removal authorized.`);
+    if (resource.model === 'ir.module.module')
+      fail('MODULE_MUTATION_UNSUPPORTED', 'Addon changes need a separate approved module stage and fresh record planning');
   }
   return all;
 }
@@ -93,7 +103,8 @@ async function checkServer(connection: StateConnection, stored: StoredPlanOption
   const server = await connection.serverInfo();
   if (!server || typeof server.version !== 'string') fail('VERSION_UNKNOWN', 'Read-only server adapter did not provide an Odoo version');
   const major = Number(server.version.match(/^(\d+)/)?.[1]);
-  if (major < 18 || !(stored.odooMajorVersions ?? [18]).includes(major)) fail('VERSION_UNSUPPORTED', `Odoo ${server.version} is outside the explicit supported major versions`);
+  if (major < 18 || !(stored.odooMajorVersions ?? [18]).includes(major))
+    fail('VERSION_UNSUPPORTED', `Odoo ${server.version} is outside the explicit supported major versions`);
   observations.push({ kind: 'server', key: 'version', value: copy(server) });
   return major;
 }
@@ -104,11 +115,18 @@ async function checkAddons(ctx: PlanContext): Promise<void> {
     ctx.diagnostics.push('No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.');
     return;
   }
-  if (!ctx.connection.inspectAddons) fail('ADDON_INSPECTION_UNAVAILABLE', 'Required addons need the generic read-only inspectAddons adapter; installed client 0.6.1 does not include the new seam');
+  if (!ctx.connection.inspectAddons)
+    fail(
+      'ADDON_INSPECTION_UNAVAILABLE',
+      'Required addons need the generic read-only inspectAddons adapter; installed client 0.6.1 does not include the new seam',
+    );
   const report = await ctx.connection.inspectAddons(addons, { context: ctx.context });
   ctx.observations.push({ kind: 'addons', key: addons.join(','), value: copy(report) });
   if (!report.closureComplete || report.modules.some(m => m.status !== 'installed') || addons.some(name => !report.modules.some(m => m.name === name))) {
-    throw new StateError('ADDON_PREREQUISITES', `Addon prerequisites not established: ${report.modules.map(m => `${m.name}:${m.status}`).join(', ')}; ${report.diagnostics.map(d => `${d.code}: ${d.message}`).join('; ')}`);
+    throw new StateError(
+      'ADDON_PREREQUISITES',
+      `Addon prerequisites not established: ${report.modules.map(m => `${m.name}:${m.status}`).join(', ')}; ${report.diagnostics.map(d => `${d.code}: ${d.message}`).join('; ')}`,
+    );
   }
 }
 
@@ -116,27 +134,37 @@ async function validateResource(ctx: PlanContext, resource: InspectedResource): 
   const meta = await ctx.fields(resource.model);
   if (resource.model === 'ir.cron') {
     if (meta.active?.type !== 'boolean') fail('FIELD_UNAVAILABLE', `${resource.externalId}: cron active metadata is unavailable or restricted`);
-    if ('active' in resource.values && typeof resource.values.active !== 'boolean') fail('INVALID_CRON_POLICY', `${resource.externalId}: cron active must be an explicit boolean or omitted to preserve its observed state`);
+    if ('active' in resource.values && typeof resource.values.active !== 'boolean')
+      fail('INVALID_CRON_POLICY', `${resource.externalId}: cron active must be an explicit boolean or omitted to preserve its observed state`);
   }
   for (const name of Object.keys(resource.values)) await validateValue(ctx, resource, name);
-  for (const entry of resource.translations?.entries ?? []) if (meta[entry.field]?.company_dependent) fail('COMPANY_VALUE_UNSUPPORTED', `${resource.externalId}.${entry.field}: translations of company-dependent fields are unsupported`);
-  for (const entry of resource.translations?.entries ?? []) if (meta[entry.field]?.type === 'reference') fail('REFERENCE_TRANSLATION_UNSUPPORTED', `${resource.externalId}.${entry.field}: Reference fields do not support contextual translations`);
+  for (const entry of resource.translations?.entries ?? [])
+    if (meta[entry.field]?.company_dependent)
+      fail('COMPANY_VALUE_UNSUPPORTED', `${resource.externalId}.${entry.field}: translations of company-dependent fields are unsupported`);
+  for (const entry of resource.translations?.entries ?? [])
+    if (meta[entry.field]?.type === 'reference')
+      fail('REFERENCE_TRANSLATION_UNSUPPORTED', `${resource.externalId}.${entry.field}: Reference fields do not support contextual translations`);
 }
 
 async function validateValue(ctx: PlanContext, resource: InspectedResource, name: string): Promise<void> {
   const meta = await ctx.fields(resource.model);
   if (systemFields.has(name)) fail('SYSTEM_FIELD', `${resource.externalId}.${name} is not a managed field`);
   if (!meta[name] || name.startsWith('x_')) await ctx.validateDomain(resource.model, [[name]]);
-  const raw = resource.values[name], field = meta[name];
+  const raw = resource.values[name],
+    field = meta[name];
   if (isCompanyValues(raw)) {
-    if (!field.company_dependent || field.translate || field.readonly || !companyValueTypes.includes(field.type)) fail('COMPANY_VALUE_UNSUPPORTED', `${resource.externalId}.${name}: companyValues() requires a writable non-translated scalar company-dependent field`);
-    if (!Array.isArray(raw.entries) || !raw.entries.length || raw.entries.some(entry => !record(entry) || !('company' in entry) || !('value' in entry))) fail('COMPANY_VALUE_INVALID', `${resource.externalId}.${name}: expected explicit company/value entries`);
-    if ('force_company' in ctx.context || 'company_id' in ctx.context) fail('COMPANY_CONTEXT', 'companyValues() uses allowed_company_ids; competing company context keys are unsupported');
+    if (!field.company_dependent || field.translate || field.readonly || !companyValueTypes.includes(field.type))
+      fail('COMPANY_VALUE_UNSUPPORTED', `${resource.externalId}.${name}: companyValues() requires a writable non-translated scalar company-dependent field`);
+    if (!Array.isArray(raw.entries) || !raw.entries.length || raw.entries.some(entry => !record(entry) || !('company' in entry) || !('value' in entry)))
+      fail('COMPANY_VALUE_INVALID', `${resource.externalId}.${name}: expected explicit company/value entries`);
+    if ('force_company' in ctx.context || 'company_id' in ctx.context)
+      fail('COMPANY_CONTEXT', 'companyValues() uses allowed_company_ids; competing company context keys are unsupported');
   }
   // Scoped markers only have meaning as direct field values. Never pass a
   // nested marker to Odoo as an ordinary JSON value.
   function nested(value: unknown, root = false): void {
-    if (!root && (isCompanyValues(value) || isExact(value))) fail('SCOPED_VALUE_UNSUPPORTED', `${resource.externalId}.${name}: scoped markers must be direct fields and cannot nest`);
+    if (!root && (isCompanyValues(value) || isExact(value)))
+      fail('SCOPED_VALUE_UNSUPPORTED', `${resource.externalId}.${name}: scoped markers must be direct fields and cannot nest`);
     if (Array.isArray(value)) value.forEach(item => nested(item));
     else if (record(value)) Object.values(value).forEach(item => nested(item));
   }
@@ -151,10 +179,12 @@ function withInverses(ctx: PlanContext, resources: InspectedResource[]): Map<str
     if (!scope?.inverseField || !scope.parentExternalId) continue;
     const parent = ctx.all.get(scope.parentExternalId)!;
     const field = ctx.schema[resource.model][scope.inverseField];
-    if (!field || field.relation !== parent.model || !['many2one', 'many2many'].includes(field.type)) fail('INVALID_INVERSE', `${resource.externalId}.${scope.inverseField} must relate to ${parent.model} through M2O or M2M`);
+    if (!field || field.relation !== parent.model || !['many2one', 'many2many'].includes(field.type))
+      fail('INVALID_INVERSE', `${resource.externalId}.${scope.inverseField} must relate to ${parent.model} through M2O or M2M`);
     const values = desired.get(resource.externalId)!;
     if (scope.inverseField in values) fail('INVERSE_CONFLICT', `${resource.externalId}: children inverse ${scope.inverseField} is declared twice`);
-    values[scope.inverseField] = field.type === 'many2one' ? { __type: 'resourceRef', externalId: parent.externalId } : [{ __type: 'resourceRef', externalId: parent.externalId }];
+    values[scope.inverseField] =
+      field.type === 'many2one' ? { __type: 'resourceRef', externalId: parent.externalId } : [{ __type: 'resourceRef', externalId: parent.externalId }];
   }
   return desired;
 }
@@ -167,16 +197,31 @@ async function observe(ctx: PlanContext, resources: InspectedResource[], desired
   const { actual, needsAdoption } = binder;
   await protectComputedFields(resources, ctx.bindings, ctx.search, ctx.fields, ctx.resolveValue);
   await protectMis(resources, ctx.bindings, ctx.search, ctx.resolveValue, ctx.diagnostics);
-  const baseReads: RecordRead[] = resources.filter(resource => ctx.bindings[resource.externalId]).map(resource => ({
-    key: resource.externalId, label: resource.externalId, model: resource.model, id: ctx.bindings[resource.externalId],
-    names: [...Object.keys(desired.get(resource.externalId)!).filter(name => !isCompanyValues(desired.get(resource.externalId)![name])), ...(resource.model === 'ir.cron' ? ['active'] : [])],
-  }));
+  const baseReads: RecordRead[] = resources
+    .filter(resource => ctx.bindings[resource.externalId])
+    .map(resource => ({
+      key: resource.externalId,
+      label: resource.externalId,
+      model: resource.model,
+      id: ctx.bindings[resource.externalId],
+      names: [
+        ...Object.keys(desired.get(resource.externalId)!).filter(name => !isCompanyValues(desired.get(resource.externalId)![name])),
+        ...(resource.model === 'ir.cron' ? ['active'] : []),
+      ],
+    }));
   for (const [id, row] of await readRecords(baseReads, ctx.search)) actual.set(id, row);
   // Establish the complete exact-ownership scope before narrower company reads.
   // Field-specific checks remain separate; only identical physical reads share.
-  for (const resource of resources) for (const [name, raw] of Object.entries(desired.get(resource.externalId)!)) {
-    if (isExact(raw)) await validateExactScope(ctx.schema[resource.model][name], ctx.context, ctx.target.uid, ctx.search, { externalId: resource.externalId, model: resource.model, field: name, major: ctx.major });
-  }
+  for (const resource of resources)
+    for (const [name, raw] of Object.entries(desired.get(resource.externalId)!)) {
+      if (isExact(raw))
+        await validateExactScope(ctx.schema[resource.model][name], ctx.context, ctx.target.uid, ctx.search, {
+          externalId: resource.externalId,
+          model: resource.model,
+          field: name,
+          major: ctx.major,
+        });
+    }
   const effective = await readCompanyValues(ctx, resources, desired);
   const exactState = await auditExact(ctx, resources, desired, actual);
   const translations = await readTranslations(ctx, resources, desired);
@@ -226,7 +271,10 @@ class Binder {
   readonly needsAdoption = new Set<string>();
   private readonly claims = new Map<string, string>();
   private readonly resolving = new Set<string>();
-  constructor(private readonly ctx: PlanContext, private readonly receipts: Map<string, Receipt>) {}
+  constructor(
+    private readonly ctx: PlanContext,
+    private readonly receipts: Map<string, Receipt>,
+  ) {}
 
   async bind(resource: InspectedResource): Promise<void> {
     const id = resource.externalId;
@@ -253,10 +301,15 @@ class Binder {
     return binding.res_id;
   }
   private recovered(resource: InspectedResource, resolved: number | undefined): number | undefined {
-    const id = resource.externalId, receipt = this.receipts.get(id);
+    const id = resource.externalId,
+      receipt = this.receipts.get(id);
     if (!receipt) return resolved;
     if (receipt.model !== resource.model) fail('RECOVERY_COLLISION', `Recovery model mismatch for ${id}`);
-    if (!receipt.id) fail('RECOVERY_REQUIRED', `Uncertain create for ${id}; investigate pending receipt before retrying. Supply the verified record ID or establish that no record was created.`);
+    if (!receipt.id)
+      fail(
+        'RECOVERY_REQUIRED',
+        `Uncertain create for ${id}; investigate pending receipt before retrying. Supply the verified record ID or establish that no record was created.`,
+      );
     assertId(receipt.id, `Recovery ${id}`);
     if (resolved && resolved !== receipt.id) fail('RECOVERY_COLLISION', `XML ID ${id} conflicts with recovered record ${receipt.id}`);
     if (resolved) return resolved;
@@ -271,8 +324,12 @@ class Binder {
     await this.ctx.validateDomain(resource.model, criteria);
     const rows = scoped && !parentId ? [] : await this.ctx.search(resource.model, [...criteria, ...(scoped ? [[scoped, '=', parentId]] : [])], [], 2);
     if (rows.length > 1) fail('AMBIGUOUS_LOOKUP', `Adoption lookup for ${id} matched multiple records`);
-    if (rows.length) { this.needsAdoption.add(id); return rows[0].id as number; }
-    if (resource.options?.onMissing !== 'create') fail('LOOKUP_MISSING', `${id}: adoption lookup has zero matches; explicitly choose onMissing: 'create' to create`);
+    if (rows.length) {
+      this.needsAdoption.add(id);
+      return rows[0].id as number;
+    }
+    if (resource.options?.onMissing !== 'create')
+      fail('LOOKUP_MISSING', `${id}: adoption lookup has zero matches; explicitly choose onMissing: 'create' to create`);
     return undefined;
   }
   private claim(resource: InspectedResource, resolved: number): void {
@@ -295,7 +352,8 @@ async function readCompanyValues(ctx: PlanContext, resources: InspectedResource[
       const names = scope.names.sort();
       const key = digest({ model: resource.model, names, context: scope.context });
       const batch = batches.get(key) ?? { model: resource.model, names, companyId, context: scope.context, resources: [] };
-      batch.resources.push(resource); batches.set(key, batch);
+      batch.resources.push(resource);
+      batches.set(key, batch);
     }
   }
   const effective = new Map<string, Map<number, Row>>();
@@ -314,7 +372,8 @@ async function companyScopes(ctx: PlanContext, resource: InspectedResource, valu
       if (seen.has(scope.companyId)) fail('COMPANY_VALUE_DUPLICATE', `${resource.externalId}.${name}: duplicate company ${scope.companyId}`);
       seen.add(scope.companyId);
       const group = scopes.get(scope.companyId) ?? { context: scope.context, names: [] };
-      group.names.push(name); scopes.set(scope.companyId, group);
+      group.names.push(name);
+      scopes.set(scope.companyId, group);
     }
   }
   return scopes;
@@ -329,12 +388,17 @@ async function readCompanyChunk(ctx: PlanContext, batch: CompanyBatch, chunk: In
     if (!row) fail('RECORD_UNAVAILABLE', `${resource.externalId}: inaccessible in company ${batch.companyId}`);
     if (batch.names.some(name => !(name in row))) fail('INVALID_READ', `${resource.externalId}: incomplete company field read in company ${batch.companyId}`);
     const values = effective.get(resource.externalId) ?? new Map<number, Row>();
-    values.set(batch.companyId, row); effective.set(resource.externalId, values);
+    values.set(batch.companyId, row);
+    effective.set(resource.externalId, values);
   }
 }
 
-
-async function auditExact(ctx: PlanContext, resources: InspectedResource[], desired: Map<string, Row>, actual: Map<string, Row>): Promise<PlanState['exactState']> {
+async function auditExact(
+  ctx: PlanContext,
+  resources: InspectedResource[],
+  desired: Map<string, Row>,
+  actual: Map<string, Row>,
+): Promise<PlanState['exactState']> {
   const exactState: PlanState['exactState'] = new Map();
   const probes: MembershipProbe[] = [];
   for (const resource of resources) {
@@ -343,26 +407,45 @@ async function auditExact(ctx: PlanContext, resources: InspectedResource[], desi
     }
   }
   const hiddenMembership = await readMembership(probes, ctx.search);
-  for (const resource of resources) for (const [name, raw] of Object.entries(desired.get(resource.externalId)!)) {
-    if (!isExact(raw)) continue;
-    const hidden = hiddenMembership.get(exactKey(resource.externalId, name)) ?? [];
-    if (hidden.length) fail('EXACT_VISIBILITY', `${resource.externalId}.${name}: relation reads hide ${ctx.schema[resource.model][name].relation} IDs ${hidden.join(', ')}; Odoo's filtered M2M unlink cannot safely reconcile these links`);
-  }
+  for (const resource of resources)
+    for (const [name, raw] of Object.entries(desired.get(resource.externalId)!)) {
+      if (!isExact(raw)) continue;
+      const hidden = hiddenMembership.get(exactKey(resource.externalId, name)) ?? [];
+      if (hidden.length)
+        fail(
+          'EXACT_VISIBILITY',
+          `${resource.externalId}.${name}: relation reads hide ${ctx.schema[resource.model][name].relation} IDs ${hidden.join(', ')}; Odoo's filtered M2M unlink cannot safely reconcile these links`,
+        );
+    }
   return exactState;
 }
-async function auditExactField(ctx: PlanContext, resource: InspectedResource, name: string, actual: Map<string, Row>, exactState: PlanState['exactState'], probes: MembershipProbe[]): Promise<void> {
+async function auditExactField(
+  ctx: PlanContext,
+  resource: InspectedResource,
+  name: string,
+  actual: Map<string, Row>,
+  exactState: PlanState['exactState'],
+  probes: MembershipProbe[],
+): Promise<void> {
   const id = resource.externalId;
   const field = ctx.schema[resource.model][name];
   let current = sortedIds(actual.get(id)![name]);
   if (ctx.bindings[id] && !Array.isArray(actual.get(id)![name])) fail('EXACT_VISIBILITY', `${id}.${name}: incomplete relation read`);
-  const exactCompanies = await validateExactScope(field, ctx.context, ctx.target.uid, ctx.search, { externalId: id, model: resource.model, field: name, major: ctx.major });
+  const exactCompanies = await validateExactScope(field, ctx.context, ctx.target.uid, ctx.search, {
+    externalId: id,
+    model: resource.model,
+    field: name,
+    major: ctx.major,
+  });
   const targetMeta = await ctx.fields(field.relation!);
   const companyField = targetMeta.company_id;
   if (!companyField && targetMeta.company_ids) fail('EXACT_VISIBILITY', 'exact() does not support targets partitioned through company_ids');
-  if (companyField && (companyField.type !== 'many2one' || companyField.relation !== 'res.company')) fail('EXACT_VISIBILITY', 'Unsupported target company partition');
-  const inCompanyScope = (row: Row): boolean => field.relation === 'res.company'
-    ? exactCompanies.includes(row.id as number)
-    : !companyField || row.company_id === false || exactCompanies.includes(normalized(row.company_id, companyField) as number);
+  if (companyField && (companyField.type !== 'many2one' || companyField.relation !== 'res.company'))
+    fail('EXACT_VISIBILITY', 'Unsupported target company partition');
+  const inCompanyScope = (row: Row): boolean =>
+    field.relation === 'res.company'
+      ? exactCompanies.includes(row.id as number)
+      : !companyField || row.company_id === false || exactCompanies.includes(normalized(row.company_id, companyField) as number);
   if (current.length) {
     const visible = await ctx.search(field.relation!, [['id', 'in', current]], companyField ? ['company_id'] : []);
     if (visible.length !== current.length) fail('EXACT_VISIBILITY', `${id}.${name}: existing relation targets are inaccessible`);
@@ -378,23 +461,34 @@ async function auditExactField(ctx: PlanContext, resource: InspectedResource, na
   const key = exactKey(id, name);
   exactState.set(key, { current, inScope });
   const unseen = inScope.filter(candidate => !current.includes(candidate));
-  if (ctx.bindings[id]) for (let start = 0; start < unseen.length; start += 1000) {
-    probes.push({ key, model: resource.model, field: name, id: ctx.bindings[id], candidates: unseen.slice(start, start + 1000) });
-  }
+  if (ctx.bindings[id])
+    for (let start = 0; start < unseen.length; start += 1000) {
+      probes.push({ key, model: resource.model, field: name, id: ctx.bindings[id], candidates: unseen.slice(start, start + 1000) });
+    }
 }
 
 async function readTranslations(ctx: PlanContext, resources: InspectedResource[], desired: Map<string, Row>): Promise<Map<string, Row>> {
   const translationReads: RecordRead[] = [];
-  for (const resource of resources) for (const entry of resource.translations?.entries ?? []) {
-    const id = resource.externalId;
-    const field = ctx.schema[resource.model][entry.field];
-    if (!field || field.relation || typeof entry.value !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}: translation needs a scalar string field`);
-    const defaultValue = desired.get(id)![entry.field];
-    if (typeof defaultValue !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}.${entry.field}: translation needs an authored string default`);
-    const baseLang = ctx.context.lang === false ? 'en_US' : ctx.context.lang;
-    if (entry.lang === baseLang && !fieldEqual(defaultValue, entry.value, field)) fail('TRANSLATION_CONFLICT', `${id}.${entry.field}: base context and translation ${entry.lang} request different values`);
-    if (ctx.bindings[id]) translationReads.push({ key: translationKey(id, entry.field, entry.lang), label: `${id}.${entry.field} (${entry.lang})`, model: resource.model, id: ctx.bindings[id], names: [entry.field], context: { lang: entry.lang } });
-  }
+  for (const resource of resources)
+    for (const entry of resource.translations?.entries ?? []) {
+      const id = resource.externalId;
+      const field = ctx.schema[resource.model][entry.field];
+      if (!field || field.relation || typeof entry.value !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}: translation needs a scalar string field`);
+      const defaultValue = desired.get(id)![entry.field];
+      if (typeof defaultValue !== 'string') fail('TRANSLATION_UNSUPPORTED', `${id}.${entry.field}: translation needs an authored string default`);
+      const baseLang = ctx.context.lang === false ? 'en_US' : ctx.context.lang;
+      if (entry.lang === baseLang && !fieldEqual(defaultValue, entry.value, field))
+        fail('TRANSLATION_CONFLICT', `${id}.${entry.field}: base context and translation ${entry.lang} request different values`);
+      if (ctx.bindings[id])
+        translationReads.push({
+          key: translationKey(id, entry.field, entry.lang),
+          label: `${id}.${entry.field} (${entry.lang})`,
+          model: resource.model,
+          id: ctx.bindings[id],
+          names: [entry.field],
+          context: { lang: entry.lang },
+        });
+    }
   return readRecords(translationReads, ctx.search);
 }
 
@@ -402,11 +496,25 @@ function sealed(ctx: PlanContext, resources: InspectedResource[], order: string[
   // Parallel lookup reads may finish in any order. Preserve each query/value
   // observation while canonicalizing their order before hashing the plan.
   const observations = ctx.observations;
-  const sorted = observations.map(value => ({ value, key: `${value.kind}:${value.key}:${digest(value.value)}` }))
-    .sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
-  sorted.forEach((entry, index) => { observations[index] = entry.value; });
-  const result: Omit<Plan, 'digest'> = { kind: 'stateman-plan', version: 1, target: ctx.target, input: ctx.complete, options: ctx.stored, resources, order, bindings: ctx.bindings,
-    schema: ctx.schema, observations, operations, diagnostics: [...new Set(ctx.diagnostics)].sort() };
+  const sorted = observations
+    .map(value => ({ value, key: `${value.kind}:${value.key}:${digest(value.value)}` }))
+    .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  sorted.forEach((entry, index) => {
+    observations[index] = entry.value;
+  });
+  const result: Omit<Plan, 'digest'> = {
+    kind: 'stateman-plan',
+    version: 1,
+    target: ctx.target,
+    input: ctx.complete,
+    options: ctx.stored,
+    resources,
+    order,
+    bindings: ctx.bindings,
+    schema: ctx.schema,
+    observations,
+    operations,
+    diagnostics: [...new Set(ctx.diagnostics)].sort(),
+  };
   return { ...copy(result), digest: digest(result) };
 }
-

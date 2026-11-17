@@ -57,7 +57,7 @@ describe('resource()', () => {
 
   it('works with .map() for collections', () => {
     const data = [{ name: 'Tag A' }, { name: 'Tag B' }];
-    const resources = data.map((d) => resource('res.partner.category', d));
+    const resources = data.map(d => resource('res.partner.category', d));
     expect(resources).toHaveLength(2);
     expect(resources[0].__type).toBe('resource');
     expect(resources[0].values).toEqual({ name: 'Tag A' });

@@ -24,10 +24,10 @@ async function collectFiles(path: string): Promise<string[]> {
   }
   const files: string[] = [];
   const entries = await readdir(path, { withFileTypes: true });
-  for (const entry of entries.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
+  for (const entry of entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
     if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build'].includes(entry.name)) continue;
     const child = join(path, entry.name);
-    if (entry.isDirectory()) files.push(...await collectFiles(child));
+    if (entry.isDirectory()) files.push(...(await collectFiles(child)));
     else if (entry.isFile() && /\.(?:m?[jt]s)$/.test(entry.name) && !/\.d\.[cm]?ts$/.test(entry.name)) files.push(child);
   }
   return files.sort();
@@ -56,7 +56,7 @@ export async function evaluate(path: string): Promise<EvaluationResult> {
   const loader = register({ namespace: randomUUID() });
   try {
     for (const file of files) {
-      const mod = await loader.import(pathToFileURL(file).href, import.meta.url) as Record<string, unknown>;
+      const mod = (await loader.import(pathToFileURL(file).href, import.meta.url)) as Record<string, unknown>;
       for (const key of Object.keys(mod).sort()) collect(mod[key]);
     }
   } finally {

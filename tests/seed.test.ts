@@ -10,7 +10,11 @@ it('seeds portable state, returns fresh XML-ID bindings and reapplies without mu
   const client = new FakeClient();
   const fixture = createFixture(await inspectResources([resource('x', 'seed.root', { name: 'Portable' })]), { namespaces: ['seed'] });
   const receipts = new Map<string, RecoveryReceipt>();
-  const journal = { save: async (receipt: RecoveryReceipt) => { receipts.set(receipt.externalId, receipt); } };
+  const journal = {
+    save: async (receipt: RecoveryReceipt) => {
+      receipts.set(receipt.externalId, receipt);
+    },
+  };
   const first = await seedFixture(fixture, client.connection(), { journal });
   expect(first.ok).toBe(true);
   expect(first.bindings['seed.root']).toBe(client.data.x[0].id);

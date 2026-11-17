@@ -32,7 +32,10 @@ it('keeps different company field signatures and omitted-company values separate
   store.seed('x', { property: target }, 'scope.b');
   store.effective.set(`x:${a}:property:${companies[2]}`, false);
   const input = [
-    resource('x', 'scope.a', { property: companyValues([{ company: companies[0], value: target }]), amount: companyValues([{ company: companies[1], value: 0 }]) }),
+    resource('x', 'scope.a', {
+      property: companyValues([{ company: companies[0], value: target }]),
+      amount: companyValues([{ company: companies[1], value: 0 }]),
+    }),
     resource('x', 'scope.b', { property: companyValues([{ company: companies[1], value: target }]) }),
   ];
   const before = await plan(input, store.connection(), { context });
@@ -51,13 +54,18 @@ it('coalesces concurrent repeated lookups into one observation', async () => {
   let reads = 0;
   const read = store.searchRead.bind(store);
   store.searchRead = async (model, domain, options) => {
-    if (domain?.[0]?.[0] === 'name') { reads++; await new Promise(resolve => setTimeout(resolve, 1)); }
+    if (domain?.[0]?.[0] === 'name') {
+      reads++;
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
     return read(model, domain, options);
   };
   const result = await plan([resource('x', 'scope.root', { items: Array.from({ length: 50 }, () => lookup('x', { name: 'Target' })) })], store.connection());
   expect(reads).toBe(1);
   expect(result.operations[0].values.items).toHaveLength(50);
-  expect(result.observations.filter(o => o.kind === 'search' && (o.value as { query: { domain: unknown[][] } }).query.domain[0]?.[0] === 'name')).toHaveLength(1);
+  expect(result.observations.filter(o => o.kind === 'search' && (o.value as { query: { domain: unknown[][] } }).query.domain[0]?.[0] === 'name')).toHaveLength(
+    1,
+  );
   expect(target).toBeGreaterThan(0);
 });
 
@@ -66,7 +74,8 @@ it('retains deterministic digests under changed asynchronous lookup completion o
   const read = f.store.searchRead.bind(f.store);
   let reverse = false;
   f.store.searchRead = async (model, domain, options) => {
-    if (model === 'catalog.tax' && typeof domain?.[0]?.[2] === 'number') await new Promise(resolve => setTimeout(resolve, (Number(domain[0][2]) % 3) * (reverse ? 2 : 1)));
+    if (model === 'catalog.tax' && typeof domain?.[0]?.[2] === 'number')
+      await new Promise(resolve => setTimeout(resolve, (Number(domain[0][2]) % 3) * (reverse ? 2 : 1)));
     return read(model, domain, options);
   };
   const first = await plan(f.definitions, f.store.connection(), f.options);
@@ -76,9 +85,11 @@ it('retains deterministic digests under changed asynchronous lookup completion o
 
 it('propagates coalesced read failures and starts the next plan with fresh reads', async () => {
   const { store } = scopedStore();
-  store.seed('x', { name: 'Target' }); store.seed('x', {}, 'scope.root');
+  store.seed('x', { name: 'Target' });
+  store.seed('x', {}, 'scope.root');
   const read = store.searchRead.bind(store);
-  let denied = true, reads = 0;
+  let denied = true,
+    reads = 0;
   store.searchRead = async (model, domain, options) => {
     if (domain?.[0]?.[0] === 'name') {
       reads++;

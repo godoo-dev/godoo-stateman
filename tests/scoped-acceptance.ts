@@ -6,7 +6,8 @@ import { scopedStore } from './scoped-client.js';
 /** Also executed unchanged against the tarball in an isolated typed consumer. */
 export async function scopedAcceptance() {
   const { store, companies, context } = scopedStore();
-  const a = store.seed('x', { name: 'A' }), b = store.seed('x', { name: 'B' });
+  const a = store.seed('x', { name: 'A' }),
+    b = store.seed('x', { name: 'B' });
   const record = store.seed('x', { name: 'Shared', items: [a, b], description: 'Keep' }, 'scope.shared');
   const unrelated = store.seed('x', { name: 'Unrelated', items: [b] });
   const definitions = (items: unknown) => [resource('x', 'scope.shared', { items })];
@@ -27,11 +28,18 @@ export async function scopedAcceptance() {
   assert.equal((await apply(await plan(definitions(exact([])), store.connection(), { context }), store.connection())).ok, true);
   assert.deepEqual(store.data.x.find(row => row.id === record)!.items, []);
   const receipts: RecoveryReceipt[] = [];
-  const journal = { save: async (receipt: RecoveryReceipt) => { const index = receipts.findIndex(r => r.externalId === receipt.externalId); if (index < 0) receipts.push(receipt); else receipts[index] = receipt; } };
+  const journal = {
+    save: async (receipt: RecoveryReceipt) => {
+      const index = receipts.findIndex(r => r.externalId === receipt.externalId);
+      if (index < 0) receipts.push(receipt);
+      else receipts[index] = receipt;
+    },
+  };
   const freshTargets = [resource('x', 'scope.shared', { items: exact([ref('scope.new')]) }), resource('x', 'scope.new', { name: 'New target' })];
-  store.failure = (_method, _model, values) => values?.items ? new Error('link refused') : undefined;
+  store.failure = (_method, _model, values) => (values?.items ? new Error('link refused') : undefined);
   const partial = await apply(await plan(freshTargets, store.connection(), { context }), store.connection(), { journal });
-  assert.equal(partial.ok, false); assert.equal(receipts[0].state, 'complete');
+  assert.equal(partial.ok, false);
+  assert.equal(receipts[0].state, 'complete');
   store.failure = undefined;
   assert.equal((await apply(await plan(freshTargets, store.connection(), { context, recovery: receipts }), store.connection(), { journal })).ok, true);
   assert.equal(store.data.x.filter(row => row.name === 'New target').length, 1);
@@ -45,18 +53,30 @@ export async function scopedAcceptance() {
   store.data.x.find(row => row.id === record)!.body = '<p>Base<br/></p>';
   store.languages.set(`x:${record}:body:es_ES`, '<p>Idioma<br/></p>');
   const combinedContext = { ...context, lang: false };
-  const desired = [resource('x', 'scope.shared', {
-    items: exact([a]),
-    body: translated('<p>Base<br></p>', { es_ES: '<p>Idioma<br></p>' }),
-    property: companyValues([
-      { company: lookup('res.company', { name: 'Company A' }), value: a },
-      { company: companies[1], value: ref('scope.account') },
-    ]), description: translated('Keep', { es_ES: 'Conservar' }),
-  }), resource('x', 'scope.account', { name: 'New account' })];
+  const desired = [
+    resource('x', 'scope.shared', {
+      items: exact([a]),
+      body: translated('<p>Base<br></p>', { es_ES: '<p>Idioma<br></p>' }),
+      property: companyValues([
+        { company: lookup('res.company', { name: 'Company A' }), value: a },
+        { company: companies[1], value: ref('scope.account') },
+      ]),
+      description: translated('Keep', { es_ES: 'Conservar' }),
+    }),
+    resource('x', 'scope.account', { name: 'New account' }),
+  ];
   const companyPlan = await plan(desired, store.connection(), { context: combinedContext, recovery: receipts });
-  await assert.rejects(plan(desired, store.connection(), { context: { allowed_company_ids: [companies[0]] }, recovery: receipts }), { code: 'EXACT_VISIBILITY' });
-  assert.deepEqual(companyPlan.operations.filter(op => op.companyId).map(op => op.companyId), [companies[1]]);
-  assert.equal(companyPlan.operations.some(op => 'body' in op.values), false);
+  await assert.rejects(plan(desired, store.connection(), { context: { allowed_company_ids: [companies[0]] }, recovery: receipts }), {
+    code: 'EXACT_VISIBILITY',
+  });
+  assert.deepEqual(
+    companyPlan.operations.filter(op => op.companyId).map(op => op.companyId),
+    [companies[1]],
+  );
+  assert.equal(
+    companyPlan.operations.some(op => 'body' in op.values),
+    false,
+  );
   const restore = companyPlan.operations.find(op => op.key.endsWith(':translation-defaults'))!;
   assert.deepEqual(restore.values, { description: 'Keep' });
   assert.equal(restore.context?.lang, false);
@@ -67,8 +87,9 @@ export async function scopedAcceptance() {
   store.effective.set(`x:${record}:property:${companies[1]}`, false);
   await assert.rejects(apply(companyPlan, store.connection(), { journal }), { code: 'STALE_PLAN' });
   store.effective.set(`x:${record}:property:${companies[1]}`, a);
-  store.failure = (_method, _model, values) => values?.property ? new Error('company write refused') : undefined;
-  const failed = await apply(companyPlan, store.connection(), { journal }); assert.equal(failed.ok, false);
+  store.failure = (_method, _model, values) => (values?.property ? new Error('company write refused') : undefined);
+  const failed = await apply(companyPlan, store.connection(), { journal });
+  assert.equal(failed.ok, false);
   store.failure = undefined;
   const retried = await apply(await plan(desired, store.connection(), { context: combinedContext, recovery: receipts }), store.connection(), { journal });
   assert.equal(retried.ok, true);
@@ -91,7 +112,8 @@ export async function standardContextAcceptance() {
   const { store, context } = scopedStore();
   store.schema['account.tax'] = { name: { type: 'char' } };
   store.schema['account.account'] = { tax_ids: { type: 'many2many', relation: 'account.tax', store: true, context: { append_type_to_tax_name: true } } };
-  const a = store.seed('account.tax', { name: 'Tax A' }), b = store.seed('account.tax', { name: 'Tax B' });
+  const a = store.seed('account.tax', { name: 'Tax A' }),
+    b = store.seed('account.tax', { name: 'Tax B' });
   const account = store.seed('account.account', { tax_ids: [a, b] }, 'scope.standard');
   const desired = (ids: number[]) => [resource('account.account', 'scope.standard', { tax_ids: exact(ids) })];
   for (const ids of [[a], [], [b]]) {
@@ -106,7 +128,14 @@ export async function standardContextAcceptance() {
   const reviewed = await plan(desired([]), store.connection(), { context });
   field.context = {};
   await assert.rejects(apply(reviewed, store.connection()), { code: 'STALE_PLAN' });
-  for (const rejected of [{ append_type_to_tax_name: false }, { append_type_to_tax_name: 1 }, { append_type_to_tax_name: 'true' }, { append_type_to_tax_name: true, active_test: false }, { allowed_company_ids: [1] }, { arbitrary: 'PRIVATE_VALUE' }]) {
+  for (const rejected of [
+    { append_type_to_tax_name: false },
+    { append_type_to_tax_name: 1 },
+    { append_type_to_tax_name: 'true' },
+    { append_type_to_tax_name: true, active_test: false },
+    { allowed_company_ids: [1] },
+    { arbitrary: 'PRIVATE_VALUE' },
+  ]) {
     field.context = rejected;
     await assert.rejects(plan(desired([]), store.connection(), { context }), error => {
       const failure = error as Error & { code: string };
@@ -125,7 +154,9 @@ export async function standardContextAcceptance() {
   store.seed('x', {}, 'scope.wrong');
   await assert.rejects(plan([resource('x', 'scope.wrong', { items: exact([]) })], store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
   store.schema['account.account'].other_taxes = { ...field };
-  await assert.rejects(plan([resource('account.account', 'scope.standard', { other_taxes: exact([]) })], store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
+  await assert.rejects(plan([resource('account.account', 'scope.standard', { other_taxes: exact([]) })], store.connection(), { context }), {
+    code: 'EXACT_VISIBILITY',
+  });
   store.schema.x.tax_ids = { ...field };
   await assert.rejects(plan([resource('x', 'scope.wrong', { tax_ids: exact([]) })], store.connection(), { context }), { code: 'EXACT_VISIBILITY' });
   const beforeRefusals = store.mutations.length;
