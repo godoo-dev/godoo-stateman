@@ -271,5 +271,6 @@ above. Changes are delivered as pull requests to `main`.
   The plugin starts `typescript-language-server` from `PATH`, so launch Claude
   Code with the project's binaries on it, for example `npm exec -- claude`.
 - **Codex:** `.codex/config.toml` registers Serena 2.1.0 through `uvx`, using the
-  committed `.serena/project.yml` (TypeScript). Check it with
+  committed `.serena/project.yml` (TypeScript); Codex loads it once the project is
+  trusted. Check it with
   `uvx --from serena-agent==2.1.0 serena project health-check .`.
