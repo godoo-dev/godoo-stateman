@@ -28,7 +28,9 @@ if(major===19){
   assert.equal(baseline.passed,true);assert.equal(baseline.allOwnedResourcesAbsent,true);assert.equal(baseline.artifact.sha256,artifact.sha256,'19 requires18 proof for same artifact');assert.equal(baseline.sourceHead,manifest.sourceHead);
 }
 const consumerInput=frozenConsumer(artifactDir); // Validate before provisioning.
-const image='odoo:'+major+'.0';
+// Image pins live in scripts/images so Dependabot can update them.
+const pinnedImage=name=>readFileSync(join(root,'scripts','images',name+'.Dockerfile'),'utf8').match(/^FROM (\S+)$/m)[1];
+const image=pinnedImage('odoo'+major), postgresImage=pinnedImage('postgres');
 const tarball=resolve(artifactDir,artifact.filename);
 assert.equal(createHash('sha256').update(readFileSync(tarball)).digest('hex'),artifact.sha256,'Candidate hash mismatch');
 const exec=(command,args,options={})=>execFileSync(command,args,{encoding:'utf8',timeout:600_000,...options}).trim();
@@ -43,11 +45,11 @@ const labels=['--label','godoo.ci.owner='+owner];
 try {
   const misInputs = major === 18 ? await misPrerequisites(consumer) : undefined;
   if (misInputs) writeFileSync(join(artifactDir,'mis-prerequisites.json'),JSON.stringify(misInputs.proof,null,2)+'\n');
-  for(const candidateImage of ['postgres:15-alpine',image])exec('docker',['pull',candidateImage]);
-  const images=Object.fromEntries(['postgres:15-alpine',image].map(image=>[image,JSON.parse(exec('docker',['image','inspect',image,'--format','{{json .RepoDigests}}']))]));
+  for(const candidateImage of [postgresImage,image])exec('docker',['pull',candidateImage]);
+  const images=Object.fromEntries([postgresImage,image].map(image=>[image,JSON.parse(exec('docker',['image','inspect',image,'--format','{{json .RepoDigests}}']))]));
   exec('docker',['network','create',...labels,network]);created.network=true;
   for(const volume of volumes){exec('docker',['volume','create',...labels,volume]);created.volumes.push(volume);}
-  exec('docker',['run','-d','--name',pg,...labels,'--network',network,'-e','POSTGRES_USER=odoo','-e','POSTGRES_PASSWORD=odoo','-e','POSTGRES_DB=postgres','-v',volumes[0]+':/var/lib/postgresql/data','postgres:15-alpine']);created.containers.push(pg);
+  exec('docker',['run','-d','--name',pg,...labels,'--network',network,'-e','POSTGRES_USER=odoo','-e','POSTGRES_PASSWORD=odoo','-e','POSTGRES_DB=postgres','-v',volumes[0]+':/var/lib/postgresql/data',postgresImage]);created.containers.push(pg);
   const deadline=Date.now()+60_000;
   while(true){try{exec('docker',['exec',pg,'pg_isready','-U','odoo','-d','postgres'],{stdio:'pipe'});break;}catch(error){if(Date.now()>deadline)throw error;await new Promise(resolve=>setTimeout(resolve,500));}}
   const common=['--name',odoo,...labels,'--network',network,'-e','HOST='+pg,'-e','USER=odoo','-e','PASSWORD=odoo','-v',volumes[1]+':/var/lib/odoo',...(misInputs ? ['-v',misInputs.addons+':/mnt/extra-addons:ro','-v',misInputs.wheel+':/tmp/'+misInputs.wheel.split('/').at(-1)+':ro'] : [])];

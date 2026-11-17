@@ -282,33 +282,25 @@ wheels = [
 [[package]]
 name = "godoo-client"
 version = "0.2.0"
-source = { editable = "../godoo-py/packages/godoo-client" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "pydantic", marker = "extra == 'typed'", specifier = ">=2.13" },
+sdist = { url = "https://files.pythonhosted.org/packages/09/00/651a9d892a261eb1c62b3897906b5373a16bbc5fce7f2d38a77032de2bb6/godoo_client-0.2.0.tar.gz", hash = "sha256:e62ce75a57cd7a550ddbf9cd41b5cb50e13b457288bcf5f639048991c494f778", size = 33697, upload-time = "2026-05-22T15:38:13.43Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/cf/4ed33b79f2bd012d2f80bee6095f229021d1e2b4975ca121e84871e6265a/godoo_client-0.2.0-py3-none-any.whl", hash = "sha256:2d64115d7c7e3062ded5f90e29cdd07265b6ff613916cd0280e12197df0fcffc", size = 37607, upload-time = "2026-05-22T15:38:12.339Z" },
 ]
-provides-extras = ["typed"]
 
 [[package]]
 name = "godoo-introspection"
 version = "0.2.0"
-source = { editable = "../godoo-py/packages/godoo-introspection" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "godoo-client" },
-    { name = "pydantic" },
-    { name = "typer" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "godoo-client", editable = "../godoo-py/packages/godoo-client" },
-    { name = "pydantic", specifier = ">=2.13" },
-    { name = "typer", specifier = ">=0.26" },
+sdist = { url = "https://files.pythonhosted.org/packages/24/fc/c33d0e3391aa3802ded57c3c31ba569800539a7c0207f686b906dfd36a3d/godoo_introspection-0.2.0.tar.gz", hash = "sha256:aaf0b2f7c2031507f8c16d570bf7c3ff6483472050c49815994f19cacbad0492", size = 11222, upload-time = "2026-05-22T15:38:14.227Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/22/db/1fe8cb250ac0c625f4a8e93883b028b72e068fce18c9df16f8bef643eecf/godoo_introspection-0.2.0-py3-none-any.whl", hash = "sha256:aa06d125ed3a1e681d5561a2c8874cd19be9b0c7cf3e5badd5feef301f6bd237", size = 10389, upload-time = "2026-05-22T15:28:45.978Z" },
 ]
 
 [[package]]
@@ -340,8 +332,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "godoo-client", editable = "../godoo-py/packages/godoo-client" },
-    { name = "godoo-introspection", editable = "../godoo-py/packages/godoo-introspection" },
+    { name = "godoo-client", specifier = ">=0.2.0" },
+    { name = "godoo-introspection", specifier = ">=0.2.0" },
     { name = "networkx", specifier = ">=3.6.1" },
     { name = "platformdirs", specifier = ">=4.9.6" },
     { name = "pydantic", specifier = ">=2.13.4" },
@@ -351,7 +343,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "godoo-testcontainers", editable = "../godoo-py/packages/godoo-testcontainers" },
+    { name = "godoo-testcontainers", specifier = ">=0.2.0" },
     { name = "mkdocs-material", specifier = ">=9" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.27" },
     { name = "mypy", specifier = ">=1.13" },
@@ -365,16 +357,14 @@ dev = [
 [[package]]
 name = "godoo-testcontainers"
 version = "0.2.0"
-source = { editable = "../godoo-py/packages/godoo-testcontainers" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "godoo-client" },
     { name = "testcontainers" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "godoo-client", editable = "../godoo-py/packages/godoo-client" },
-    { name = "testcontainers", extras = ["postgres"], specifier = ">=4" },
+sdist = { url = "https://files.pythonhosted.org/packages/9c/ee/fbbb554ba5ef3b0de650bddcee6aba3f7d8dc38ba8c4f1d555c5c98257e1/godoo_testcontainers-0.2.0.tar.gz", hash = "sha256:095f0dd646aa0f05e29c28d8cf99c95601a8cd733443fa01dd26d3c57a9cdad9", size = 14682, upload-time = "2026-05-22T15:38:19.198Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/65/50204e7a1267170b9493aca751bb8b9832ae032455519057c35666809726/godoo_testcontainers-0.2.0-py3-none-any.whl", hash = "sha256:1a671d321d877028180d779fb90ad6ff942b8ce0099cddb980bec6e18559e834", size = 12668, upload-time = "2026-05-22T15:38:15.138Z" },
 ]
 
 [[package]]

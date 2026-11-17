@@ -72,7 +72,8 @@ Odoo harness. Needs Docker, `tar`, Python 3 and `pdftotext`, and the same
 npm run check:odoo18
 ```
 
-It starts uniquely labelled Odoo 18 and Postgres 15 containers, a network and
+It starts uniquely labelled Odoo 18 and Postgres 15 containers (images pinned by
+digest in `scripts/images/*.Dockerfile`, updated by Dependabot), a network and
 two volumes on random loopback ports with cron workers disabled, installs the
 tarball from the package tier and runs the installed API and CLI against
 synthetic data (partners, accounting and taxes, mail templates, MIS Builder
