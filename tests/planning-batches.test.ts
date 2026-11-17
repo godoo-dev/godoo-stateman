@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { apply, exact, plan, resource, translated } from '@godoo-dev/stateman';
+import type { Row } from '@godoo-dev/stateman';
 import { mixedPlanningWorkload, planningWorkload } from './planning-workload.js';
 import { scopedStore } from './scoped-client.js';
 
@@ -28,6 +29,25 @@ it.each([99, 100, 101])('batches identities, base values and translations at the
   expect(f.calls.length - seen).toBe(2 * seen); // Independent revalidation and final drift.
 });
 
+type BatchKind = 'base' | 'translation' | 'identity' | 'membership';
+type BatchFault = 'missing' | 'duplicate' | 'unexpected' | 'field' | 'denied';
+function batchHit(kind: BatchKind, model: string, domain: unknown[][] | undefined, options: { fields?: string[]; context?: Row } | undefined): boolean {
+  const fields = options?.fields ?? [];
+  if (kind === 'identity') return model === 'ir.model.data';
+  if (model !== 'catalog.product' || domain?.[0]?.[1] !== 'in') return false;
+  if (kind === 'base') return fields.includes('taxes');
+  if (kind === 'translation') return Boolean(options?.context?.lang);
+  return domain?.[1]?.[0] === 'suggestions';
+}
+function injectFault(kind: BatchKind, fault: BatchFault, rows: Row[]): Row[] {
+  if (fault === 'denied') throw new Error('batch read denied');
+  if (fault === 'missing') return rows.slice(1);
+  if (fault === 'duplicate') return [...rows, rows[0]];
+  if (fault === 'unexpected') return [...rows, { ...rows[0], id: 999999, name: 'unrequested' }];
+  delete rows[0][kind === 'identity' ? 'res_id' : kind === 'translation' ? 'name' : 'taxes'];
+  return rows;
+}
+
 it.each(['base', 'translation', 'identity', 'membership'] as const)('rejects malformed %s batch responses before writes', async kind => {
   for (const fault of ['missing', 'duplicate', 'unexpected', 'field', 'denied'] as const) {
     // A missing identity legitimately invokes adoption; an empty membership
@@ -41,19 +61,8 @@ it.each(['base', 'translation', 'identity', 'membership'] as const)('rejects mal
     const read = f.store.searchRead.bind(f.store);
     f.store.searchRead = async (model, domain, options) => {
       const rows = await read(model, domain, options);
-      const fields = options?.fields ?? [];
-      if (kind === 'membership' && model === 'catalog.product' && fields.includes('suggestions')) for (const row of rows) row.suggestions = [];
-      const hit = kind === 'identity' ? model === 'ir.model.data'
-        : model === 'catalog.product' && domain?.[0]?.[1] === 'in' && (kind === 'base' ? fields.includes('taxes')
-          : kind === 'translation' ? Boolean(options?.context?.lang)
-          : domain?.[1]?.[0] === 'suggestions');
-      if (!hit) return rows;
-      if (fault === 'denied') throw new Error('batch read denied');
-      if (fault === 'missing') return rows.slice(1);
-      if (fault === 'duplicate') return [...rows, rows[0]];
-      if (fault === 'unexpected') return [...rows, { ...rows[0], id: 999999, name: 'unrequested' }];
-      delete rows[0][kind === 'identity' ? 'res_id' : kind === 'translation' ? 'name' : 'taxes'];
-      return rows;
+      if (kind === 'membership' && model === 'catalog.product' && (options?.fields ?? []).includes('suggestions')) for (const row of rows) row.suggestions = [];
+      return batchHit(kind, model, domain, options) ? injectFault(kind, fault, rows) : rows;
     };
     await expect(plan(f.definitions, f.store.connection(), f.options), `${kind}/${fault}`).rejects.toThrow();
     expect(f.store.mutations).toEqual([]);
