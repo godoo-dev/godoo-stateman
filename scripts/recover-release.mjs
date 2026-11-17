@@ -16,7 +16,11 @@ const gh = path => execFileSync('gh', ['api', `repos/${repository}/${path}`], { 
 
 export function parseRecovery(input) {
   const request = JSON.parse(input);
-  assert.deepEqual(Object.keys(request).sort(), ['source', 'runId', 'attempt', 'packageArtifactId', 'odooArtifactId', 'archiveSha256', 'manifestSha256'].sort(), 'Exact recovery inputs required');
+  assert.deepEqual(
+    Object.keys(request).sort(),
+    ['source', 'runId', 'attempt', 'packageArtifactId', 'odooArtifactId', 'archiveSha256', 'manifestSha256'].sort(),
+    'Exact recovery inputs required',
+  );
   assert.match(request.source, /^[a-f0-9]{40}$/, 'Full original source SHA required');
   for (const name of ['runId', 'attempt', 'packageArtifactId', 'odooArtifactId']) {
     assert.equal(typeof request[name], 'string', `${name} must be a decimal string`);
@@ -93,7 +97,10 @@ export function validateRecoveryEvidence(request, { original, current, jobs, art
     // Artifact metadata has no attempt field. Its creation must fall within this
     // exact attempt's successful producer job, in addition to the manifest binding.
     const created = Date.parse(artifact.created_at);
-    assert(Number.isFinite(created) && created >= Date.parse(job.started_at) && created <= Date.parse(job.completed_at), 'Artifact was not created by the selected attempt');
+    assert(
+      Number.isFinite(created) && created >= Date.parse(job.started_at) && created <= Date.parse(job.completed_at),
+      'Artifact was not created by the selected attempt',
+    );
     return artifact;
   });
 }
@@ -124,15 +131,21 @@ export function unpackArtifact(bytes, artifact, destination, kind) {
     const zip = join(scratch, 'artifact.zip');
     writeFileSync(zip, bytes);
     const names = execFileSync('unzip', ['-Z1', zip], { encoding: 'utf8' }).trim().split('\n');
-    const allowed = kind === 'package'
-      ? /^(manifest\.json|installed-(files|package|package-lock|dependency-tree)\.json|godoo-dev-stateman-[0-9][a-zA-Z0-9.+-]*\.tgz)$/
-      : /^(odoo18-(result|cleanup)\.json|odoo18-container\.log|mis-(prerequisites|matrices)\.json|mis-example\.(pdf|xlsx))$/;
+    const allowed =
+      kind === 'package'
+        ? /^(manifest\.json|installed-(files|package|package-lock|dependency-tree)\.json|godoo-dev-stateman-[0-9][a-zA-Z0-9.+-]*\.tgz)$/
+        : /^(odoo18-(result|cleanup)\.json|odoo18-container\.log|mis-(prerequisites|matrices)\.json|mis-example\.(pdf|xlsx))$/;
     assert.equal(new Set(names).size, names.length, 'Duplicate artifact paths');
-    assert(names.every(name => allowed.test(name)), 'Unexpected artifact contents');
+    assert(
+      names.every(name => allowed.test(name)),
+      'Unexpected artifact contents',
+    );
     mkdirSync(destination, { recursive: true });
     // Extract bytes by approved flat name, never ZIP-supplied filesystem types/paths.
     for (const name of names) writeFileSync(join(destination, name), execFileSync('unzip', ['-p', zip, name], { maxBuffer: 64 * 1024 * 1024 }), { flag: 'wx' });
-  } finally { rmSync(scratch, { recursive: true, force: true }); }
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
 }
 
 export function verifyRecoveryCandidate(directory, request, { sourceRoot, publisherRoot = root, env = process.env } = {}) {
@@ -142,14 +155,33 @@ export function verifyRecoveryCandidate(directory, request, { sourceRoot, publis
   assert.equal(git(publisherRoot, 'status', '--porcelain'), '', 'Recovery checkout must be clean');
   git(publisherRoot, 'merge-base', '--is-ancestor', request.source, env.GITHUB_SHA);
   assert.equal(hash(join(directory, 'manifest.json')), request.manifestSha256, 'Original manifest hash mismatch');
-  const candidate = verifyCandidate(directory, { root: sourceRoot, env: {
-    ...env, GITHUB_SHA: request.source, GITHUB_RUN_ID: request.runId, GITHUB_RUN_ATTEMPT: request.attempt,
-  } });
+  const candidate = verifyCandidate(directory, {
+    root: sourceRoot,
+    env: {
+      ...env,
+      GITHUB_SHA: request.source,
+      GITHUB_RUN_ID: request.runId,
+      GITHUB_RUN_ATTEMPT: request.attempt,
+    },
+  });
   assert.equal(candidate.artifact.sha256, request.archiveSha256, 'Original archive hash mismatch');
   return candidate;
 }
 
-export async function recoverCandidate(request, { directory, sourceRoot, publisherRoot = root, env = process.env, api, download = async artifact => gh(`actions/artifacts/${artifact.id}/zip`), guard = () => requireReleaseSource(publisherRoot, env), fetchImpl, publish } = {}) {
+export async function recoverCandidate(
+  request,
+  {
+    directory,
+    sourceRoot,
+    publisherRoot = root,
+    env = process.env,
+    api,
+    download = async artifact => gh(`actions/artifacts/${artifact.id}/zip`),
+    guard = () => requireReleaseSource(publisherRoot, env),
+    fetchImpl,
+    publish,
+  } = {},
+) {
   request = parseRecovery(JSON.stringify(request));
   requireRecoveryWorkflow(env);
   guard();
@@ -183,11 +215,24 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const area = mkdtempSync(join(tmpdir(), 'stateman-recovery-'));
     try {
       const receipt = await recoverCandidate(request, {
-        directory: join(area, 'candidate'), sourceRoot: process.env.GODOO_RECOVERY_SOURCE_DIR,
-        ...(mode === 'publish' ? { publish: archive => execFileSync('npm', ['publish', archive, '--ignore-scripts', '--access', 'public', '--registry', 'https://registry.npmjs.org', '--provenance'], { stdio: 'inherit' }) } : {}),
+        directory: join(area, 'candidate'),
+        sourceRoot: process.env.GODOO_RECOVERY_SOURCE_DIR,
+        ...(mode === 'publish'
+          ? {
+              publish: archive =>
+                execFileSync(
+                  'npm',
+                  ['publish', archive, '--ignore-scripts', '--access', 'public', '--registry', 'https://registry.npmjs.org', '--provenance'],
+                  { stdio: 'inherit' },
+                ),
+            }
+          : {}),
       });
       console.log(JSON.stringify(receipt));
-      if (process.env.GITHUB_STEP_SUMMARY) writeFileSync(process.env.GITHUB_STEP_SUMMARY, '```json\n' + JSON.stringify(receipt, null, 2) + '\n```\n', { flag: 'a' });
-    } finally { rmSync(area, { recursive: true, force: true }); }
+      if (process.env.GITHUB_STEP_SUMMARY)
+        writeFileSync(process.env.GITHUB_STEP_SUMMARY, '```json\n' + JSON.stringify(receipt, null, 2) + '\n```\n', { flag: 'a' });
+    } finally {
+      rmSync(area, { recursive: true, force: true });
+    }
   }
 }

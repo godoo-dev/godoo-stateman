@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- `StateClient.searchRead` and `StateClient.call` declare their domain and argument
+  lists as `unknown[]` instead of `any[]`. Existing client implementations remain
+  assignable and callers are unaffected.
+- The check now runs ESLint (including a blocking complexity limit of 20) and a
+  Prettier format check; the planner and other complex functions were split
+  without behaviour changes.
+
 ## 0.2.0
 
 Prepared next public npm release; publication and registry-consumer acceptance

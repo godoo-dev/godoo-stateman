@@ -100,9 +100,10 @@ const cases: Record<string, () => Promise<unknown>> = {
     input.resources[1].parentScope = { parentExternalId: 'c.parent', inverseField: 'name' } as never;
     return plan(input, new FakeClient().connection());
   },
-  'receipt for another connection': async () => plan([resource('x', 'c.a', { name: 'A' })], new FakeClient().connection(), {
-    recovery: [{ version: 1, target: { url: 'http://other.test/', database: 'other', uid: 1 }, externalId: 'c.a', model: 'x', state: 'pending' }],
-  } as PlanOptions),
+  'receipt for another connection': async () =>
+    plan([resource('x', 'c.a', { name: 'A' })], new FakeClient().connection(), {
+      recovery: [{ version: 1, target: { url: 'http://other.test/', database: 'other', uid: 1 }, externalId: 'c.a', model: 'x', state: 'pending' }],
+    } as PlanOptions),
   'duplicate receipts': async () => {
     const target = { url: 'http://fake.test/', database: 'fixture', uid: 7 };
     const receipt = { version: 1, target, externalId: 'c.a', model: 'x', state: 'pending' };
@@ -112,7 +113,9 @@ const cases: Record<string, () => Promise<unknown>> = {
     const client = new FakeClient();
     const id = client.seed('x', { name: 'A' }, 'c.a');
     const target = { url: 'http://fake.test/', database: 'fixture', uid: 7 };
-    return plan([resource('x', 'c.a', { name: 'A' })], client.connection(), { recovery: [{ version: 1, target, externalId: 'c.a', model: 'x', state: 'complete', id: id + 100 }] } as PlanOptions);
+    return plan([resource('x', 'c.a', { name: 'A' })], client.connection(), {
+      recovery: [{ version: 1, target, externalId: 'c.a', model: 'x', state: 'complete', id: id + 100 }],
+    } as PlanOptions);
   },
   'cyclic parent scope': async () => {
     const input = await rendered([resource('x', 'c.a', { name: 'A' }), resource('x', 'c.b', { name: 'B' })]);
@@ -130,8 +133,10 @@ const cases: Record<string, () => Promise<unknown>> = {
     input.resources[0].values.parent_id = { __type: 'resourceRef', externalId: 'c.missing' };
     return plan(input, new FakeClient().connection(), { select: ['c.a'] });
   },
-  'lookup on wrong relation model': async () => plan([resource('x', 'c.a', { parent_id: lookup('project.project', { name: 'P' }) })], new FakeClient().connection()),
-  'ref to wrong relation model': async () => plan([resource('project.project', 'c.p', { name: 'P' }), resource('x', 'c.a', { parent_id: ref('c.p') })], new FakeClient().connection()),
+  'lookup on wrong relation model': async () =>
+    plan([resource('x', 'c.a', { parent_id: lookup('project.project', { name: 'P' }) })], new FakeClient().connection()),
+  'ref to wrong relation model': async () =>
+    plan([resource('project.project', 'c.p', { name: 'P' }), resource('x', 'c.a', { parent_id: ref('c.p') })], new FakeClient().connection()),
   'unrendered marker': async () => {
     const input = await rendered([resource('x', 'c.a', { name: 'A' })]);
     input.resources[0].values.payload = { __type: 'md', source: 'x' };
@@ -146,16 +151,40 @@ const cases: Record<string, () => Promise<unknown>> = {
   'company outside base context': async () => {
     const { client, company } = scoped();
     client.seed('x', { name: 'A' }, 'c.a');
-    return plan([resource('x', 'c.a', { property: companyValues([{ company, value: false }]) })], client.connection(), { context: { allowed_company_ids: [999] } });
+    return plan([resource('x', 'c.a', { property: companyValues([{ company, value: false }]) })], client.connection(), {
+      context: { allowed_company_ids: [999] },
+    });
   },
   'duplicate company entry': async () => {
     const { client, company, context } = scoped();
     client.seed('x', { name: 'A' }, 'c.a');
-    return plan([resource('x', 'c.a', { property: companyValues([{ company, value: false }, { company, value: false }]) })], client.connection(), { context });
+    return plan(
+      [
+        resource('x', 'c.a', {
+          property: companyValues([
+            { company, value: false },
+            { company, value: false },
+          ]),
+        }),
+      ],
+      client.connection(),
+      { context },
+    );
   },
   'duplicate company entry on create': async () => {
     const { client, company, context } = scoped();
-    return plan([resource('x', 'c.a', { property: companyValues([{ company, value: false }, { company, value: false }]) })], client.connection(), { context });
+    return plan(
+      [
+        resource('x', 'c.a', {
+          property: companyValues([
+            { company, value: false },
+            { company, value: false },
+          ]),
+        }),
+      ],
+      client.connection(),
+      { context },
+    );
   },
   'exact target partitioned by company_ids': async () => {
     const { client, context } = scoped();
@@ -182,7 +211,8 @@ const ordered: Record<string, () => Promise<unknown>> = {
     input.resources.push({ ...structuredClone(input.resources[0]), options: { onMissing: 'replace' } as never });
     return plan(input, new FakeClient().connection());
   },
-  'system field and wrong relation model': async () => plan([resource('x', 'c.a', { create_uid: 1, parent_id: lookup('project.project', { name: 'P' }) })], new FakeClient().connection()),
+  'system field and wrong relation model': async () =>
+    plan([resource('x', 'c.a', { create_uid: 1, parent_id: lookup('project.project', { name: 'P' }) })], new FakeClient().connection()),
   'receipt collision and missing dependency': async () => {
     const target = { url: 'http://fake.test/', database: 'fixture', uid: 7 };
     const receipt = { version: 1, target, externalId: 'c.a', model: 'x', state: 'pending' };
@@ -191,10 +221,12 @@ const ordered: Record<string, () => Promise<unknown>> = {
     return plan(input, new FakeClient().connection(), { recovery: [receipt, receipt] } as PlanOptions);
   },
   'unsupported version and module resource': async () => {
-    const client = new FakeClient(); client.version = '17.0';
+    const client = new FakeClient();
+    client.version = '17.0';
     return plan([resource('ir.module.module', 'c.module', { state: 'installed' })], client.connection());
   },
-  'cron policy and system field': async () => plan([resource('ir.cron', 'c.cron', { name: 'Cron', active: 'yes', write_date: false })], new FakeClient().connection()),
+  'cron policy and system field': async () =>
+    plan([resource('ir.cron', 'c.cron', { name: 'Cron', active: 'yes', write_date: false })], new FakeClient().connection()),
 };
 
 describe('plan() fail-closed characterization', () => {
@@ -209,7 +241,10 @@ describe('plan() fail-closed characterization', () => {
         for (const args of read.mock.calls) calls.push(JSON.stringify(['search_read', ...args]));
         for (const args of call.mock.calls) calls.push(JSON.stringify(['call', ...args]));
         expect({ result, calls: calls.sort() }).toMatchSnapshot();
-      } finally { read.mockRestore(); call.mockRestore(); }
+      } finally {
+        read.mockRestore();
+        call.mockRestore();
+      }
     });
   }
 });
@@ -217,7 +252,8 @@ describe('plan() fail-closed characterization', () => {
 type Call = { kind: string; model: string; domain?: unknown; fields?: unknown; limit?: unknown; context?: unknown };
 function recorded<T extends FakeClient>(client: T): { client: T; calls: () => string[] } {
   const log: Call[] = [];
-  const read = client.searchRead.bind(client), call = client.call.bind(client);
+  const read = client.searchRead.bind(client),
+    call = client.call.bind(client);
   client.searchRead = async (model, domain = [], options = {}) => {
     log.push({ kind: 'search_read', model, domain, fields: options.fields, limit: options.limit, context: options.context });
     return read(model, domain, options);
@@ -269,13 +305,17 @@ describe('plan() output characterization', () => {
   it('plans company values, exact membership and translations', async () => {
     const { client, company, other, context } = scoped();
     const { calls } = recorded(client);
-    const a = client.seed('x', { name: 'A' }), b = client.seed('x', { name: 'B' });
+    const a = client.seed('x', { name: 'A' }),
+      b = client.seed('x', { name: 'B' });
     client.seed('x', { name: 'Root', items: [b] }, 'c.root');
     const defs = [
       resource('x', 'c.root', {
         name: 'Root',
         items: exact([a]),
-        property: companyValues([{ company, value: a }, { company: other, value: false }]),
+        property: companyValues([
+          { company, value: a },
+          { company: other, value: false },
+        ]),
         description: translated('Text', { es_ES: 'Texto', ca_ES: 'Text català' }),
       }),
       resource('x', 'c.new', { name: 'New', body: translated('<p>Body</p>', { es_ES: '<p>Cuerpo</p>' }), items: exact([ref('c.root')]) }),

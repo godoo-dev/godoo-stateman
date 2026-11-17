@@ -10,8 +10,10 @@ export async function apply(reviewed: Plan, connection: StateConnection, options
   if (digest(body) !== checksum) fail('PLAN_MODIFIED', 'Plan contents do not match the reviewed digest');
   const original = copy(reviewed);
   const fresh = await plan(original.input, connection, original.options);
-  if (!equal(original.target, fresh.target) || fresh.digest !== original.digest) fail('STALE_PLAN', 'Target or observed state changed; produce and review a fresh plan before applying');
-  if (original.operations.some(op => op.type === 'create') && !options.journal) fail('RECOVERY_JOURNAL_REQUIRED', 'Creates require a durable RecoveryJournal.save callback before any writes');
+  if (!equal(original.target, fresh.target) || fresh.digest !== original.digest)
+    fail('STALE_PLAN', 'Target or observed state changed; produce and review a fresh plan before applying');
+  if (original.operations.some(op => op.type === 'create') && !options.journal)
+    fail('RECOVERY_JOURNAL_REQUIRED', 'Creates require a durable RecoveryJournal.save callback before any writes');
   const run = new ApplyRun(original, connection, options);
   for (const operation of original.operations) await run.step(operation);
   return run.finish();
@@ -25,7 +27,11 @@ class ApplyRun {
   private readonly statuses = new Map<string, OperationResult['status']>();
   private halted = false;
 
-  constructor(private readonly original: Plan, private readonly connection: StateConnection, private readonly options: ApplyOptions) {
+  constructor(
+    private readonly original: Plan,
+    private readonly connection: StateConnection,
+    private readonly options: ApplyOptions,
+  ) {
     this.bindings = { ...original.bindings };
     this.models = new Map(original.resources.map(resource => [resource.externalId, resource.model]));
     this.recovery = new Map((original.options.recovery ?? []).map(receipt => [receipt.externalId, copy(receipt)]));
@@ -41,34 +47,52 @@ class ApplyRun {
       await this.execute(operation, attempt);
       this.record({ operation, status: 'committed', id: attempt.id });
     } catch (error) {
-      this.record({ operation, status: 'failed', ...(attempt.id ? { id: attempt.id } : {}), error,
-        message: error instanceof Error ? error.message : String(error), partial: attempt.partial });
+      this.record({
+        operation,
+        status: 'failed',
+        ...(attempt.id ? { id: attempt.id } : {}),
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        partial: attempt.partial,
+      });
       if (this.options.stopOnError !== false) this.halted = true;
     }
   }
 
   async finish(): Promise<ApplyResult> {
     const results = this.results;
-    const result: ApplyResult = { ok: false, committed: results.filter(r => r.status === 'committed').length,
-      failed: results.filter(r => r.status === 'failed').length, skipped: results.filter(r => r.status === 'skipped').length,
-      results, recovery: [...this.recovery.values()] };
+    const result: ApplyResult = {
+      ok: false,
+      committed: results.filter(r => r.status === 'committed').length,
+      failed: results.filter(r => r.status === 'failed').length,
+      skipped: results.filter(r => r.status === 'skipped').length,
+      results,
+      recovery: [...this.recovery.values()],
+    };
     try {
       result.drift = await plan(this.original.input, this.connection, { ...this.original.options, recovery: result.recovery });
-    } catch (error) { result.verificationError = error; }
+    } catch (error) {
+      result.verificationError = error;
+    }
     result.ok = result.failed === 0 && result.skipped === 0 && !!result.drift && result.drift.operations.length === 0;
     return result;
   }
 
   private blocked(operation: Mutation): boolean {
-    return this.halted || operation.dependsOn.some(key => this.statuses.get(key) !== 'committed')
-      || (operation.type === 'activate' && this.results.some(result => result.status !== 'committed'));
+    return (
+      this.halted ||
+      operation.dependsOn.some(key => this.statuses.get(key) !== 'committed') ||
+      (operation.type === 'activate' && this.results.some(result => result.status !== 'committed'))
+    );
   }
   private record(result: OperationResult): void {
-    this.results.push(result); this.statuses.set(result.operation.key, result.status);
+    this.results.push(result);
+    this.statuses.set(result.operation.key, result.status);
   }
 
   private async execute(operation: Mutation, attempt: { id: number | undefined; partial: boolean }): Promise<void> {
-    if (!equal(identity(await this.connection.identity()), this.original.target)) fail('TARGET_CHANGED', 'Authenticated connection identity changed during apply');
+    if (!equal(identity(await this.connection.identity()), this.original.target))
+      fail('TARGET_CHANGED', 'Authenticated connection identity changed during apply');
     const values = this.resolvedValues(operation);
     if (operation.type === 'create') await this.create(operation, values, attempt);
     else if (operation.type === 'adopt') await this.adopt(operation, attempt);
@@ -91,13 +115,19 @@ class ApplyRun {
 
   private async create(operation: Mutation, values: Row, attempt: { id: number | undefined; partial: boolean }): Promise<void> {
     const target = this.original.target;
-    const receipt: RecoveryReceipt = { version: 1, target, externalId: operation.externalId,
-      model: operation.model, intent: digest({ model: operation.model, values, target }), state: 'pending' };
+    const receipt: RecoveryReceipt = {
+      version: 1,
+      target,
+      externalId: operation.externalId,
+      model: operation.model,
+      intent: digest({ model: operation.model, values, target }),
+      state: 'pending',
+    };
     // A crash between RPC commit and returned ID leaves an explicit uncertain
     // receipt instead of silently allowing a duplicate on the next run.
     await this.save(receipt);
     attempt.partial = true;
-    const id = attempt.id = await this.connection.client.create(operation.model, values, operation.context);
+    const id = (attempt.id = await this.connection.client.create(operation.model, values, operation.context));
     assertId(id, operation.externalId);
     this.bindings[operation.externalId] = id;
     await this.save({ ...receipt, state: 'record-created', id });
@@ -121,8 +151,10 @@ class ApplyRun {
     // dependencies. Exclude only other pending active=true differences.
     if (operation.type === 'activate') await this.checkActivationReady();
     attempt.partial = true;
-    const accepted = operation.type === 'delete' ? await this.connection.client.unlink(operation.model, [id])
-      : await this.connection.client.write(operation.model, [id], values, operation.context);
+    const accepted =
+      operation.type === 'delete'
+        ? await this.connection.client.unlink(operation.model, [id])
+        : await this.connection.client.write(operation.model, [id], values, operation.context);
     if (accepted !== true) fail('WRITE_REJECTED', `${operation.key}: Odoo returned a non-success result`);
   }
 
@@ -136,28 +168,51 @@ class ApplyRun {
     const client = this.connection.client;
     const rows = await client.searchRead('ir.model.fields', [['id', '=', id]], { fields: ['model', 'name'], context: operation.context });
     if (rows.length !== 1) fail('FIELD_NOT_READY', `${operation.externalId}: created/updated metadata is not visible`);
-    const metadata = await client.call<Record<string, { type: string; store?: boolean; readonly?: boolean }>>(String(rows[0].model), 'fields_get', [], { attributes: ['type', 'store', 'readonly'], context: operation.context });
+    const metadata = await client.call<Record<string, { type: string; store?: boolean; readonly?: boolean }>>(String(rows[0].model), 'fields_get', [], {
+      attributes: ['type', 'store', 'readonly'],
+      context: operation.context,
+    });
     const field = metadata[String(rows[0].name)];
-    if (!field || field.type !== 'json' || field.store !== false || field.readonly !== true) fail('FIELD_NOT_READY', `${operation.externalId}: fresh target-model metadata is not ready; dependent operations are blocked`);
+    if (!field || field.type !== 'json' || field.store !== false || field.readonly !== true)
+      fail('FIELD_NOT_READY', `${operation.externalId}: fresh target-model metadata is not ready; dependent operations are blocked`);
   }
 
   private async save(receipt: RecoveryReceipt): Promise<void> {
     this.recovery.set(receipt.externalId, copy(receipt));
     if (!this.options.journal) return;
-    try { await this.options.journal.save(copy(receipt)); }
-    catch (error) { this.halted = true; throw error; }
+    try {
+      await this.options.journal.save(copy(receipt));
+    } catch (error) {
+      this.halted = true;
+      throw error;
+    }
   }
 
   private async register(operation: Mutation, id: number): Promise<void> {
     const { module, name } = xmlid(operation.externalId);
-    const rows = await this.connection.client.searchRead('ir.model.data', [['module', '=', module], ['name', '=', name]], {
-      fields: ['id', 'model', 'res_id'], limit: 2, order: 'id', context: operation.context,
-    });
+    const rows = await this.connection.client.searchRead(
+      'ir.model.data',
+      [
+        ['module', '=', module],
+        ['name', '=', name],
+      ],
+      {
+        fields: ['id', 'model', 'res_id'],
+        limit: 2,
+        order: 'id',
+        context: operation.context,
+      },
+    );
     if (rows.length) {
-      if (rows.length !== 1 || rows[0].model !== operation.model || rows[0].res_id !== id) fail('IDENTITY_COLLISION', `Concurrent XML-ID collision for ${operation.externalId}`);
+      if (rows.length !== 1 || rows[0].model !== operation.model || rows[0].res_id !== id)
+        fail('IDENTITY_COLLISION', `Concurrent XML-ID collision for ${operation.externalId}`);
       return;
     }
-    const bindingId = await this.connection.client.create('ir.model.data', { module, name, model: operation.model, res_id: id, noupdate: true }, operation.context);
+    const bindingId = await this.connection.client.create(
+      'ir.model.data',
+      { module, name, model: operation.model, res_id: id, noupdate: true },
+      operation.context,
+    );
     assertId(bindingId, `XML ID ${operation.externalId}`);
   }
 }

@@ -7,9 +7,18 @@ function fixture() {
   const client = new FakeClient();
   client.schema['ir.actions.client'] = { name: { type: 'char' }, tag: { type: 'char' } };
   client.schema['ir.ui.menu'] = { name: { type: 'char' }, action: { type: 'reference' } };
-  Object.assign(client.schema['ir.ui.menu'].action, { selection: [['ir.actions.client', 'Client'], ['ir.actions.server', 'Server']] });
+  Object.assign(client.schema['ir.ui.menu'].action, {
+    selection: [
+      ['ir.actions.client', 'Client'],
+      ['ir.actions.server', 'Server'],
+    ],
+  });
   const receipts = new Map<string, RecoveryReceipt>();
-  const journal = { async save(receipt: RecoveryReceipt) { receipts.set(receipt.externalId, structuredClone(receipt)); } };
+  const journal = {
+    async save(receipt: RecoveryReceipt) {
+      receipts.set(receipt.externalId, structuredClone(receipt));
+    },
+  };
   const definitions = [
     resource('ir.ui.menu', 'example.menu', { name: 'Dashboard', action: ref('example.dashboard') }),
     resource('ir.actions.client', 'example.dashboard', { name: 'Dashboard', tag: 'example.dashboard' }),
@@ -26,10 +35,14 @@ it.each([false, true])('qualifies %s existing targets while ordinary refs remain
   f.client.schema.x.parent_id.relation = 'ir.actions.client';
   f.client.schema.x.items.relation = 'ir.actions.client';
   f.client.schema.x.polymorphic_id = { type: 'many2one_reference' };
-  f.definitions.push(resource('x', 'example.numeric', {
-    parent_id: ref('example.dashboard'), items: [ref('example.dashboard')],
-    polymorphic_id: ref('example.dashboard'), payload: { nested: [ref('example.dashboard')] },
-  }));
+  f.definitions.push(
+    resource('x', 'example.numeric', {
+      parent_id: ref('example.dashboard'),
+      items: [ref('example.dashboard')],
+      polymorphic_id: ref('example.dashboard'),
+      payload: { nested: [ref('example.dashboard')] },
+    }),
+  );
   const reviewed = await plan(f.definitions, f.connection, { select: ['example.menu', 'example.numeric'] });
   expect(reviewed.order.indexOf('example.dashboard')).toBeLessThan(reviewed.order.indexOf('example.menu'));
   expect((await apply(JSON.parse(JSON.stringify(reviewed)), f.connection, { journal: f.journal })).ok).toBe(true);
@@ -60,14 +73,27 @@ it('rejects Reference translations before any contextual value can bypass valida
   expect(f.client.mutations).toEqual([]);
 });
 
-it.each([1, 0, true, '', 'ir.actions.client,0', 'ir.actions.client,-1', 'ir.actions.client,01', 'ir.actions.client,1,2',
-  'ir.actions.client,1.5', 'ir.actions.client,9007199254740992', [], {}, { nested: ref('example.dashboard') }])(
-  'rejects ambiguous or malformed Reference input %j before writes', async value => {
-    const f = fixture();
-    await expect(plan([...f.definitions.slice(1), resource('ir.ui.menu', 'example.menu', { action: value })], f.connection))
-      .rejects.toMatchObject({ code: 'REFERENCE_VALUE' });
-    expect(f.client.mutations).toEqual([]);
+it.each([
+  1,
+  0,
+  true,
+  '',
+  'ir.actions.client,0',
+  'ir.actions.client,-1',
+  'ir.actions.client,01',
+  'ir.actions.client,1,2',
+  'ir.actions.client,1.5',
+  'ir.actions.client,9007199254740992',
+  [],
+  {},
+  { nested: ref('example.dashboard') },
+])('rejects ambiguous or malformed Reference input %j before writes', async value => {
+  const f = fixture();
+  await expect(plan([...f.definitions.slice(1), resource('ir.ui.menu', 'example.menu', { action: value })], f.connection)).rejects.toMatchObject({
+    code: 'REFERENCE_VALUE',
   });
+  expect(f.client.mutations).toEqual([]);
+});
 
 it('rejects missing, ambiguous, invisible and disallowed targets before writes', async () => {
   const f = fixture();
@@ -85,12 +111,14 @@ it('rejects missing, ambiguous, invisible and disallowed targets before writes',
 });
 
 it.each([undefined, null, 'callable', [['ir.actions.client']], [[17, 'Invalid']], [['ir.actions.client', false]]])(
-  'fails closed on unavailable or malformed Reference selection metadata %j', async selection => {
+  'fails closed on unavailable or malformed Reference selection metadata %j',
+  async selection => {
     const f = fixture();
     Object.assign(f.client.schema['ir.ui.menu'].action, { selection });
     await expect(plan(f.definitions, f.connection)).rejects.toMatchObject({ code: 'REFERENCE_METADATA' });
     expect(f.client.mutations).toEqual([]);
-  });
+  },
+);
 
 it('includes fresh allowed-model metadata and target observations in stale-plan validation', async () => {
   const f = fixture();
@@ -110,10 +138,12 @@ it('uses the target model when IDs coincide', async () => {
   const server = f.client.seed('ir.actions.server', { name: 'Server' }, 'example.server');
   f.client.nextId = server;
   f.client.seed('ir.actions.client', { name: 'Client' }, 'example.client');
-  const definitions = [resource('ir.actions.server', 'example.server', { name: 'Server' }),
+  const definitions = [
+    resource('ir.actions.server', 'example.server', { name: 'Server' }),
     resource('ir.actions.client', 'example.client', { name: 'Client' }),
     resource('ir.ui.menu', 'example.client_menu', { action: ref('example.client') }),
-    resource('ir.ui.menu', 'example.server_menu', { action: ref('example.server') })];
+    resource('ir.ui.menu', 'example.server_menu', { action: ref('example.server') }),
+  ];
   expect((await apply(await plan(definitions, f.connection), f.connection, { journal: f.journal })).ok).toBe(true);
   expect(f.client.data['ir.ui.menu'].map(row => row.action).sort()).toEqual([`ir.actions.client,${server}`, `ir.actions.server,${server}`]);
 });
@@ -121,7 +151,7 @@ it('uses the target model when IDs coincide', async () => {
 it('requests selection attributes from the actual schema adapter', async () => {
   const f = fixture();
   const original = f.client.call.bind(f.client);
-  f.client.call = async <T>(model: string, method: string, _args?: any[], kwargs?: Record<string, unknown>): Promise<T> => {
+  f.client.call = async <T>(model: string, method: string, _args?: unknown[], kwargs?: Record<string, unknown>): Promise<T> => {
     expect(kwargs?.attributes).toContain('selection');
     return original<T>(model, method);
   };

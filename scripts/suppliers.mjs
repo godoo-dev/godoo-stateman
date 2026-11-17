@@ -54,7 +54,9 @@ export function proveSuppliers(supplier, consumer) {
       };
       walk(join(unpack, 'package'));
       proof[item.name] = { version: item.version, archiveSha256: item.sha256, files: hashes };
-    } finally { rmSync(unpack, { recursive: true, force: true }); }
+    } finally {
+      rmSync(unpack, { recursive: true, force: true });
+    }
   }
   return proof;
 }

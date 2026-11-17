@@ -26,20 +26,12 @@ export interface ChildrenRef {
 }
 
 export function isChildrenRef(v: unknown): v is ChildrenRef {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'children';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'children';
 }
 
 export function children(model: string, resources: ResourceDefinition[]): ChildrenRef;
-export function children(
-  model: string,
-  inverseField: string,
-  resources: ResourceDefinition[]
-): ChildrenRef;
-export function children(
-  model: string,
-  inverseFieldOrResources: string | ResourceDefinition[],
-  maybeResources?: ResourceDefinition[]
-): ChildrenRef {
+export function children(model: string, inverseField: string, resources: ResourceDefinition[]): ChildrenRef;
+export function children(model: string, inverseFieldOrResources: string | ResourceDefinition[], maybeResources?: ResourceDefinition[]): ChildrenRef {
   if (typeof inverseFieldOrResources === 'string') {
     return Object.freeze({
       __type: 'children' as const,

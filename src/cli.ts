@@ -30,36 +30,57 @@ No implicit action execution, addon changes, broad live export/import or snapsho
 async function connectionFrom(path: string): Promise<StateConnection> {
   const loader = register({ namespace: randomUUID() });
   try {
-    const module = await loader.import(pathToFileURL(resolve(path)).href, import.meta.url) as { default?: StateConnection; connection?: StateConnection };
+    const module = (await loader.import(pathToFileURL(resolve(path)).href, import.meta.url)) as { default?: StateConnection; connection?: StateConnection };
     const connection = module.default ?? module.connection;
-    if (!connection?.client || typeof connection.identity !== 'function' || typeof connection.serverInfo !== 'function') throw new StateError('INVALID_CONNECTION', 'Connection module must export a StateConnection');
+    if (!connection?.client || typeof connection.identity !== 'function' || typeof connection.serverInfo !== 'function')
+      throw new StateError('INVALID_CONNECTION', 'Connection module must export a StateConnection');
     return connection;
-  } finally { await loader.unregister(); }
+  } finally {
+    await loader.unregister();
+  }
 }
 
 type CliValues = { help?: boolean; fixture?: boolean; 'content-root'?: string; connection?: string; options?: string; journal?: string; out?: string };
 
 export async function main(args = process.argv.slice(2)): Promise<number> {
   try {
-    const { values, positionals } = parseArgs({ args, allowPositionals: true, options: {
-      help: { type: 'boolean', short: 'h' }, fixture: { type: 'boolean' }, 'content-root': { type: 'string' }, connection: { type: 'string' },
-      options: { type: 'string' }, journal: { type: 'string' }, out: { type: 'string' },
-    } });
-    if (values.help) { console.log(help); return 0; }
+    const { values, positionals } = parseArgs({
+      args,
+      allowPositionals: true,
+      options: {
+        help: { type: 'boolean', short: 'h' },
+        fixture: { type: 'boolean' },
+        'content-root': { type: 'string' },
+        connection: { type: 'string' },
+        options: { type: 'string' },
+        journal: { type: 'string' },
+        out: { type: 'string' },
+      },
+    });
+    if (values.help) {
+      console.log(help);
+      return 0;
+    }
     const [command, path] = positionals;
     checkUsage(command, path, positionals.length, values);
-    const input = command === 'apply' ? undefined : values.fixture
-      ? parseFixture(await readFile(path, 'utf8'))
-      : await loadResources(path, { contentRoot: values['content-root'] });
+    const input =
+      command === 'apply'
+        ? undefined
+        : values.fixture
+          ? parseFixture(await readFile(path, 'utf8'))
+          : await loadResources(path, { contentRoot: values['content-root'] });
     if (['load', 'inspect'].includes(command)) {
-      console.log(JSON.stringify(input, null, 2)); return 0;
+      console.log(JSON.stringify(input, null, 2));
+      return 0;
     }
     checkJournal(command, path, values);
-    const options: PlanOptions = values.options ? JSON.parse(await readFile(values.options, 'utf8')) as PlanOptions : {};
+    const options: PlanOptions = values.options ? (JSON.parse(await readFile(values.options, 'utf8')) as PlanOptions) : {};
     if (command === 'apply') return await applyCommand(path, values);
     return await planCommand(command, input!, options, values);
   } catch (error) {
-    console.error(JSON.stringify({ code: error instanceof StateError ? error.code : 'ERROR', message: error instanceof Error ? error.message : String(error) }));
+    console.error(
+      JSON.stringify({ code: error instanceof StateError ? error.code : 'ERROR', message: error instanceof Error ? error.message : String(error) }),
+    );
     return 1;
   }
 }
@@ -72,19 +93,23 @@ function checkUsage(command: string | undefined, path: string | undefined, count
 
 function checkJournal(command: string, path: string, values: CliValues): void {
   if (command === 'apply' && !values.journal) throw new StateError('RECOVERY_JOURNAL_REQUIRED', 'Apply requires an explicit --journal path');
-  if (values.journal && [path, values.connection, values.options, values.out].some(other => other && resolve(other) === resolve(values.journal!))) throw new StateError('PATH_COLLISION', 'Journal must have its own path, separate from inputs and output');
+  if (values.journal && [path, values.connection, values.options, values.out].some(other => other && resolve(other) === resolve(values.journal!)))
+    throw new StateError('PATH_COLLISION', 'Journal must have its own path, separate from inputs and output');
 }
 
 async function applyCommand(path: string, values: CliValues): Promise<number> {
   const reviewed = JSON.parse(await readFile(path, 'utf8')) as Plan;
   const journal = await openRecoveryJournal(values.journal!);
   try {
-    if (!equal(journal.receipts, reviewed.options?.recovery ?? [])) throw new StateError('JOURNAL_CHANGED', 'Journal receipts differ from this reviewed plan; re-plan with --journal before applying');
+    if (!equal(journal.receipts, reviewed.options?.recovery ?? []))
+      throw new StateError('JOURNAL_CHANGED', 'Journal receipts differ from this reviewed plan; re-plan with --journal before applying');
     const connection = await connectionFrom(values.connection!);
     const result = await apply(reviewed, connection, { journal });
     await emit(result, values.out);
     return result.ok ? 0 : 1;
-  } finally { await journal.close(); }
+  } finally {
+    await journal.close();
+  }
 }
 
 async function planCommand(command: string, input: NonNullable<Parameters<typeof plan>[0]>, options: PlanOptions, values: CliValues): Promise<number> {

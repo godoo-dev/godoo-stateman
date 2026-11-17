@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolve } from 'node:path';
 import { OdooClient } from '@godoo-dev/client';
-import { apply, children, createSchemaContext, drift, loadResources, lookup, normalizeResources, plan, resource } from '../src/index.js';
+import { apply, children, createSchemaContext, loadResources, lookup, normalizeResources, resource } from '../src/index.js';
 const fixture = resolve(import.meta.dirname, 'fixtures/consumer/resources');
 
 describe('representative offline consumer', () => {
@@ -41,22 +41,26 @@ describe('deterministic nested identities', () => {
   it('preserves child identities across input reordering and never uses array indices', () => {
     const a = resource('stage', 'ready', { name: 'Ready' });
     const b = resource('stage', 'done', { name: 'Done' });
-    const run = (stages: typeof a[]) => normalizeResources([resource('project', 'fixture.project', { stages: children('stage', stages) })]);
+    const run = (stages: (typeof a)[]) => normalizeResources([resource('project', 'fixture.project', { stages: children('stage', stages) })]);
     expect(run([a, b]).map(r => r.externalId)).toEqual(run([b, a]).map(r => r.externalId));
     expect(() => run([resource('stage', { name: 'Unnamed' })])).toThrow('stable externalId');
   });
   it('derives unnamed scalar nested identity from the field, recursively', () => {
-    const res = normalizeResources([resource('cron', 'fixture.cron', {
-      action: resource('action', { nested: resource('other', 'inner', { name: 'Leaf' }) }),
-    })]);
+    const res = normalizeResources([
+      resource('cron', 'fixture.cron', {
+        action: resource('action', { nested: resource('other', 'inner', { name: 'Leaf' }) }),
+      }),
+    ]);
     expect(res.map(r => r.externalId)).toEqual(['fixture.cron', 'fixture.cron.action', 'fixture.cron.action.inner']);
     expect(res[1].values.nested).toEqual({ __type: 'resourceRef', externalId: 'fixture.cron.action.inner' });
   });
   it('handles nested resources inside lists and plain objects while retaining list lookups', () => {
-    const res = normalizeResources([resource('x', 'fixture.x', {
-      items: [resource('x', 'one', { target: lookup('x', { name: 'existing' }) }), lookup('x', { name: 'other' })],
-      object: { item: resource('y', 'two', { name: 'Two' }) },
-    })]);
+    const res = normalizeResources([
+      resource('x', 'fixture.x', {
+        items: [resource('x', 'one', { target: lookup('x', { name: 'existing' }) }), lookup('x', { name: 'other' })],
+        object: { item: resource('y', 'two', { name: 'Two' }) },
+      }),
+    ]);
     expect(res.map(r => r.externalId)).toEqual(['fixture.x', 'fixture.x.one', 'fixture.x.two']);
     expect((res[0].values.items as unknown[])[1]).toEqual(lookup('x', { name: 'other' }));
   });
@@ -73,7 +77,8 @@ describe('deterministic nested identities', () => {
     fields.self = a;
     expect(() => normalizeResources([a])).toThrow('Cyclic');
     expect(() => normalizeResources([resource('x', 'fixture.safe', {}), a])).toThrow('Cyclic');
-    const cyclic: unknown[] = []; cyclic.push(cyclic);
+    const cyclic: unknown[] = [];
+    cyclic.push(cyclic);
     expect(() => normalizeResources([resource('x', 'fixture.x', { cyclic })])).toThrow('Cyclic');
   });
   it('retains empty child relations and rejects lossy JSON values', () => {
@@ -86,7 +91,14 @@ describe('deterministic nested identities', () => {
 
 describe('invalid-plan boundary and library seam', () => {
   it('rejects malformed reviewed plans before touching a client', async () => {
-    const hostile = new Proxy({}, { get() { throw new Error('client touched'); } });
+    const hostile = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error('client touched');
+        },
+      },
+    );
     await expect(apply({} as never, hostile as never)).rejects.toMatchObject({ code: 'INVALID_PLAN' });
   });
   it('constructs godoo introspection with no connection or credentials', () => {

@@ -4,7 +4,7 @@ import { equivalentHtml } from './html-equivalence.js';
 import type { FieldMetadata } from './state-types.js';
 
 export const multiple = (field: FieldMetadata): boolean => ['one2many', 'many2many'].includes(field.type);
-export const sortedIds = (value: unknown): number[] => Array.isArray(value) ? [...new Set(value as number[])].sort((a, b) => a - b) : [];
+export const sortedIds = (value: unknown): number[] => (Array.isArray(value) ? [...new Set(value as number[])].sort((a, b) => a - b) : []);
 
 export function normalized(value: unknown, field: FieldMetadata): unknown {
   if (field.type === 'many2one') return Array.isArray(value) ? value[0] : value === null ? false : value;
@@ -20,8 +20,7 @@ export function companyScalar(value: unknown, field: FieldMetadata): boolean {
   return value === false || typeof value === 'string';
 }
 export function fieldEqual(a: unknown, b: unknown, field: FieldMetadata): boolean {
-  return field.type === 'html' && typeof a === 'string' && typeof b === 'string'
-    ? equivalentHtml(a, b) : equal(normalized(a, field), normalized(b, field));
+  return field.type === 'html' && typeof a === 'string' && typeof b === 'string' ? equivalentHtml(a, b) : equal(normalized(a, field), normalized(b, field));
 }
 
 export const exactKey = (id: string, name: string): string => digest({ id, name });

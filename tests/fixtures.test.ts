@@ -4,9 +4,16 @@ import type { Inspection } from '../src/inspect.js';
 
 function input(): Inspection {
   return {
-    kind: 'offline-inspection', files: ['/private/source/file.ts'], diagnostics: [], policies: [],
+    kind: 'offline-inspection',
+    files: ['/private/source/file.ts'],
+    diagnostics: [],
+    policies: [],
     resources: [
-      { externalId: 'seed.project', model: 'project.project', values: { name: 'Synthetic', secret: 'exclude me', tag_ids: [{ __type: 'resourceRef', externalId: 'seed.tag' }] } },
+      {
+        externalId: 'seed.project',
+        model: 'project.project',
+        values: { name: 'Synthetic', secret: 'exclude me', tag_ids: [{ __type: 'resourceRef', externalId: 'seed.tag' }] },
+      },
       { externalId: 'seed.tag', model: 'project.tags', values: { name: 'Fixture', color: 4 } },
     ],
   };
@@ -51,7 +58,8 @@ describe('portable desired-state fixtures', () => {
       source.resources[0].values.name = value;
       expect(() => createFixture(source, { namespaces: ['seed'] })).toThrow();
     }
-    const cyclic: Record<string, unknown> = {}; cyclic.self = cyclic;
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
     source.resources[0].values.name = cyclic;
     expect(() => createFixture(source, { namespaces: ['seed'] })).toThrow('cyclic');
   });

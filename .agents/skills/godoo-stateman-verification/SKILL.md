@@ -16,13 +16,16 @@ npm ci --ignore-scripts
 npm run check
 ```
 
-`npm run check` runs the release-script tests, `tsc --noEmit` over source and
-tests, the Vitest suite against a fake Odoo RPC client, and the build. Its exit
+`npm run check` runs ESLint, the Prettier format check, the release-script tests,
+`tsc --noEmit` over source and tests, the Vitest suite against a fake Odoo RPC
+client, and the build. Its exit
 status is the result. Fake-RPC tests are simulation, not live Odoo.
 
 Focused commands while iterating:
 
 ```sh
+npm run lint
+npm run format          # apply formatting; format:check only checks
 npm run typecheck
 npx vitest run tests/translation-ordering.test.ts
 npm run build
@@ -36,9 +39,12 @@ The `required` job fails unless each mandatory
 job succeeded. Let CI run the full set on the PR; run the slow tiers locally
 only when the trigger below applies and you need the answer before CI.
 
-There is no lint, formatter or complexity rule yet; adding one awaits an owner
-decision in [issue #27](https://github.com/godoo-dev/godoo-stateman/issues/27).
-Until then, keep new functions small and do not add suppressions.
+ESLint enforces `complexity` at 20 (`eslint.config.mjs`). A new violation is
+refactored, not suppressed. What cannot be split safely goes to Marc; an approved
+exception is the narrowest `eslint-disable-next-line complexity` with its reason
+and "owner-approved". Characterization snapshots under `tests/__snapshots__` pin
+plan, CLI and guard behaviour: a snapshot diff is a behaviour change, so fix the
+code rather than updating the snapshot unless the change is intended.
 
 Changes to docs or skills alone need only `git diff --check` and a link check,
 not the product or container tiers.

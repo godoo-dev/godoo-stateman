@@ -14,9 +14,14 @@ for (const relation of relations) {
     it.each([true, false])(`waits for an already-linked ${relation.name} child when parent changes=${parentChanges} (stopOnError=%s)`, async stopOnError => {
       const client = new FakeClient();
       const parent = client.seed(relation.parentModel, { name: 'Parent' }, 'review.b_parent');
-      const child = client.seed(relation.childModel, {
-        name: 'Before', [relation.inverse]: relation.many ? [parent] : parent,
-      }, 'review.b_parent.child');
+      const child = client.seed(
+        relation.childModel,
+        {
+          name: 'Before',
+          [relation.inverse]: relation.many ? [parent] : parent,
+        },
+        'review.b_parent.child',
+      );
       client.data[relation.parentModel][0][relation.field] = [child];
       const dependent = client.seed('x', { name: 'Before' }, 'review.a_dependent');
       const independent = client.seed('x', { name: 'Before' }, 'review.z_independent');
@@ -30,7 +35,7 @@ for (const relation of relations) {
       ];
       const reviewed = await plan(definitions, client.connection());
       expect(reviewed.operations.filter(op => op.externalId === 'review.b_parent').map(op => op.type)).toEqual(parentChanges ? ['update'] : []);
-      client.failure = (_method, _model, values) => values?.name === 'Refused' ? new Error('child refused') : undefined;
+      client.failure = (_method, _model, values) => (values?.name === 'Refused' ? new Error('child refused') : undefined);
       const result = await apply(reviewed, client.connection(), { stopOnError });
       expect(result.results.find(r => r.operation.externalId === 'review.b_parent.child')?.status).toBe('failed');
       expect(result.results.find(r => r.operation.externalId === 'review.a_dependent')?.status).toBe('skipped');
@@ -59,7 +64,7 @@ it.each([false, true])('includes desired child work through a bridge with mutati
     resource('x', 'review.a_dependent', { name: 'After' }, { dependsOn: ['review.b_bridge'] }),
   ];
   const reviewed = await plan(definitions, client.connection());
-  client.failure = (_method, _model, values) => values?.name === 'Refused' ? new Error('child refused') : undefined;
+  client.failure = (_method, _model, values) => (values?.name === 'Refused' ? new Error('child refused') : undefined);
   const result = await apply(reviewed, client.connection(), { stopOnError: false });
   expect(result.results.find(r => r.operation.externalId === 'review.a_dependent')?.status).toBe('skipped');
   expect(client.data.x.find(row => row.id === bridge)?.name).toBe('Before');
@@ -74,8 +79,8 @@ it.each(['link', 'translation', 'unlink'] as const)('includes deferred child %s 
   client.data.x.find(row => row.id === parent)!.items = [child];
   if (work === 'unlink') client.data.x.find(row => row.id === child)!.items = [tag];
   const dependent = client.seed('x', { name: 'Before' }, 'review.a_dependent');
-  const childValues = work === 'translation' ? { name: translated('Child', { en_US: 'Refused' }) }
-    : work === 'link' ? { name: 'Child', items: [tag] } : { name: 'Child' };
+  const childValues =
+    work === 'translation' ? { name: translated('Child', { en_US: 'Refused' }) } : work === 'link' ? { name: 'Child', items: [tag] } : { name: 'Child' };
   const definitions = [
     resource('x', 'review.b_parent', { items: children('x', 'parent_id', [resource('x', 'child', childValues)]) }),
     resource('x', 'review.a_dependent', { name: 'After' }, { dependsOn: ['review.b_parent'] }),
@@ -83,7 +88,7 @@ it.each(['link', 'translation', 'unlink'] as const)('includes deferred child %s 
   const options: PlanOptions = work === 'unlink' ? { unlink: [{ externalId: 'review.b_parent.child', field: 'items', ids: [tag] }] } : {};
   const reviewed = await plan(definitions, client.connection(), options);
   expect(reviewed.operations.some(op => op.externalId === 'review.b_parent')).toBe(false);
-  client.failure = (_method, _model, values) => values?.name === 'Refused' || values?.items ? new Error('child work refused') : undefined;
+  client.failure = (_method, _model, values) => (values?.name === 'Refused' || values?.items ? new Error('child work refused') : undefined);
   const result = await apply(reviewed, client.connection(), { stopOnError: false });
   expect(result.results.find(r => r.operation.externalId === 'review.b_parent.child')?.status).toBe('failed');
   expect(result.results.find(r => r.operation.externalId === 'review.a_dependent')?.status).toBe('skipped');
@@ -97,7 +102,10 @@ for (const parentExists of [false, true]) {
     if (childExists) client.seed('project.task', { name: 'Before', project_id: parent ?? false }, 'review.b_parent.child');
     client.seed('x', { name: 'Before' }, 'review.a_dependent');
     const definitions = [
-      resource('project.project', 'review.b_parent', { name: 'Parent', task_ids: children('project.task', 'project_id', [resource('project.task', 'child', { name: 'After' })]) }),
+      resource('project.project', 'review.b_parent', {
+        name: 'Parent',
+        task_ids: children('project.task', 'project_id', [resource('project.task', 'child', { name: 'After' })]),
+      }),
       resource('x', 'review.a_dependent', { name: 'After' }, { dependsOn: ['review.b_parent'] }),
     ];
     const result = await apply(await plan(definitions, client.connection()), client.connection(), { journal: { save: async () => {} } });
@@ -116,7 +124,9 @@ it('rejects an explicit full child-to-parent readiness cycle even when the paren
   const parent = client.seed('x', {}, 'review.parent');
   const child = client.seed('x', { parent_id: parent, name: 'Before' }, 'review.parent.child');
   client.data.x.find(row => row.id === parent)!.items = [child];
-  const definitions = [resource('x', 'review.parent', { items: children('x', 'parent_id', [resource('x', 'child', { name: 'After' }, { dependsOn: ['review.parent'] })]) })];
+  const definitions = [
+    resource('x', 'review.parent', { items: children('x', 'parent_id', [resource('x', 'child', { name: 'After' }, { dependsOn: ['review.parent'] })]) }),
+  ];
   await expect(plan(definitions, client.connection())).rejects.toMatchObject({ code: 'RESOURCE_CYCLE' });
   expect(client.mutations).toEqual([]);
 });

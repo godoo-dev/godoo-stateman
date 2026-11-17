@@ -13,17 +13,12 @@ import type { LookupRef, RemoveUnmanagedMap, ResourceDefinition, ResourceOptions
  * resource('project.project', 'example.fiscal_project', { name: 'Fiscal FY' })
  */
 export function resource(model: string, definition: Record<string, unknown>): ResourceDefinition;
-export function resource(
-  model: string,
-  externalId: string,
-  definition: Record<string, unknown>,
-  options?: ResourceOptions
-): ResourceDefinition;
+export function resource(model: string, externalId: string, definition: Record<string, unknown>, options?: ResourceOptions): ResourceDefinition;
 export function resource(
   model: string,
   externalIdOrDefinition: string | Record<string, unknown>,
   maybeDefinition?: Record<string, unknown>,
-  options?: ResourceOptions
+  options?: ResourceOptions,
 ): ResourceDefinition {
   let externalId: string | undefined;
   let definition: Record<string, unknown>;
@@ -43,9 +38,7 @@ export function resource(
     ...(_ref !== undefined ? { ref: _ref as LookupRef } : {}),
     values: Object.freeze({ ...values }),
     ...(options ? { options: Object.freeze({ ...options, ...(options.dependsOn ? { dependsOn: Object.freeze([...options.dependsOn]) } : {}) }) } : {}),
-    ...(removeUnmanaged !== undefined
-      ? { removeUnmanaged: removeUnmanaged as RemoveUnmanagedMap }
-      : {}),
+    ...(removeUnmanaged !== undefined ? { removeUnmanaged: removeUnmanaged as RemoveUnmanagedMap } : {}),
   });
 }
 

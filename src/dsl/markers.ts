@@ -47,10 +47,7 @@ export function md(source: string): MdMarker {
   return Object.freeze({ __type: 'md' as const, source });
 }
 
-export function mdFile(
-  path: string,
-  opts?: { css?: string; inlineCss?: boolean; stripFrontmatter?: boolean }
-): MdFileMarker {
+export function mdFile(path: string, opts?: { css?: string; inlineCss?: boolean; stripFrontmatter?: boolean }): MdFileMarker {
   return Object.freeze({
     __type: 'mdFile' as const,
     path,
@@ -62,7 +59,7 @@ export function mdFile(
 
 export function translated(
   defaultValue: string | MdMarker | MdFileMarker,
-  translations: Record<string, string | MdMarker | MdFileMarker> = {}
+  translations: Record<string, string | MdMarker | MdFileMarker> = {},
 ): TranslatedMarker {
   return Object.freeze({
     __type: 'translated' as const,
@@ -93,42 +90,25 @@ export function html(value: string, opts?: { verify?: boolean }): HtmlMarker {
 // ---------------------------------------------------------------------------
 
 export function isMdMarker(v: unknown): v is MdMarker {
-  return (
-    typeof v === 'object' &&
-    v !== null &&
-    (v as any).__type === 'md' &&
-    typeof (v as any).source === 'string'
-  );
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'md' && typeof (v as Record<string, unknown>).source === 'string';
 }
 
 export function isMdFileMarker(v: unknown): v is MdFileMarker {
-  return (
-    typeof v === 'object' &&
-    v !== null &&
-    (v as any).__type === 'mdFile' &&
-    typeof (v as any).path === 'string'
-  );
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'mdFile' && typeof (v as Record<string, unknown>).path === 'string';
 }
 
 export function isTranslatedMarker(v: unknown): v is TranslatedMarker {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'translated';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'translated';
 }
 
 export function isCssMarker(v: unknown): v is CssMarker {
-  return typeof v === 'object' && v !== null && (v as any).__type === 'css';
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'css';
 }
 
 export function isHtmlMarker(v: unknown): v is HtmlMarker {
-  return (
-    typeof v === 'object' &&
-    v !== null &&
-    (v as any).__type === 'html' &&
-    typeof (v as any).value === 'string'
-  );
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).__type === 'html' && typeof (v as Record<string, unknown>).value === 'string';
 }
 
 export function isContentMarker(v: unknown): v is ContentMarker {
-  return (
-    isMdMarker(v) || isMdFileMarker(v) || isTranslatedMarker(v) || isCssMarker(v) || isHtmlMarker(v)
-  );
+  return isMdMarker(v) || isMdFileMarker(v) || isTranslatedMarker(v) || isCssMarker(v) || isHtmlMarker(v);
 }

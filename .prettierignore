@@ -1,0 +1,6 @@
+# Formatting covers TypeScript and JavaScript sources only (see the format scripts).
+dist/
+node_modules/
+.scratch/
+# Test inputs loaded and compared by the suite.
+tests/fixtures/

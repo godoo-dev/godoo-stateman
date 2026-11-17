@@ -9,14 +9,17 @@ class InactiveFallbackClient extends FakeClient {
   writes: { values: Row; context?: Row }[] = [];
   rejectDefault = false;
   constructor() {
-    super(); this.schema.x.description = { type: 'text' }; this.schema.x.body = { type: 'html' };
+    super();
+    this.schema.x.description = { type: 'text' };
+    this.schema.x.body = { type: 'html' };
   }
-  override async searchRead(model: string, criteria: any[] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
+  override async searchRead(model: string, criteria: unknown[][] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
     const rows = await super.searchRead(model, criteria, options);
     const lang = options.context?.lang;
-    if (model === 'x' && typeof lang === 'string' && lang !== 'en_US') for (const row of rows) {
-      for (const field of options.fields ?? []) row[field] = this.translations.get(`${row.id}:${lang}:${field}`) ?? row[field];
-    }
+    if (model === 'x' && typeof lang === 'string' && lang !== 'en_US')
+      for (const row of rows) {
+        for (const field of options.fields ?? []) row[field] = this.translations.get(`${row.id}:${lang}:${field}`) ?? row[field];
+      }
     return rows;
   }
   override async write(model: string, ids: number | number[], values: Row, context?: Row): Promise<boolean> {
@@ -26,31 +29,47 @@ class InactiveFallbackClient extends FakeClient {
     }
     const accepted = await super.write(model, ids, values);
     if (model === 'x' && typeof context?.lang === 'string' && context.lang !== 'en_US') {
-      for (const id of Array.isArray(ids) ? ids : [ids]) for (const [field, value] of Object.entries(values)) {
-        this.translations.set(`${id}:${context.lang}:${field}`, value);
-      }
+      for (const id of Array.isArray(ids) ? ids : [ids])
+        for (const [field, value] of Object.entries(values)) {
+          this.translations.set(`${id}:${context.lang}:${field}`, value);
+        }
     }
     return accepted;
   }
 }
 const options = { context: { lang: false, tz: 'Europe/Madrid' } };
-const definitions = () => [resource('x', 'test.template', {
-  name: 'Stable', description: translated('Default description', { ca_ES: 'Català', en_GB: 'English', es_ES: 'Castellano' }),
-  body: translated('<p>Default</p>', { ca_ES: '<p>Català</p>', en_GB: '<p>English</p>', es_ES: '<p>Castellano</p>' }),
-})];
+const definitions = () => [
+  resource('x', 'test.template', {
+    name: 'Stable',
+    description: translated('Default description', { ca_ES: 'Català', en_GB: 'English', es_ES: 'Castellano' }),
+    body: translated('<p>Default</p>', { ca_ES: '<p>Català</p>', en_GB: '<p>English</p>', es_ES: '<p>Castellano</p>' }),
+  }),
+];
 
 it.each([false, true])('preserves exact defaults and three translations (existing=%s), then writes nothing', async existing => {
   const client = new InactiveFallbackClient();
   if (existing) client.seed('x', { name: 'Stable', description: 'Default description', body: '<p>Default</p>' }, 'test.template');
-  const connection = client.connection(), input = definitions();
+  const connection = client.connection(),
+    input = definitions();
   const reviewed = await plan(input, connection, options);
   const restore = reviewed.operations.at(-1)!;
-  expect(restore).toMatchObject({ key: 'test.template:translation-defaults', type: 'update', values: { description: 'Default description', body: '<p>Default</p>' }, context: { ...options.context, active_test: false } });
+  expect(restore).toMatchObject({
+    key: 'test.template:translation-defaults',
+    type: 'update',
+    values: { description: 'Default description', body: '<p>Default</p>' },
+    context: { ...options.context, active_test: false },
+  });
   const translations = reviewed.operations.filter(op => op.key.includes(':translation:'));
   expect(translations).toHaveLength(6);
   expect(restore.dependsOn).toEqual(expect.arrayContaining(translations.map(op => op.key)));
   const saved: unknown[] = [];
-  const result = await apply(reviewed, connection, { journal: { save: async receipt => { saved.push(receipt); } } });
+  const result = await apply(reviewed, connection, {
+    journal: {
+      save: async receipt => {
+        saved.push(receipt);
+      },
+    },
+  });
   expect(result.ok).toBe(true);
   expect(saved.length).toBe(existing ? 0 : 3);
   const id = result.drift!.bindings['test.template'];
@@ -61,7 +80,8 @@ it.each([false, true])('preserves exact defaults and three translations (existin
     expect(row.body).toBe(`<p>${text}</p>`);
   }
   const repeated = await apply(await plan(input, connection, options), connection);
-  expect(repeated.ok).toBe(true); expect(repeated.committed).toBe(0);
+  expect(repeated.ok).toBe(true);
+  expect(repeated.committed).toBe(0);
   // Changing just one language affects only that field's default restoration.
   const changed = await inspectResources(input);
   changed.resources[0].translations!.entries.find(e => e.lang === 'en_GB' && e.field === 'body')!.value = '<p>Changed English</p>';
@@ -75,7 +95,11 @@ it.each([false, true])('default restoration failure blocks full dependents and a
   client.seed('x', { name: 'Stable', description: 'Default description', body: '<p>Default</p>' }, 'test.template');
   const dependent = client.seed('x', { name: 'Before' }, 'test.dependent');
   const cron = client.seed('ir.cron', { active: true }, 'test.cron');
-  const input = [...definitions(), resource('x', 'test.dependent', { name: 'After' }, { dependsOn: ['test.template'] }), resource('ir.cron', 'test.cron', { active: true })];
+  const input = [
+    ...definitions(),
+    resource('x', 'test.dependent', { name: 'After' }, { dependsOn: ['test.template'] }),
+    resource('ir.cron', 'test.cron', { active: true }),
+  ];
   const reviewed = await plan(input, client.connection(), options);
   expect(reviewed.operations.find(op => op.externalId === 'test.dependent')!.dependsOn).toContain('test.template:translation-defaults');
   client.rejectDefault = true;
@@ -93,10 +117,13 @@ it.each([false, true])('default restoration failure blocks full dependents and a
 });
 
 it('retains durable creation receipts when the final default update fails', async () => {
-  const client = new InactiveFallbackClient(); client.rejectDefault = true;
-  const input = definitions(), connection = client.connection();
+  const client = new InactiveFallbackClient();
+  client.rejectDefault = true;
+  const input = definitions(),
+    connection = client.connection();
   const result = await apply(await plan(input, connection, options), connection, { journal: { save: async () => {} } });
-  expect(result.ok).toBe(false); expect(result.recovery[0]).toMatchObject({ state: 'complete', externalId: 'test.template' });
+  expect(result.ok).toBe(false);
+  expect(result.recovery[0]).toMatchObject({ state: 'complete', externalId: 'test.template' });
   const id = result.recovery[0].id;
   client.rejectDefault = false;
   const retry = await plan(input, connection, { ...options, recovery: result.recovery });
@@ -108,12 +135,15 @@ it('retains durable creation receipts when the final default update fails', asyn
 it.each([false, 'en_GB'])('rejects contradictory values for an explicit base language %s', async lang => {
   const client = new InactiveFallbackClient();
   const language = typeof lang === 'string' ? lang : 'en_US';
-  await expect(plan([resource('x', 'test.template', { name: translated('Base', { [language]: 'Different' }) })], client.connection(), { context: { lang } })).rejects.toMatchObject({ code: 'TRANSLATION_CONFLICT' });
+  await expect(
+    plan([resource('x', 'test.template', { name: translated('Base', { [language]: 'Different' }) })], client.connection(), { context: { lang } }),
+  ).rejects.toMatchObject({ code: 'TRANSLATION_CONFLICT' });
   expect(client.mutations).toEqual([]);
 });
 
 it('refuses manually supplied translations without an authored string default', async () => {
   const client = new InactiveFallbackClient();
-  const input = await inspectResources(definitions()); delete input.resources[0].values.body;
+  const input = await inspectResources(definitions());
+  delete input.resources[0].values.body;
   await expect(plan(input, client.connection(), options)).rejects.toMatchObject({ code: 'TRANSLATION_UNSUPPORTED' });
 });

@@ -5,15 +5,15 @@ import { resolve as resolvePath } from 'path';
 import { readFile as fsReadFile } from 'fs/promises';
 import createDebug from 'debug';
 import juice from 'juice';
-import {
-  isMdMarker,
-  isMdFileMarker,
-  isHtmlMarker,
-  isCssMarker,
-  isTranslatedMarker,
-} from './dsl/markers.js';
-export interface TranslationEntry { field: string; lang: string; value: unknown; }
-export interface TranslationMeta { entries: TranslationEntry[]; }
+import { isMdMarker, isMdFileMarker, isHtmlMarker, isCssMarker, isTranslatedMarker } from './dsl/markers.js';
+export interface TranslationEntry {
+  field: string;
+  lang: string;
+  value: unknown;
+}
+export interface TranslationMeta {
+  entries: TranslationEntry[];
+}
 
 const debug = createDebug('stateman:content');
 
@@ -23,7 +23,7 @@ export type FileReader = (absolutePath: string) => Promise<string>;
 /**
  * Default file reader using fs.
  */
-export const defaultReadFile: FileReader = (path) => fsReadFile(path, 'utf-8');
+export const defaultReadFile: FileReader = path => fsReadFile(path, 'utf-8');
 
 // ---------------------------------------------------------------------------
 // Markdown rendering
@@ -47,13 +47,7 @@ async function renderMarkdown(source: string): Promise<string> {
  * @param projectDir - Project root for resolving relative paths
  * @param readFile - File reader function
  */
-export async function applyCss(
-  htmlContent: string,
-  cssFile: string,
-  inline: boolean,
-  projectDir: string,
-  readFile: FileReader
-): Promise<string> {
+export async function applyCss(htmlContent: string, cssFile: string, inline: boolean, projectDir: string, readFile: FileReader): Promise<string> {
   const absPath = resolvePath(projectDir, cssFile);
   const css = await readFile(absPath);
   debug('apply CSS from %s (%d chars, inline=%s)', absPath, css.length, inline);
@@ -94,11 +88,7 @@ function stripFrontmatter(source: string): string {
  * - HtmlMarker: unwrap to the raw value string
  * - Other markers (CssMarker, TranslatedMarker): handled by callers or later tasks
  */
-export async function renderMarkerValue(
-  value: unknown,
-  projectDir: string,
-  readFile: FileReader
-): Promise<unknown> {
+export async function renderMarkerValue(value: unknown, projectDir: string, readFile: FileReader): Promise<unknown> {
   if (isMdMarker(value)) {
     debug('render md marker (%d chars)', value.source.length);
     return renderMarkdown(value.source);
@@ -146,10 +136,7 @@ export interface SanitizationWarning {
  * Heuristic check: scan HTML for patterns that Odoo's sanitizer would strip.
  * Returns warnings — not errors. The post-apply re-plan is the definitive check.
  */
-export function checkSanitization(
-  html: string,
-  fieldAttrs: Record<string, unknown>
-): SanitizationWarning[] {
+export function checkSanitization(html: string, fieldAttrs: Record<string, unknown>): SanitizationWarning[] {
   if (!fieldAttrs.sanitize) return [];
 
   const warnings: SanitizationWarning[] = [];
@@ -232,7 +219,7 @@ export function checkSanitization(
 export async function extractTranslations(
   values: Record<string, unknown>,
   projectDir: string,
-  readFile: FileReader
+  readFile: FileReader,
 ): Promise<{ resolvedValues: Record<string, unknown>; translations: TranslationMeta }> {
   const resolvedValues: Record<string, unknown> = {};
   const entries: TranslationEntry[] = [];
@@ -255,4 +242,3 @@ export async function extractTranslations(
 
   return { resolvedValues, translations: { entries } };
 }
-

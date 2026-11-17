@@ -54,9 +54,10 @@ class TemplateClient extends FakeClient {
   languages = new Map<string, string>();
   writes: { values: Row; lang: unknown }[] = [];
   constructor() {
-    super(); this.schema['mail.template'] = { body_html: { type: 'html' }, subject: { type: 'char' } };
+    super();
+    this.schema['mail.template'] = { body_html: { type: 'html' }, subject: { type: 'char' } };
   }
-  override async searchRead(model: string, criteria: any[] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
+  override async searchRead(model: string, criteria: unknown[][] = [], options: { fields?: string[]; limit?: number; context?: Row } = {}): Promise<Row[]> {
     const rows = await super.searchRead(model, criteria, options);
     const language = options.context?.lang;
     if (model === 'mail.template' && typeof language === 'string' && options.fields?.includes('body_html')) {
@@ -71,7 +72,8 @@ class TemplateClient extends FakeClient {
     const observed: Row = { ...values };
     if (values.body_html === '<p>Updated<br></p>') observed.body_html = '<p>Updated<br/></p>';
     if (typeof context?.lang === 'string') {
-      this.languages.set(context.lang, observed.body_html as string); return true;
+      this.languages.set(context.lang, observed.body_html as string);
+      return true;
     }
     return super.write(model, ids, observed);
   }
@@ -81,12 +83,16 @@ describe('HTML reconciliation through planning and apply', () => {
   it('uses the same bounded comparison for base and separate fresh language reads', async () => {
     const client = new TemplateClient();
     client.seed('mail.template', { body_html: '<p>Base<br/></p>', subject: 'Subject<br/>' }, 'test.mail');
-    client.languages.set('ca_ES', '<p>Català<br/></p>'); client.languages.set('en_GB', '<p>English<br/></p>');
-    const definitions = [resource('mail.template', 'test.mail', {
-      body_html: translated('<p>Base<br></p>', { ca_ES: '<p>Català<br></p>', en_GB: '<p>English<br></p>' }),
-      subject: 'Subject<br>',
-    })];
-    const options = { context: { lang: false } }, connection = client.connection();
+    client.languages.set('ca_ES', '<p>Català<br/></p>');
+    client.languages.set('en_GB', '<p>English<br/></p>');
+    const definitions = [
+      resource('mail.template', 'test.mail', {
+        body_html: translated('<p>Base<br></p>', { ca_ES: '<p>Català<br></p>', en_GB: '<p>English<br></p>' }),
+        subject: 'Subject<br>',
+      }),
+    ];
+    const options = { context: { lang: false } },
+      connection = client.connection();
     const first = await plan(definitions, connection, options);
     expect(first.operations.map(op => op.values)).toEqual([{ subject: 'Subject<br>' }]);
     expect((await apply(first, connection)).ok).toBe(true);
@@ -100,14 +106,18 @@ describe('HTML reconciliation through planning and apply', () => {
   });
 
   it('writes authored bytes and converges; a second apply commits nothing', async () => {
-    const client = new TemplateClient(); client.seed('mail.template', { body_html: '<p>Old</p>' }, 'test.mail');
+    const client = new TemplateClient();
+    client.seed('mail.template', { body_html: '<p>Old</p>' }, 'test.mail');
     const definitions = [resource('mail.template', 'test.mail', { body_html: '<p>Updated<br></p>' })];
-    const connection = client.connection(), first = await plan(definitions, connection);
+    const connection = client.connection(),
+      first = await plan(definitions, connection);
     expect(first.input.resources[0].values.body_html).toBe('<p>Updated<br></p>');
     expect((await apply(first, connection)).ok).toBe(true);
     expect(client.writes[0].values.body_html).toBe('<p>Updated<br></p>');
     const again = await apply(await plan(definitions, connection), connection);
-    expect(again.ok).toBe(true); expect(again.committed).toBe(0); expect(client.writes).toHaveLength(1);
+    expect(again.ok).toBe(true);
+    expect(again.committed).toBe(0);
+    expect(client.writes).toHaveLength(1);
   });
 
   it.each([false, 'en_GB'])('keeps exact observed HTML in stale-plan validation (lang %s)', async language => {
@@ -115,13 +125,15 @@ describe('HTML reconciliation through planning and apply', () => {
     const id = client.seed('mail.template', { body_html: '<p>Base<br></p>' }, 'test.mail');
     client.languages.set('en_GB', '<p>English<br></p>');
     const definitions = [resource('mail.template', 'test.mail', { body_html: translated('<p>Base<br/></p>', { en_GB: '<p>English<br/></p>' }) })];
-    const connection = client.connection(), options = { context: { lang: false } };
+    const connection = client.connection(),
+      options = { context: { lang: false } };
     const reviewed = await plan(definitions, connection, options);
     expect(reviewed.operations).toEqual([]);
     if (typeof language === 'string') client.languages.set(language, '<p>English<br/></p>');
     else client.data['mail.template'].find(row => row.id === id)!.body_html = '<p>Base<br/></p>';
     const fresh = await plan(definitions, connection, options);
-    expect(fresh.operations).toEqual([]); expect(fresh.digest).not.toBe(reviewed.digest);
+    expect(fresh.operations).toEqual([]);
+    expect(fresh.digest).not.toBe(reviewed.digest);
     await expect(apply(reviewed, connection)).rejects.toMatchObject({ code: 'STALE_PLAN' });
     expect(client.writes).toEqual([]);
   });

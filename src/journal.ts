@@ -19,26 +19,45 @@ export async function readRecoveryJournal(path: string): Promise<RecoveryReceipt
  * investigation, never automatic expiry. Directory must already exist.
  */
 export async function openRecoveryJournal(path: string): Promise<RecoveryJournal & { receipts: RecoveryReceipt[]; close(): Promise<void> }> {
-  const destination = resolve(path), lockPath = `${destination}.lock`;
+  const destination = resolve(path),
+    lockPath = `${destination}.lock`;
   const lock = await open(lockPath, 'wx', 0o600);
   let receipts: RecoveryReceipt[];
-  try { receipts = await readRecoveryJournal(destination); }
-  catch (error) { await lock.close(); await unlink(lockPath); throw error; }
+  try {
+    receipts = await readRecoveryJournal(destination);
+  } catch (error) {
+    await lock.close();
+    await unlink(lockPath);
+    throw error;
+  }
   return {
     receipts,
     async save(receipt) {
-      if (receipt.state === 'pending' && receipts.some(previous => previous.externalId === receipt.externalId)) fail('RECOVERY_CONFLICT', `Retained receipt for ${receipt.externalId} must be reconciled before another create`);
+      if (receipt.state === 'pending' && receipts.some(previous => previous.externalId === receipt.externalId))
+        fail('RECOVERY_CONFLICT', `Retained receipt for ${receipt.externalId} must be reconciled before another create`);
       const next = receipts.filter(previous => previous.externalId !== receipt.externalId);
-      next.push(copy(receipt)); next.sort((a, b) => a.externalId.localeCompare(b.externalId));
+      next.push(copy(receipt));
+      next.sort((a, b) => a.externalId.localeCompare(b.externalId));
       const temporary = `${destination}.${randomUUID()}.tmp`;
       const file = await open(temporary, 'wx', 0o600);
-      try { await file.writeFile(JSON.stringify(next, null, 2) + '\n'); await file.sync(); }
-      finally { await file.close(); }
+      try {
+        await file.writeFile(JSON.stringify(next, null, 2) + '\n');
+        await file.sync();
+      } finally {
+        await file.close();
+      }
       await rename(temporary, destination);
       const directory = await open(dirname(destination), 'r');
-      try { await directory.sync(); } finally { await directory.close(); }
+      try {
+        await directory.sync();
+      } finally {
+        await directory.close();
+      }
       receipts.splice(0, receipts.length, ...next);
     },
-    async close() { await lock.close(); await unlink(lockPath); },
+    async close() {
+      await lock.close();
+      await unlink(lockPath);
+    },
   };
 }

@@ -17,9 +17,10 @@ export function requireReleaseSource(root = defaultRoot, env = process.env) {
   assert.equal(env.GITHUB_REPOSITORY, 'godoo-dev/godoo-stateman', 'Unexpected release repository');
   assert.equal(git(root, 'status', '--porcelain'), '', 'Release source must be clean');
   const sha = git(root, 'rev-parse', 'HEAD');
-  const remote = env.GITHUB_ACTIONS === 'true'
-    ? execFileSync('gh', ['api', 'repos/godoo-dev/godoo-stateman/git/ref/heads/main', '--jq', '.object.sha'], { encoding: 'utf8', env }).trim()
-    : git(root, 'ls-remote', '--exit-code', 'origin', 'refs/heads/main').split(/\s+/)[0];
+  const remote =
+    env.GITHUB_ACTIONS === 'true'
+      ? execFileSync('gh', ['api', 'repos/godoo-dev/godoo-stateman/git/ref/heads/main', '--jq', '.object.sha'], { encoding: 'utf8', env }).trim()
+      : git(root, 'ls-remote', '--exit-code', 'origin', 'refs/heads/main').split(/\s+/)[0];
   if (env.GITHUB_ACTIONS === 'true') assert.equal(sha, env.GITHUB_SHA, 'Workflow source changed');
   assert.equal(remote, sha, 'Release source is no longer the remote main head');
   return sha;
@@ -64,9 +65,12 @@ export function verifyCandidate(directory, { root = defaultRoot, complete = true
   const installed = json(join(directory, 'installed-files.json'));
   for (const name of ['LICENSE', 'COPYING', 'NOTICE.md', 'src/index.ts', 'dist/index.js', 'dist/index.d.ts', 'bin/stateman.js']) {
     assert.match(installed[name] ?? '', /^[a-f0-9]{64}$/, `Missing shipped source/rights: ${name}`);
-    if (!name.startsWith('dist/')) assert.equal(installed[name], hash(join(root,name)), `Source/rights changed: ${name}`);
+    if (!name.startsWith('dist/')) assert.equal(installed[name], hash(join(root, name)), `Source/rights changed: ${name}`);
   }
-  const archiveFiles = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8' }).trim().split('\n').filter(name => !name.endsWith('/'));
+  const archiveFiles = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8' })
+    .trim()
+    .split('\n')
+    .filter(name => !name.endsWith('/'));
   assert.deepEqual(archiveFiles.map(name => name.replace(/^package\//, '')).sort(), Object.keys(installed).sort(), 'Installed proof omits shipped files');
   for (const [name, expected] of Object.entries(installed)) {
     assert(!name.startsWith('/') && !name.split('/').includes('..'), 'Unsafe shipped path');
@@ -98,7 +102,10 @@ export function verifyCandidate(directory, { root = defaultRoot, complete = true
 
 export async function promoteCandidate(candidate, { fetchImpl = fetch, publish } = {}) {
   const { artifact, archive } = candidate;
-  const response = await fetchImpl(`${npmRegistry}/${encodeURIComponent(artifact.package)}/${encodeURIComponent(artifact.version)}`, { redirect: 'error', signal: AbortSignal.timeout(30_000) });
+  const response = await fetchImpl(`${npmRegistry}/${encodeURIComponent(artifact.package)}/${encodeURIComponent(artifact.version)}`, {
+    redirect: 'error',
+    signal: AbortSignal.timeout(30_000),
+  });
   if (response.status === 404) {
     assert.equal(typeof publish, 'function');
     await publish(archive);
@@ -113,7 +120,9 @@ export async function promoteCandidate(candidate, { fetchImpl = fetch, publish }
   assert(!url.username && !url.password);
   const remote = await fetchImpl(url.href, { redirect: 'error', signal: AbortSignal.timeout(30_000) });
   assert(remote.ok, 'Existing npm archive unavailable');
-  const observed = createHash('sha256').update(Buffer.from(await remote.arrayBuffer())).digest('hex');
+  const observed = createHash('sha256')
+    .update(Buffer.from(await remote.arrayBuffer()))
+    .digest('hex');
   assert.equal(observed, artifact.sha256, 'Reserved npm version has different bytes');
   return 'present';
 }

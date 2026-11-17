@@ -21,7 +21,9 @@ const qualified = /^[A-Za-z0-9_][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_][A-Za-z0-9_-]*)+$
 const modelName = /^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*$/;
 const unsafe = new Set(['__proto__', 'prototype', 'constructor']);
 const contentTypes = new Set(['md', 'mdFile', 'html', 'css', 'translated', 'resource', 'children']);
-function fail(message: string): never { throw new Error(`Invalid state fixture: ${message}`); }
+function fail(message: string): never {
+  throw new Error(`Invalid state fixture: ${message}`);
+}
 
 function limits(bounds: FixtureBounds) {
   const value = (key: keyof FixtureBounds, fallback: number, ceiling: number) => {
@@ -76,7 +78,9 @@ function clone(value: unknown, maxDepth: number, path: string, depth = 0, active
       result[key] = clone(input[key], maxDepth, `${path}.${key}`, depth + 1, active);
     }
     return result;
-  } finally { active.delete(value); }
+  } finally {
+    active.delete(value);
+  }
 }
 
 function validate(value: unknown, bounds: FixtureBounds): StateFixture {
@@ -85,39 +89,50 @@ function validate(value: unknown, bounds: FixtureBounds): StateFixture {
   keys(root, ['format', 'version', 'namespaces', 'resources'], 'fixture');
   if (root.format !== 'godoo-state-fixture' || root.version !== 1) fail('unsupported format/version');
   if (!Array.isArray(root.namespaces) || !root.namespaces.length || root.namespaces.length > 100) fail('namespaces must be explicit');
-  const namespaces = [...new Set(root.namespaces.map((ns: unknown) => {
-    if (typeof ns !== 'string' || !/^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(ns)) return fail('invalid namespace');
-    return ns;
-  }))].sort();
+  const namespaces = [
+    ...new Set(
+      root.namespaces.map((ns: unknown) => {
+        if (typeof ns !== 'string' || !/^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(ns)) return fail('invalid namespace');
+        return ns;
+      }),
+    ),
+  ].sort();
   if (!Array.isArray(root.resources) || root.resources.length > bound.maxResources) fail('resource count exceeds maxResources');
   const ids = new Set<string>();
-  const resources = root.resources.map((value: unknown) => {
-    const raw = object(value, 'resource');
-    keys(raw, ['externalId', 'model', 'values', 'ref', 'parentScope', 'options'], 'resource');
-    const id = xmlid(raw.externalId, 'resource.externalId');
-    if (!namespaces.some(ns => id.startsWith(`${ns}.`))) fail(`${id} is outside the declared namespaces`);
-    if (ids.has(id)) fail(`duplicate identity ${id}`);
-    ids.add(id);
-    if (typeof raw.model !== 'string' || !modelName.test(raw.model)) fail(`${id} has an invalid model`);
-    object(raw.values, `${id}.values`);
-    if (raw.ref !== undefined) {
-      const ref = object(raw.ref, `${id}.ref`);
-      if (ref.__type !== 'lookup' || ref.model !== raw.model) fail(`${id} adoption lookup model mismatch`);
-    }
-    if (raw.parentScope !== undefined) {
-      const scope = object(raw.parentScope, `${id}.parentScope`);
-      keys(scope, ['parentExternalId', 'inverseField'], `${id}.parentScope`);
-      xmlid(scope.parentExternalId, `${id}.parentScope`);
-      if (scope.inverseField !== undefined && (typeof scope.inverseField !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(scope.inverseField))) fail(`${id} has an invalid inverse field`);
-    }
-    if (raw.options !== undefined) {
-      const options = object(raw.options, `${id}.options`);
-      keys(options, ['dependsOn', 'onMissing'], `${id}.options`);
-      if (options.dependsOn !== undefined && (!Array.isArray(options.dependsOn) || options.dependsOn.some((id: unknown) => typeof id !== 'string' || !qualified.test(id)))) fail(`${id} has invalid explicit dependencies`);
-      if (options.onMissing !== undefined && options.onMissing !== 'create' && options.onMissing !== 'error') fail(`${id} has an invalid onMissing policy`);
-    }
-    return clone(raw, bound.maxDepth, id) as InspectedResource;
-  }).sort((a, b) => a.externalId.localeCompare(b.externalId, 'en'));
+  const resources = root.resources
+    .map((value: unknown) => {
+      const raw = object(value, 'resource');
+      keys(raw, ['externalId', 'model', 'values', 'ref', 'parentScope', 'options'], 'resource');
+      const id = xmlid(raw.externalId, 'resource.externalId');
+      if (!namespaces.some(ns => id.startsWith(`${ns}.`))) fail(`${id} is outside the declared namespaces`);
+      if (ids.has(id)) fail(`duplicate identity ${id}`);
+      ids.add(id);
+      if (typeof raw.model !== 'string' || !modelName.test(raw.model)) fail(`${id} has an invalid model`);
+      object(raw.values, `${id}.values`);
+      if (raw.ref !== undefined) {
+        const ref = object(raw.ref, `${id}.ref`);
+        if (ref.__type !== 'lookup' || ref.model !== raw.model) fail(`${id} adoption lookup model mismatch`);
+      }
+      if (raw.parentScope !== undefined) {
+        const scope = object(raw.parentScope, `${id}.parentScope`);
+        keys(scope, ['parentExternalId', 'inverseField'], `${id}.parentScope`);
+        xmlid(scope.parentExternalId, `${id}.parentScope`);
+        if (scope.inverseField !== undefined && (typeof scope.inverseField !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(scope.inverseField)))
+          fail(`${id} has an invalid inverse field`);
+      }
+      if (raw.options !== undefined) {
+        const options = object(raw.options, `${id}.options`);
+        keys(options, ['dependsOn', 'onMissing'], `${id}.options`);
+        if (
+          options.dependsOn !== undefined &&
+          (!Array.isArray(options.dependsOn) || options.dependsOn.some((id: unknown) => typeof id !== 'string' || !qualified.test(id)))
+        )
+          fail(`${id} has invalid explicit dependencies`);
+        if (options.onMissing !== undefined && options.onMissing !== 'create' && options.onMissing !== 'error') fail(`${id} has an invalid onMissing policy`);
+      }
+      return clone(raw, bound.maxDepth, id) as InspectedResource;
+    })
+    .sort((a, b) => a.externalId.localeCompare(b.externalId, 'en'));
   for (const resource of resources) {
     const dependencies = (resource as InspectedResource & { options?: { dependsOn?: string[] } }).options?.dependsOn ?? [];
     for (const dependency of dependencies) if (!ids.has(dependency)) fail(`${resource.externalId} needs missing managed dependency ${dependency}`);
@@ -152,5 +167,11 @@ export function serializeFixture(fixture: StateFixture, bounds: FixtureBounds = 
 export function parseFixture(json: string, bounds: FixtureBounds = {}): Inspection {
   if (Buffer.byteLength(json, 'utf8') > limits(bounds).maxBytes) fail('input exceeds maxBytes');
   const fixture = validate(JSON.parse(json), bounds);
-  return { kind: 'offline-inspection', resources: fixture.resources, policies: [], files: [], diagnostics: ['Portable desired-state fixture; identities, schema and ownership require ordinary live planning.'] };
+  return {
+    kind: 'offline-inspection',
+    resources: fixture.resources,
+    policies: [],
+    files: [],
+    diagnostics: ['Portable desired-state fixture; identities, schema and ownership require ordinary live planning.'],
+  };
 }
