@@ -47,7 +47,8 @@ Thumbs.db
 # TypeScript foundation
 node_modules/
 *.tgz
-.serena/
+.serena/*
+!.serena/project.yml
 
 # Agent working material
 .scratch/

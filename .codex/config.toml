@@ -1,0 +1,12 @@
+# Serena semantic navigation for Codex, pinned and run per project through uvx.
+[mcp_servers.serena]
+command = "uvx"
+args = [
+  "--from", "serena-agent==2.1.0",
+  "serena", "start-mcp-server",
+  "--transport", "stdio",
+  "--context", "codex",
+  "--project-from-cwd",
+  "--enable-web-dashboard", "false",
+  "--open-web-dashboard", "false",
+]
