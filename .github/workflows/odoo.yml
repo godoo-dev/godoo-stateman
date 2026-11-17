@@ -18,8 +18,9 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
+          # The harness uses only Node built-ins; the npm cache serves the
+          # isolated consumer install of the candidate tarball.
           cache: npm
-      - run: npm ci --ignore-scripts
       - name: Install PDF observation tool
         if: inputs.major == '18'
         run: |
