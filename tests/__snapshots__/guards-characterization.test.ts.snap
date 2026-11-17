@@ -1,0 +1,731 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`apply() characterization > accepts an XML-ID binding that already points to the created record 1`] = `
+{
+  "mutations": [
+    "create:x",
+  ],
+  "ok": true,
+  "statuses": [
+    "committed",
+  ],
+}
+`;
+
+exports[`apply() characterization > refuses a concurrent XML-ID binding to another record 1`] = `
+[
+  {
+    "code": "IDENTITY_COLLISION",
+    "message": "Concurrent XML-ID collision for a.one",
+    "status": "failed",
+  },
+]
+`;
+
+exports[`apply() characterization > stops when the connection identity changes 1`] = `
+{
+  "code": "STALE_PLAN",
+  "message": "Target or observed state changed; produce and review a fresh plan before applying",
+}
+`;
+
+exports[`mis.instance characterization > both company and companies 1`] = `
+{
+  "code": "MIS_COMPANY_SCOPE",
+  "message": "m.i: choose company or nonempty companies",
+}
+`;
+
+exports[`mis.instance characterization > compare non-actual operand 1`] = `
+{
+  "code": "MIS_PERIOD_OPERAND",
+  "message": "c: operand c must be a sibling actual period",
+}
+`;
+
+exports[`mis.instance characterization > compare same operand 1`] = `
+{
+  "code": "MIS_PERIOD_OPERAND",
+  "message": "c: different operands and positive integer normalizeFactor required",
+}
+`;
+
+exports[`mis.instance characterization > complete instance 1`] = `
+{
+  "__type": "resource",
+  "externalId": "m.i",
+  "model": "mis.report.instance",
+  "values": {
+    "company_id": false,
+    "company_ids": {
+      "__type": "exact",
+      "targets": [
+        1,
+        2,
+      ],
+    },
+    "currency_id": 1,
+    "date": "2026-02-15",
+    "date_from": false,
+    "date_to": false,
+    "multi_company": true,
+    "name": "I",
+    "period_ids": {
+      "__type": "children",
+      "inverseField": "report_instance_id",
+      "model": "mis.report.instance.period",
+      "resources": [
+        {
+          "__type": "resource",
+          "externalId": "m.i.period.jan",
+          "model": "mis.report.instance.period",
+          "values": {
+            "is_ytd": false,
+            "manual_date_from": "2026-01-01",
+            "manual_date_to": "2026-01-31",
+            "mode": "fix",
+            "name": "Jan",
+            "sequence": 10,
+            "source": "actuals",
+          },
+        },
+        {
+          "__type": "resource",
+          "externalId": "m.i.period.feb",
+          "model": "mis.report.instance.period",
+          "values": {
+            "date_range_type_id": undefined,
+            "duration": 1,
+            "is_ytd": false,
+            "manual_date_from": false,
+            "manual_date_to": false,
+            "mode": "relative",
+            "name": "Feb",
+            "offset": 0,
+            "sequence": 20,
+            "source": "actuals",
+            "type": "date_range",
+          },
+        },
+        {
+          "__type": "resource",
+          "externalId": "m.i.period.c",
+          "model": "mis.report.instance.period",
+          "values": {
+            "mode": "none",
+            "name": "C",
+            "normalize_factor": 2,
+            "sequence": 30,
+            "source": "cmpcol",
+            "source_cmpcol_from_id": {
+              "__type": "resourceRef",
+              "externalId": "m.i.period.jan",
+            },
+            "source_cmpcol_to_id": {
+              "__type": "resourceRef",
+              "externalId": "m.i.period.feb",
+            },
+          },
+        },
+        {
+          "__type": "resource",
+          "externalId": "m.i.period.s",
+          "model": "mis.report.instance.period",
+          "values": {
+            "mode": "none",
+            "name": "S",
+            "sequence": 40,
+            "source": "sumcol",
+            "source_sumcol_ids": {
+              "__type": "children",
+              "inverseField": "period_id",
+              "model": "mis.report.instance.period.sum",
+              "resources": [
+                {
+                  "__type": "resource",
+                  "externalId": "m.i.period.s.term.a",
+                  "model": "mis.report.instance.period.sum",
+                  "values": {
+                    "period_to_sum_id": {
+                      "__type": "resourceRef",
+                      "externalId": "m.i.period.jan",
+                    },
+                    "sign": "+",
+                  },
+                },
+                {
+                  "__type": "resource",
+                  "externalId": "m.i.period.s.term.b",
+                  "model": "mis.report.instance.period.sum",
+                  "values": {
+                    "period_to_sum_id": {
+                      "__type": "resourceRef",
+                      "externalId": "m.i.period.feb",
+                    },
+                    "sign": "-",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+    "report_id": 1,
+    "target_move": "posted",
+  },
+}
+`;
+
+exports[`mis.instance characterization > empty sum 1`] = `
+{
+  "code": "MIS_SUM_INVALID",
+  "message": "s: nonempty uniquely keyed operands required",
+}
+`;
+
+exports[`mis.instance characterization > invalid pivot date 1`] = `
+{
+  "code": "MIS_INSTANCE_INVALID",
+  "message": "m.i: periods, targetMove and valid pivotDate required",
+}
+`;
+
+exports[`mis.instance characterization > invalid relative unit 1`] = `
+{
+  "code": "MIS_PERIOD_DATES",
+  "message": "x: valid unit, integer offset and positive duration required",
+}
+`;
+
+exports[`mis.instance characterization > invalid sum sign 1`] = `
+{
+  "code": "MIS_SUM_INVALID",
+  "message": "s: sign must be + or -",
+}
+`;
+
+exports[`mis.instance characterization > no periods 1`] = `
+{
+  "code": "MIS_INSTANCE_INVALID",
+  "message": "m.i: periods, targetMove and valid pivotDate required",
+}
+`;
+
+exports[`mis.instance characterization > non-integer sequence 1`] = `
+{
+  "code": "MIS_SEQUENCE_INVALID",
+  "message": "x: sequence must be an integer",
+}
+`;
+
+exports[`mis.instance characterization > unordered fixed dates 1`] = `
+{
+  "code": "MIS_PERIOD_DATES",
+  "message": "x: ordered fixed dates required; YTD uses relative mode",
+}
+`;
+
+exports[`mis.instance characterization > unsupported source 1`] = `
+{
+  "code": "MIS_PERIOD_SOURCE",
+  "message": "u: unsupported source",
+}
+`;
+
+exports[`protectComputedFields characterization > base field 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_BASE_PROTECTED",
+    "message": "f.field: base/module-defined fields cannot be managed",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > bound field incomplete 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "METADATA_INACCESSIBLE",
+    "message": "f.field: incomplete compatibility metadata",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > bound field unreadable 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "RECORD_UNAVAILABLE",
+    "message": "f.field: field metadata unavailable",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > conflicting model on create 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_TRANSITION_UNSUPPORTED",
+    "message": "f.field: conflicting model/model_id",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > guard metadata missing 1`] = `
+{
+  "calls": [],
+  "result": {
+    "code": "METADATA_INACCESSIBLE",
+    "message": "f.field: compatibility metadata model unavailable",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > incompatible existing field 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_INCOMPATIBLE",
+    "message": "f.field: existing field is not a readonly nonstored JSON compute; adoption and aliases cannot convert it",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > name already taken 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+    "{"model":"ir.model.fields","criteria":[["model","=","x"],["name","=","x_total"]],"names":[],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_NAME_TAKEN",
+    "message": "f.field: x.x_total already exists; use explicit _ref adoption",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > non-string depends 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_DEPENDS_INVALID",
+    "message": "f.field: depends must be comma-separated paths",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > path through scalar 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_DEPENDS_INVALID",
+    "message": "f.field: x.name is not relational",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > self dependency 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_DEPENDS_INVALID",
+    "message": "f.field: invalid dependency x_total at x.x_total",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > stale target metadata 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_NOT_READY",
+    "message": "f.field: fresh target-model metadata does not match the protected field",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > target model unavailable 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+  ],
+  "result": {
+    "code": "METADATA_INACCESSIBLE",
+    "message": "f.field: target model unavailable",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > type transition 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": {
+    "code": "FIELD_TRANSITION_UNSUPPORTED",
+    "message": "f.field: changing ttype is unsupported",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > unresolved model on create 1`] = `
+{
+  "calls": [
+    "{"resolve":{"__type":"resourceRef","externalId":"f.model"},"model":"ir.model"}",
+  ],
+  "result": {
+    "code": "FIELD_SHAPE_UNSUPPORTED",
+    "message": "f.field: model_id must resolve to an existing ir.model",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > unsupported shape 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+    "{"resolve":3,"model":"ir.model"}",
+  ],
+  "result": {
+    "code": "FIELD_SHAPE_UNSUPPORTED",
+    "message": "f.field: only manual x_ readonly nonstored JSON computed fields are supported",
+  },
+}
+`;
+
+exports[`protectComputedFields characterization > valid relational dependency 1`] = `
+{
+  "calls": [
+    "{"model":"ir.model.fields","criteria":[["id","=",9]],"names":["model","model_id","name","state","modules","ttype","store","readonly","compute","depends","relation","related","company_dependent","translate"],"limit":2}",
+  ],
+  "result": "accepted",
+}
+`;
+
+exports[`protectMis characterization > adopted sub-kpi expression 1`] = `
+{
+  "calls": [
+    "{"model":"mis.report.kpi","criteria":[["id","=",5]],"names":["multi"],"limit":2}",
+    "{"model":"mis.report.kpi.expression","criteria":[["kpi_id","=",5]],"names":["subkpi_id"]}",
+    "{"resolve":3,"model":"mis.report.subkpi"}",
+  ],
+  "diagnostics": [],
+  "result": "accepted",
+}
+`;
+
+exports[`protectMis characterization > aggregate over nonstored field 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+    "{"resolve":10,"model":"ir.model.fields"}",
+    "{"model":"ir.model.fields","criteria":[["id","=",10]],"names":["model","ttype","store","relation"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_QUERY_AGGREGATE",
+    "message": "m.q: numeric aggregation requires stored numeric fields; JSON/nonstored fields need aggregate false",
+  },
+}
+`;
+
+exports[`protectMis characterization > child of unbound parent 1`] = `
+{
+  "calls": [
+    "{"model":"mis.report.kpi","criteria":[["id","=",5]],"names":["report_id"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_PARENT_CONFLICT",
+    "message": "m.kpi: existing MIS children cannot be silently reparented",
+  },
+}
+`;
+
+exports[`protectMis characterization > company currency unreadable 1`] = `
+{
+  "calls": [
+    "{"resolve":[1,2],"model":"res.company"}",
+    "{"model":"res.company","criteria":[["id","in",[1,2]]],"names":["currency_id"]}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "METADATA_INACCESSIBLE",
+    "message": "m.i: company currencies unavailable",
+  },
+}
+`;
+
+exports[`protectMis characterization > company field not to res.company 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+    "{"resolve":10,"model":"ir.model.fields"}",
+    "{"model":"ir.model.fields","criteria":[["id","=",10]],"names":["model","ttype","store","relation"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_QUERY_COMPANY",
+    "message": "m.q: companyField must relate to res.company",
+  },
+}
+`;
+
+exports[`protectMis characterization > comparison mode 1`] = `
+{
+  "calls": [],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_DESTRUCTIVE_INVERSE",
+    "message": "m.i: manage date_from/date_to and periods; comparison_mode has a destructive inverse",
+  },
+}
+`;
+
+exports[`protectMis characterization > empty multi-company scope 1`] = `
+{
+  "calls": [],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_COMPANY_SCOPE",
+    "message": "m.i: multi-company scope must be explicit and nonempty",
+  },
+}
+`;
+
+exports[`protectMis characterization > mixed currencies with reporting currency 1`] = `
+{
+  "calls": [
+    "{"resolve":[1,2],"model":"res.company"}",
+    "{"model":"res.company","criteria":[["id","in",[1,2]]],"names":["currency_id"]}",
+  ],
+  "diagnostics": [],
+  "result": "accepted",
+}
+`;
+
+exports[`protectMis characterization > mixed currencies without reporting currency 1`] = `
+{
+  "calls": [
+    "{"resolve":[1,2],"model":"res.company"}",
+    "{"model":"res.company","criteria":[["id","in",[1,2]]],"names":["currency_id"]}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_CURRENCY_REQUIRED",
+    "message": "m.i: companies with different currencies require an explicit reporting currency",
+  },
+}
+`;
+
+exports[`protectMis characterization > multi transition 1`] = `
+{
+  "calls": [
+    "{"model":"mis.report.kpi","criteria":[["id","=",5]],"names":["multi"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_MULTI_TRANSITION",
+    "message": "m.kpi: multi/scalar transitions need an explicit migration",
+  },
+}
+`;
+
+exports[`protectMis characterization > native kpi expression 1`] = `
+{
+  "calls": [],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_DESTRUCTIVE_INVERSE",
+    "message": "m.kpi: manage expression_ids children instead of native expression inverse",
+  },
+}
+`;
+
+exports[`protectMis characterization > non-date date field 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+    "{"resolve":10,"model":"ir.model.fields"}",
+    "{"model":"ir.model.fields","criteria":[["id","=",10]],"names":["model","ttype","store","relation"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_QUERY_DATE",
+    "message": "m.q: dateField requires a date/datetime field",
+  },
+}
+`;
+
+exports[`protectMis characterization > pending group company 1`] = `
+{
+  "calls": [
+    "{"resolve":[{"__type":"resourceRef","externalId":"m.c"}],"model":"res.company"}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_COMPANY_PENDING",
+    "message": "m.i: group companies must exist and be authorized before planning",
+  },
+}
+`;
+
+exports[`protectMis characterization > pending query field of another model 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+    "{"resolve":4,"model":"ir.model"}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_QUERY_FIELD",
+    "message": "m.q: field belongs to another model",
+  },
+}
+`;
+
+exports[`protectMis characterization > query field list not a list 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_QUERY_FIELD",
+    "message": "m.q: field_ids must be a list",
+  },
+}
+`;
+
+exports[`protectMis characterization > query field of another model 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+    "{"resolve":10,"model":"ir.model.fields"}",
+    "{"model":"ir.model.fields","criteria":[["id","=",10]],"names":["model","ttype","store","relation"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_QUERY_FIELD",
+    "message": "m.q: query field must belong to account.move.line",
+  },
+}
+`;
+
+exports[`protectMis characterization > query model unavailable 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "METADATA_INACCESSIBLE",
+    "message": "m.q: query model is unavailable",
+  },
+}
+`;
+
+exports[`protectMis characterization > reparented existing child 1`] = `
+{
+  "calls": [
+    "{"model":"mis.report.kpi","criteria":[["id","=",5]],"names":["report_id"],"limit":2}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_PARENT_CONFLICT",
+    "message": "m.kpi: existing MIS children cannot be silently reparented",
+  },
+}
+`;
+
+exports[`protectMis characterization > retained scalar expression 1`] = `
+{
+  "calls": [
+    "{"model":"mis.report.kpi","criteria":[["id","=",5]],"names":["multi"],"limit":2}",
+    "{"model":"mis.report.kpi.expression","criteria":[["kpi_id","=",5]],"names":["subkpi_id"]}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_EXPRESSION_CONFLICT",
+    "message": "m.kpi: retained scalar expression conflicts; explicitly adopt the existing expression or remove owned conflicts",
+  },
+}
+`;
+
+exports[`protectMis characterization > retained sub-kpi expression 1`] = `
+{
+  "calls": [
+    "{"model":"mis.report.kpi","criteria":[["id","=",5]],"names":["multi"],"limit":2}",
+    "{"model":"mis.report.kpi.expression","criteria":[["kpi_id","=",5]],"names":["subkpi_id"]}",
+    "{"resolve":3,"model":"mis.report.subkpi"}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_EXPRESSION_CONFLICT",
+    "message": "m.e: explicitly adopt the retained sub-KPI expression",
+  },
+}
+`;
+
+exports[`protectMis characterization > retained sum term 1`] = `
+{
+  "calls": [
+    "{"model":"mis.report.instance.period.sum","criteria":[["period_id","=",4]],"names":[]}",
+  ],
+  "diagnostics": [],
+  "result": {
+    "code": "MIS_SUM_CONFLICT",
+    "message": "m.p: retained sum terms change the result; explicitly adopt/remove them",
+  },
+}
+`;
+
+exports[`protectMis characterization > valid query 1`] = `
+{
+  "calls": [
+    "{"resolve":3,"model":"ir.model"}",
+    "{"model":"ir.model","criteria":[["id","=",3]],"names":["model"],"limit":2}",
+    "{"resolve":10,"model":"ir.model.fields"}",
+    "{"model":"ir.model.fields","criteria":[["id","=",10]],"names":["model","ttype","store","relation"],"limit":2}",
+    "{"resolve":3,"model":"ir.model"}",
+    "{"resolve":10,"model":"ir.model.fields"}",
+    "{"model":"ir.model.fields","criteria":[["id","=",10]],"names":["model","ttype","store","relation"],"limit":2}",
+    "{"resolve":10,"model":"ir.model.fields"}",
+    "{"model":"ir.model.fields","criteria":[["id","=",10]],"names":["model","ttype","store","relation"],"limit":2}",
+  ],
+  "diagnostics": [
+    "m.q: generic queries apply date/company filters; target_move and analytic filters are not inherited. Domain/expression dependencies remain explicit.",
+  ],
+  "result": "accepted",
+}
+`;

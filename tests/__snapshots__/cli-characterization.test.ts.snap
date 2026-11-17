@@ -1,0 +1,960 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`stateman CLI characterization > apply with fixture 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"USAGE","message":"Apply takes a reviewed plan, not a fixture"}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > apply without journal 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"RECOVERY_JOURNAL_REQUIRED","message":"Apply requires an explicit --journal path"}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > connection without export 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"INVALID_CONNECTION","message":"Connection module must export a StateConnection"}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > extra positional 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"USAGE","message":"Usage: stateman <load|inspect> <file-or-directory> [--content-root <directory>] [--fixture]\\n       stateman <plan|drift> <file-or-directory> --connection <module> [--options <json>] [--journal <json>] [--out <json>] [--fixture]\\n       stateman apply <reviewed-plan.json> --connection <module> --journal <json>\\n       stateman --help\\n\\nLoads trusted TypeScript/ESM modules with ordinary filesystem/network privileges.\\n--connection explicitly selects a trusted module exporting a StateConnection as default\\nor connection. That module owns credentials/authentication and retains client safety.\\nPlans serialize rendered input and observed target assumptions; apply revalidates them.\\nPlan exits 0; drift exits 0 when converged, 2 for differences; errors/apply failure exit 1.\\nApply requires a durable journal for record creation; retain it across crashes and retries.\\n--fixture reads bounded portable JSON instead of executing resource modules.\\nNo implicit action execution, addon changes, broad live export/import or snapshots."}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > help 1`] = `
+{
+  "code": 0,
+  "err": "",
+  "out": "Usage: stateman <load|inspect> <file-or-directory> [--content-root <directory>] [--fixture]
+       stateman <plan|drift> <file-or-directory> --connection <module> [--options <json>] [--journal <json>] [--out <json>] [--fixture]
+       stateman apply <reviewed-plan.json> --connection <module> --journal <json>
+       stateman --help
+
+Loads trusted TypeScript/ESM modules with ordinary filesystem/network privileges.
+--connection explicitly selects a trusted module exporting a StateConnection as default
+or connection. That module owns credentials/authentication and retains client safety.
+Plans serialize rendered input and observed target assumptions; apply revalidates them.
+Plan exits 0; drift exits 0 when converged, 2 for differences; errors/apply failure exit 1.
+Apply requires a durable journal for record creation; retain it across crashes and retries.
+--fixture reads bounded portable JSON instead of executing resource modules.
+No implicit action execution, addon changes, broad live export/import or snapshots.",
+}
+`;
+
+exports[`stateman CLI characterization > journal equals out 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"PATH_COLLISION","message":"Journal must have its own path, separate from inputs and output"}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > missing path 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"USAGE","message":"Usage: stateman <load|inspect> <file-or-directory> [--content-root <directory>] [--fixture]\\n       stateman <plan|drift> <file-or-directory> --connection <module> [--options <json>] [--journal <json>] [--out <json>] [--fixture]\\n       stateman apply <reviewed-plan.json> --connection <module> --journal <json>\\n       stateman --help\\n\\nLoads trusted TypeScript/ESM modules with ordinary filesystem/network privileges.\\n--connection explicitly selects a trusted module exporting a StateConnection as default\\nor connection. That module owns credentials/authentication and retains client safety.\\nPlans serialize rendered input and observed target assumptions; apply revalidates them.\\nPlan exits 0; drift exits 0 when converged, 2 for differences; errors/apply failure exit 1.\\nApply requires a durable journal for record creation; retain it across crashes and retries.\\n--fixture reads bounded portable JSON instead of executing resource modules.\\nNo implicit action execution, addon changes, broad live export/import or snapshots."}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > no command 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"USAGE","message":"Usage: stateman <load|inspect> <file-or-directory> [--content-root <directory>] [--fixture]\\n       stateman <plan|drift> <file-or-directory> --connection <module> [--options <json>] [--journal <json>] [--out <json>] [--fixture]\\n       stateman apply <reviewed-plan.json> --connection <module> --journal <json>\\n       stateman --help\\n\\nLoads trusted TypeScript/ESM modules with ordinary filesystem/network privileges.\\n--connection explicitly selects a trusted module exporting a StateConnection as default\\nor connection. That module owns credentials/authentication and retains client safety.\\nPlans serialize rendered input and observed target assumptions; apply revalidates them.\\nPlan exits 0; drift exits 0 when converged, 2 for differences; errors/apply failure exit 1.\\nApply requires a durable journal for record creation; retain it across crashes and retries.\\n--fixture reads bounded portable JSON instead of executing resource modules.\\nNo implicit action execution, addon changes, broad live export/import or snapshots."}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > plan without connection 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"CONNECTION_REQUIRED","message":"Select an explicit --connection module"}",
+  "out": "",
+}
+`;
+
+exports[`stateman CLI characterization > plans with options and out, applies with a journal, then reports drift > apply 1`] = `
+{
+  "code": 0,
+  "err": "",
+  "out": "{
+  "ok": true,
+  "committed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "operation": {
+        "key": "cli.root:record",
+        "type": "create",
+        "externalId": "cli.root",
+        "model": "x",
+        "values": {
+          "name": "Root"
+        },
+        "context": {
+          "active_test": false
+        },
+        "dependsOn": []
+      },
+      "status": "committed",
+      "id": 1
+    }
+  ],
+  "recovery": [
+    {
+      "version": 1,
+      "target": {
+        "url": "http://fake.test",
+        "database": "fixture",
+        "uid": 7
+      },
+      "externalId": "cli.root",
+      "model": "x",
+      "intent": "47745b6a74b4f1cce25568b93165e8587759b931c1c32ad0b6138b5f496b098a",
+      "state": "complete",
+      "id": 1
+    }
+  ],
+  "drift": {
+    "kind": "stateman-plan",
+    "version": 1,
+    "target": {
+      "url": "http://fake.test",
+      "database": "fixture",
+      "uid": 7
+    },
+    "input": {
+      "kind": "offline-inspection",
+      "resources": [
+        {
+          "externalId": "cli.root",
+          "model": "x",
+          "values": {
+            "name": "Root"
+          }
+        }
+      ],
+      "policies": [],
+      "files": [
+        "<area>/resources.mts"
+      ],
+      "diagnostics": [
+        "Offline inspection only: identities and relations are symbolic, not validated against Odoo.",
+        "Use plan with an explicit connection for schema, identity, dependency and prerequisite validation."
+      ]
+    },
+    "options": {
+      "select": [
+        "cli.root"
+      ],
+      "recovery": [
+        {
+          "version": 1,
+          "target": {
+            "url": "http://fake.test",
+            "database": "fixture",
+            "uid": 7
+          },
+          "externalId": "cli.root",
+          "model": "x",
+          "intent": "47745b6a74b4f1cce25568b93165e8587759b931c1c32ad0b6138b5f496b098a",
+          "state": "complete",
+          "id": 1
+        }
+      ]
+    },
+    "resources": [
+      {
+        "externalId": "cli.root",
+        "model": "x",
+        "values": {
+          "name": "Root"
+        }
+      }
+    ],
+    "order": [
+      "cli.root"
+    ],
+    "bindings": {
+      "cli.root": 1
+    },
+    "schema": {
+      "x": {
+        "name": {
+          "type": "char"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "parent_id": {
+          "type": "many2one",
+          "relation": "x"
+        },
+        "items": {
+          "type": "many2many",
+          "relation": "x"
+        },
+        "payload": {
+          "type": "json"
+        },
+        "state": {
+          "type": "selection"
+        }
+      }
+    },
+    "observations": [
+      {
+        "kind": "schema",
+        "key": "x",
+        "value": {
+          "name": {
+            "type": "char"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "parent_id": {
+            "type": "many2one",
+            "relation": "x"
+          },
+          "items": {
+            "type": "many2many",
+            "relation": "x"
+          },
+          "payload": {
+            "type": "json"
+          },
+          "state": {
+            "type": "selection"
+          }
+        }
+      },
+      {
+        "kind": "search",
+        "key": "baf72c0112270f0ca1e5af250f7693ec2cc8158fa9bce78d79d388c839f25f0d",
+        "value": {
+          "query": {
+            "model": "x",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  1
+                ]
+              ]
+            ],
+            "fields": [
+              "id",
+              "name"
+            ],
+            "order": "id",
+            "context": {
+              "active_test": false
+            }
+          },
+          "rows": [
+            {
+              "id": 1,
+              "name": "Root"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "search",
+        "key": "d0f694e6b61856bb2d86227131c6484013bd307439bde8f5f10f37b67b0cab16",
+        "value": {
+          "query": {
+            "model": "ir.model.data",
+            "domain": [
+              [
+                "module",
+                "=",
+                "cli"
+              ],
+              [
+                "name",
+                "in",
+                [
+                  "root"
+                ]
+              ]
+            ],
+            "fields": [
+              "id",
+              "model",
+              "module",
+              "name",
+              "res_id"
+            ],
+            "order": "id",
+            "context": {
+              "active_test": false
+            }
+          },
+          "rows": [
+            {
+              "id": 2,
+              "model": "x",
+              "module": "cli",
+              "name": "root",
+              "res_id": 1
+            }
+          ]
+        }
+      },
+      {
+        "kind": "server",
+        "key": "version",
+        "value": {
+          "version": "18.0"
+        }
+      }
+    ],
+    "operations": [],
+    "diagnostics": [
+      "Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.",
+      "No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.",
+      "Read access does not establish write permission. RPC writes retain client safety guards.",
+      "Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock."
+    ],
+    "digest": "<digest>"
+  }
+}",
+}
+`;
+
+exports[`stateman CLI characterization > plans with options and out, applies with a journal, then reports drift > converged drift 1`] = `
+{
+  "code": 0,
+  "err": "",
+  "out": "{
+  "converged": true,
+  "plan": {
+    "kind": "stateman-plan",
+    "version": 1,
+    "target": {
+      "url": "http://fake.test",
+      "database": "fixture",
+      "uid": 7
+    },
+    "input": {
+      "kind": "offline-inspection",
+      "resources": [
+        {
+          "externalId": "cli.root",
+          "model": "x",
+          "values": {
+            "name": "Root"
+          }
+        }
+      ],
+      "policies": [],
+      "files": [
+        "<area>/resources.mts"
+      ],
+      "diagnostics": [
+        "Offline inspection only: identities and relations are symbolic, not validated against Odoo.",
+        "Use plan with an explicit connection for schema, identity, dependency and prerequisite validation."
+      ]
+    },
+    "options": {
+      "recovery": [
+        {
+          "version": 1,
+          "target": {
+            "url": "http://fake.test",
+            "database": "fixture",
+            "uid": 7
+          },
+          "externalId": "cli.root",
+          "model": "x",
+          "intent": "47745b6a74b4f1cce25568b93165e8587759b931c1c32ad0b6138b5f496b098a",
+          "state": "complete",
+          "id": 1
+        }
+      ]
+    },
+    "resources": [
+      {
+        "externalId": "cli.root",
+        "model": "x",
+        "values": {
+          "name": "Root"
+        }
+      }
+    ],
+    "order": [
+      "cli.root"
+    ],
+    "bindings": {
+      "cli.root": 1
+    },
+    "schema": {
+      "x": {
+        "name": {
+          "type": "char"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "parent_id": {
+          "type": "many2one",
+          "relation": "x"
+        },
+        "items": {
+          "type": "many2many",
+          "relation": "x"
+        },
+        "payload": {
+          "type": "json"
+        },
+        "state": {
+          "type": "selection"
+        }
+      }
+    },
+    "observations": [
+      {
+        "kind": "schema",
+        "key": "x",
+        "value": {
+          "name": {
+            "type": "char"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "parent_id": {
+            "type": "many2one",
+            "relation": "x"
+          },
+          "items": {
+            "type": "many2many",
+            "relation": "x"
+          },
+          "payload": {
+            "type": "json"
+          },
+          "state": {
+            "type": "selection"
+          }
+        }
+      },
+      {
+        "kind": "search",
+        "key": "baf72c0112270f0ca1e5af250f7693ec2cc8158fa9bce78d79d388c839f25f0d",
+        "value": {
+          "query": {
+            "model": "x",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  1
+                ]
+              ]
+            ],
+            "fields": [
+              "id",
+              "name"
+            ],
+            "order": "id",
+            "context": {
+              "active_test": false
+            }
+          },
+          "rows": [
+            {
+              "id": 1,
+              "name": "Root"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "search",
+        "key": "d0f694e6b61856bb2d86227131c6484013bd307439bde8f5f10f37b67b0cab16",
+        "value": {
+          "query": {
+            "model": "ir.model.data",
+            "domain": [
+              [
+                "module",
+                "=",
+                "cli"
+              ],
+              [
+                "name",
+                "in",
+                [
+                  "root"
+                ]
+              ]
+            ],
+            "fields": [
+              "id",
+              "model",
+              "module",
+              "name",
+              "res_id"
+            ],
+            "order": "id",
+            "context": {
+              "active_test": false
+            }
+          },
+          "rows": [
+            {
+              "id": 2,
+              "model": "x",
+              "module": "cli",
+              "name": "root",
+              "res_id": 1
+            }
+          ]
+        }
+      },
+      {
+        "kind": "server",
+        "key": "version",
+        "value": {
+          "version": "18.0"
+        }
+      }
+    ],
+    "operations": [],
+    "diagnostics": [
+      "Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.",
+      "No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.",
+      "Read access does not establish write permission. RPC writes retain client safety guards.",
+      "Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock."
+    ],
+    "digest": "<digest>"
+  }
+}",
+}
+`;
+
+exports[`stateman CLI characterization > plans with options and out, applies with a journal, then reports drift > drift with changes 1`] = `
+{
+  "code": 2,
+  "err": "",
+  "out": "{
+  "converged": false,
+  "plan": {
+    "kind": "stateman-plan",
+    "version": 1,
+    "target": {
+      "url": "http://fake.test",
+      "database": "fixture",
+      "uid": 7
+    },
+    "input": {
+      "kind": "offline-inspection",
+      "resources": [
+        {
+          "externalId": "cli.root",
+          "model": "x",
+          "values": {
+            "name": "Root"
+          }
+        }
+      ],
+      "policies": [],
+      "files": [
+        "<area>/resources.mts"
+      ],
+      "diagnostics": [
+        "Offline inspection only: identities and relations are symbolic, not validated against Odoo.",
+        "Use plan with an explicit connection for schema, identity, dependency and prerequisite validation."
+      ]
+    },
+    "options": {},
+    "resources": [
+      {
+        "externalId": "cli.root",
+        "model": "x",
+        "values": {
+          "name": "Root"
+        }
+      }
+    ],
+    "order": [
+      "cli.root"
+    ],
+    "bindings": {},
+    "schema": {
+      "x": {
+        "name": {
+          "type": "char"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "parent_id": {
+          "type": "many2one",
+          "relation": "x"
+        },
+        "items": {
+          "type": "many2many",
+          "relation": "x"
+        },
+        "payload": {
+          "type": "json"
+        },
+        "state": {
+          "type": "selection"
+        }
+      }
+    },
+    "observations": [
+      {
+        "kind": "schema",
+        "key": "x",
+        "value": {
+          "name": {
+            "type": "char"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "parent_id": {
+            "type": "many2one",
+            "relation": "x"
+          },
+          "items": {
+            "type": "many2many",
+            "relation": "x"
+          },
+          "payload": {
+            "type": "json"
+          },
+          "state": {
+            "type": "selection"
+          }
+        }
+      },
+      {
+        "kind": "search",
+        "key": "d0f694e6b61856bb2d86227131c6484013bd307439bde8f5f10f37b67b0cab16",
+        "value": {
+          "query": {
+            "model": "ir.model.data",
+            "domain": [
+              [
+                "module",
+                "=",
+                "cli"
+              ],
+              [
+                "name",
+                "in",
+                [
+                  "root"
+                ]
+              ]
+            ],
+            "fields": [
+              "id",
+              "model",
+              "module",
+              "name",
+              "res_id"
+            ],
+            "order": "id",
+            "context": {
+              "active_test": false
+            }
+          },
+          "rows": []
+        }
+      },
+      {
+        "kind": "server",
+        "key": "version",
+        "value": {
+          "version": "18.0"
+        }
+      }
+    ],
+    "operations": [
+      {
+        "key": "cli.root:record",
+        "type": "create",
+        "externalId": "cli.root",
+        "model": "x",
+        "values": {
+          "name": "Root"
+        },
+        "context": {
+          "active_test": false
+        },
+        "dependsOn": []
+      }
+    ],
+    "diagnostics": [
+      "Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.",
+      "No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.",
+      "Read access does not establish write permission. RPC writes retain client safety guards.",
+      "Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock."
+    ],
+    "digest": "<digest>"
+  }
+}",
+}
+`;
+
+exports[`stateman CLI characterization > plans with options and out, applies with a journal, then reports drift > inspect 1`] = `
+{
+  "code": 0,
+  "err": "",
+  "out": "{
+  "kind": "offline-inspection",
+  "resources": [
+    {
+      "externalId": "cli.root",
+      "model": "x",
+      "values": {
+        "name": "Root"
+      }
+    }
+  ],
+  "policies": [],
+  "files": [
+    "<area>/resources.mts"
+  ],
+  "diagnostics": [
+    "Offline inspection only: identities and relations are symbolic, not validated against Odoo.",
+    "Use plan with an explicit connection for schema, identity, dependency and prerequisite validation."
+  ]
+}",
+}
+`;
+
+exports[`stateman CLI characterization > plans with options and out, applies with a journal, then reports drift > load 1`] = `
+{
+  "code": 0,
+  "err": "",
+  "out": "{
+  "kind": "offline-inspection",
+  "resources": [
+    {
+      "externalId": "cli.root",
+      "model": "x",
+      "values": {
+        "name": "Root"
+      }
+    }
+  ],
+  "policies": [],
+  "files": [
+    "<area>/resources.mts"
+  ],
+  "diagnostics": [
+    "Offline inspection only: identities and relations are symbolic, not validated against Odoo.",
+    "Use plan with an explicit connection for schema, identity, dependency and prerequisite validation."
+  ]
+}",
+}
+`;
+
+exports[`stateman CLI characterization > plans with options and out, applies with a journal, then reports drift > plan 1`] = `
+{
+  "code": 0,
+  "err": "",
+  "out": "{
+  "kind": "stateman-plan",
+  "version": 1,
+  "target": {
+    "url": "http://fake.test",
+    "database": "fixture",
+    "uid": 7
+  },
+  "input": {
+    "kind": "offline-inspection",
+    "resources": [
+      {
+        "externalId": "cli.root",
+        "model": "x",
+        "values": {
+          "name": "Root"
+        }
+      }
+    ],
+    "policies": [],
+    "files": [
+      "<area>/resources.mts"
+    ],
+    "diagnostics": [
+      "Offline inspection only: identities and relations are symbolic, not validated against Odoo.",
+      "Use plan with an explicit connection for schema, identity, dependency and prerequisite validation."
+    ]
+  },
+  "options": {
+    "select": [
+      "cli.root"
+    ],
+    "recovery": []
+  },
+  "resources": [
+    {
+      "externalId": "cli.root",
+      "model": "x",
+      "values": {
+        "name": "Root"
+      }
+    }
+  ],
+  "order": [
+    "cli.root"
+  ],
+  "bindings": {},
+  "schema": {
+    "x": {
+      "name": {
+        "type": "char"
+      },
+      "active": {
+        "type": "boolean"
+      },
+      "parent_id": {
+        "type": "many2one",
+        "relation": "x"
+      },
+      "items": {
+        "type": "many2many",
+        "relation": "x"
+      },
+      "payload": {
+        "type": "json"
+      },
+      "state": {
+        "type": "selection"
+      }
+    }
+  },
+  "observations": [
+    {
+      "kind": "schema",
+      "key": "x",
+      "value": {
+        "name": {
+          "type": "char"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "parent_id": {
+          "type": "many2one",
+          "relation": "x"
+        },
+        "items": {
+          "type": "many2many",
+          "relation": "x"
+        },
+        "payload": {
+          "type": "json"
+        },
+        "state": {
+          "type": "selection"
+        }
+      }
+    },
+    {
+      "kind": "search",
+      "key": "d0f694e6b61856bb2d86227131c6484013bd307439bde8f5f10f37b67b0cab16",
+      "value": {
+        "query": {
+          "model": "ir.model.data",
+          "domain": [
+            [
+              "module",
+              "=",
+              "cli"
+            ],
+            [
+              "name",
+              "in",
+              [
+                "root"
+              ]
+            ]
+          ],
+          "fields": [
+            "id",
+            "model",
+            "module",
+            "name",
+            "res_id"
+          ],
+          "order": "id",
+          "context": {
+            "active_test": false
+          }
+        },
+        "rows": []
+      }
+    },
+    {
+      "kind": "server",
+      "key": "version",
+      "value": {
+        "version": "18.0"
+      }
+    }
+  ],
+  "operations": [
+    {
+      "key": "cli.root:record",
+      "type": "create",
+      "externalId": "cli.root",
+      "model": "x",
+      "values": {
+        "name": "Root"
+      },
+      "context": {
+        "active_test": false
+      },
+      "dependsOn": []
+    }
+  ],
+  "diagnostics": [
+    "Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.",
+    "No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.",
+    "Read access does not establish write permission. RPC writes retain client safety guards.",
+    "Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock."
+  ],
+  "digest": "<digest>"
+}",
+}
+`;
+
+exports[`stateman CLI characterization > plans with options and out, applies with a journal, then reports drift 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"JOURNAL_CHANGED","message":"Journal receipts differ from this reviewed plan; re-plan with --journal before applying"}",
+}
+`;
+
+exports[`stateman CLI characterization > unknown command 1`] = `
+{
+  "code": 1,
+  "err": "{"code":"USAGE","message":"Usage: stateman <load|inspect> <file-or-directory> [--content-root <directory>] [--fixture]\\n       stateman <plan|drift> <file-or-directory> --connection <module> [--options <json>] [--journal <json>] [--out <json>] [--fixture]\\n       stateman apply <reviewed-plan.json> --connection <module> --journal <json>\\n       stateman --help\\n\\nLoads trusted TypeScript/ESM modules with ordinary filesystem/network privileges.\\n--connection explicitly selects a trusted module exporting a StateConnection as default\\nor connection. That module owns credentials/authentication and retains client safety.\\nPlans serialize rendered input and observed target assumptions; apply revalidates them.\\nPlan exits 0; drift exits 0 when converged, 2 for differences; errors/apply failure exit 1.\\nApply requires a durable journal for record creation; retain it across crashes and retries.\\n--fixture reads bounded portable JSON instead of executing resource modules.\\nNo implicit action execution, addon changes, broad live export/import or snapshots."}",
+  "out": "",
+}
+`;
