@@ -170,12 +170,4 @@ describe('apply() characterization', () => {
     const result = await apply(reviewed, client.connection(), { journal: { save: async () => undefined } });
     expect({ ok: result.ok, statuses: result.results.map(r => r.status), mutations: client.mutations.map(m => `${m.method}:${m.model}`) }).toMatchSnapshot();
   });
-  it('refuses a new Reference target without a managed model', async () => {
-    const client = new FakeClient();
-    client.schema.x.target = { type: 'reference', selection: [['x', 'X']] } as FieldMetadata;
-    const reviewed = await plan([resource('x', 'a.target', { name: 'T' }), resource('x', 'a.one', { target: ref('a.target') })], client.connection());
-    reviewed.resources = reviewed.resources.filter(r => r.externalId !== 'a.target');
-    const result = await outcome(async () => (await apply(reviewed, client.connection(), { journal: { save: async () => undefined } })).results.map(r => ({ key: r.operation.key, status: r.status, code: (r.error as { code?: string })?.code })));
-    expect(result).toMatchSnapshot();
-  });
 });

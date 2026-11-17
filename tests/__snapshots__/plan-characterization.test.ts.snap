@@ -2,241 +2,489 @@
 
 exports[`plan() fail-closed characterization > addon module resource 1`] = `
 {
-  "code": "MODULE_MUTATION_UNSUPPORTED",
-  "message": "Addon changes need a separate approved module stage and fresh record planning",
+  "calls": [],
+  "result": {
+    "code": "MODULE_MUTATION_UNSUPPORTED",
+    "message": "Addon changes need a separate approved module stage and fresh record planning",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > adoption lookup on another model 1`] = `
 {
-  "code": "LOOKUP_MODEL",
-  "message": "c.a: adoption lookup model must equal x",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "LOOKUP_MODEL",
+    "message": "c.a: adoption lookup model must equal x",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > company not authorized 1`] = `
 {
-  "code": "COMPANY_ACCESS",
-  "message": "Company 4 is not authorized for the authenticated user",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.company",[["id","=",4]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.users",[["id","=",3]],{"fields":["company_ids","id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","x",[["id","in",[5]]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+  ],
+  "result": {
+    "code": "COMPANY_ACCESS",
+    "message": "Company 4 is not authorized for the authenticated user",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > company outside base context 1`] = `
 {
-  "code": "COMPANY_CONTEXT",
-  "message": "Base allowed_company_ids must authorize and include company 1",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"allowed_company_ids":[999],"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"allowed_company_ids":[999],"active_test":false}}]",
+    "["search_read","res.company",[["id","=",1]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[999],"active_test":false}}]",
+    "["search_read","res.users",[["id","=",3]],{"fields":["company_ids","id"],"order":"id","context":{"allowed_company_ids":[999],"active_test":false}}]",
+    "["search_read","x",[["id","in",[4]]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[999],"active_test":false}}]",
+  ],
+  "result": {
+    "code": "COMPANY_CONTEXT",
+    "message": "Base allowed_company_ids must authorize and include company 1",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > cron active not boolean 1`] = `
 {
-  "code": "INVALID_CRON_POLICY",
-  "message": "c.cron: cron active must be an explicit boolean or omitted to preserve its observed state",
+  "calls": [
+    "["call","ir.cron","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["cron"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "INVALID_CRON_POLICY",
+    "message": "c.cron: cron active must be an explicit boolean or omitted to preserve its observed state",
+  },
+}
+`;
+
+exports[`plan() fail-closed characterization > cron policy and system field 1`] = `
+{
+  "calls": [
+    "["call","ir.cron","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["cron"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "INVALID_CRON_POLICY",
+    "message": "c.cron: cron active must be an explicit boolean or omitted to preserve its observed state",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > cron without boolean active 1`] = `
 {
-  "code": "FIELD_UNAVAILABLE",
-  "message": "c.cron: cron active metadata is unavailable or restricted",
+  "calls": [
+    "["call","ir.cron","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["cron"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "FIELD_UNAVAILABLE",
+    "message": "c.cron: cron active metadata is unavailable or restricted",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > cyclic parent scope 1`] = `
 {
-  "code": "RESOURCE_CYCLE",
-  "message": "Unsupported resource cycle: c.a -> c.b -> c.a",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a","b"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "RESOURCE_CYCLE",
+    "message": "Unsupported resource cycle: c.a -> c.b -> c.a",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > duplicate company entry 1`] = `
 {
-  "code": "COMPANY_VALUE_DUPLICATE",
-  "message": "c.a.property: duplicate company 1",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.company",[["id","=",1]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.users",[["id","=",3]],{"fields":["company_ids","id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","x",[["id","in",[4]]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+  ],
+  "result": {
+    "code": "COMPANY_VALUE_DUPLICATE",
+    "message": "c.a.property: duplicate company 1",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > duplicate company entry on create 1`] = `
 {
-  "code": "COMPANY_VALUE_DUPLICATE",
-  "message": "c.a.property: duplicate company 1",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.company",[["id","=",1]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.users",[["id","=",3]],{"fields":["company_ids","id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+  ],
+  "result": {
+    "code": "COMPANY_VALUE_DUPLICATE",
+    "message": "c.a.property: duplicate company 1",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > duplicate receipts 1`] = `
 {
-  "code": "RECOVERY_COLLISION",
-  "message": "Duplicate recovery receipt for c.a",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "RECOVERY_COLLISION",
+    "message": "Duplicate recovery receipt for c.a",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > duplicate rendered identity 1`] = `
 {
-  "code": "IDENTITY_COLLISION",
-  "message": "Duplicate XML ID c.a",
+  "calls": [],
+  "result": {
+    "code": "IDENTITY_COLLISION",
+    "message": "Duplicate XML ID c.a",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > empty company values 1`] = `
 {
-  "code": "COMPANY_VALUE_INVALID",
-  "message": "c.a.property: expected explicit company/value entries",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+  ],
+  "result": {
+    "code": "COMPANY_VALUE_INVALID",
+    "message": "c.a.property: expected explicit company/value entries",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > exact target partitioned by company_ids 1`] = `
 {
-  "code": "EXACT_VISIBILITY",
-  "message": "exact() does not support targets partitioned through company_ids",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.rule",[["model_id.model","=","x"],["active","=",true],["perm_read","=",true]],{"fields":["domain_force","id","name"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.company",[["id","in",[1,2]]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.users",[["id","=",3]],{"fields":["company_ids","id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+  ],
+  "result": {
+    "code": "EXACT_VISIBILITY",
+    "message": "exact() does not support targets partitioned through company_ids",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > exact target with unsupported company field 1`] = `
 {
-  "code": "EXACT_VISIBILITY",
-  "message": "Unsupported target company partition",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","ir.rule",[["model_id.model","=","x"],["active","=",true],["perm_read","=",true]],{"fields":["domain_force","id","name"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.company",[["id","in",[1,2]]],{"fields":["id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+    "["search_read","res.users",[["id","=",3]],{"fields":["company_ids","id"],"order":"id","context":{"allowed_company_ids":[1,2],"active_test":false}}]",
+  ],
+  "result": {
+    "code": "EXACT_VISIBILITY",
+    "message": "Unsupported target company partition",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > invalid onMissing policy 1`] = `
 {
-  "code": "INVALID_POLICY",
-  "message": "Invalid onMissing for c.a",
+  "calls": [],
+  "result": {
+    "code": "INVALID_POLICY",
+    "message": "Invalid onMissing for c.a",
+  },
 }
 `;
 
-exports[`plan() fail-closed characterization > inverse declared twice 1`] = `
+exports[`plan() fail-closed characterization > invalid policy and duplicate identity 1`] = `
 {
-  "code": "RESOURCE_CYCLE",
-  "message": "Unsupported resource cycle: c.parent -> c.parent",
+  "calls": [],
+  "result": {
+    "code": "IDENTITY_COLLISION",
+    "message": "Duplicate XML ID c.a",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > inverse to unrelated model 1`] = `
 {
-  "code": "INVALID_INVERSE",
-  "message": "c.parent.name must relate to x through M2O or M2M",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["child","parent"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "INVALID_INVERSE",
+    "message": "c.parent.name must relate to x through M2O or M2M",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > lookup on wrong relation model 1`] = `
 {
-  "code": "RELATION_MODEL",
-  "message": "Lookup project.project does not match relation x",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "RELATION_MODEL",
+    "message": "Lookup project.project does not match relation x",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > malformed schema 1`] = `
 {
-  "code": "INVALID_SCHEMA",
-  "message": "Invalid fields_get result for x",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "INVALID_SCHEMA",
+    "message": "Invalid fields_get result for x",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > malformed search result 1`] = `
 {
-  "code": "INVALID_READ",
-  "message": "Invalid search_read result for ir.model.data",
+  "calls": [],
+  "result": {
+    "code": "INVALID_READ",
+    "message": "Invalid search_read result for ir.model.data",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > manual field metadata unreadable 1`] = `
 {
-  "code": "METADATA_INACCESSIBLE",
-  "message": "Cannot establish manual field metadata for x.x_score",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+    "["search_read","ir.model.fields",[["model","=","x"],["name","=","x_score"]],{"fields":["compute","id","state"],"limit":2,"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "METADATA_INACCESSIBLE",
+    "message": "Cannot establish manual field metadata for x.x_score",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > missing model 1`] = `
 {
-  "code": "MODEL_MISSING",
-  "message": "Model x is unavailable",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "MODEL_MISSING",
+    "message": "Model x is unavailable",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > missing server version 1`] = `
 {
-  "code": "VERSION_UNKNOWN",
-  "message": "Read-only server adapter did not provide an Odoo version",
+  "calls": [],
+  "result": {
+    "code": "VERSION_UNKNOWN",
+    "message": "Read-only server adapter did not provide an Odoo version",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > model-wide orphan removal 1`] = `
 {
-  "code": "BROAD_REMOVAL_UNSUPPORTED",
-  "message": "Model-wide removal is unsupported; enumerate owned removals",
+  "calls": [],
+  "result": {
+    "code": "BROAD_REMOVAL_UNSUPPORTED",
+    "message": "Model-wide removal is unsupported; enumerate owned removals",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > non-inspection input 1`] = `
 {
-  "code": "INVALID_INPUT",
-  "message": "Expected a rendered Inspection or resource definitions",
+  "calls": [],
+  "result": {
+    "code": "INVALID_INPUT",
+    "message": "Expected a rendered Inspection or resource definitions",
+  },
 }
 `;
 
-exports[`plan() fail-closed characterization > non-tuple domain term 1`] = `"planned"`;
+exports[`plan() fail-closed characterization > non-tuple domain term is accepted 1`] = `
+{
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+    "["search_read","x",[["name","=","A"]],{"fields":["id"],"limit":2,"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": "planned",
+}
+`;
 
 exports[`plan() fail-closed characterization > path through scalar field 1`] = `
 {
-  "code": "INVALID_LOOKUP",
-  "message": "x.name is not relational",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "INVALID_LOOKUP",
+    "message": "x.name is not relational",
+  },
+}
+`;
+
+exports[`plan() fail-closed characterization > receipt collision and missing dependency 1`] = `
+{
+  "calls": [],
+  "result": {
+    "code": "MISSING_DEPENDENCY",
+    "message": "c.a needs missing managed resource c.missing; load the complete resource set",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > receipt conflicting with XML ID 1`] = `
 {
-  "code": "RECOVERY_COLLISION",
-  "message": "XML ID c.a conflicts with recovered record 101",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "RECOVERY_COLLISION",
+    "message": "XML ID c.a conflicts with recovered record 101",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > receipt for another connection 1`] = `
 {
-  "code": "RECOVERY_TARGET",
-  "message": "Recovery receipt belongs to a different connection",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "RECOVERY_TARGET",
+    "message": "Recovery receipt belongs to a different connection",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > ref to wrong relation model 1`] = `
 {
-  "code": "RELATION_MODEL",
-  "message": "c.p is project.project, expected x",
+  "calls": [
+    "["call","project.project","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a","p"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "RELATION_MODEL",
+    "message": "c.p is project.project, expected x",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > reference to unselected resource 1`] = `
 {
-  "code": "MISSING_DEPENDENCY",
-  "message": "c.a needs missing managed resource c.missing; load the complete resource set",
+  "calls": [],
+  "result": {
+    "code": "MISSING_DEPENDENCY",
+    "message": "c.a needs missing managed resource c.missing; load the complete resource set",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > resource without model 1`] = `
 {
-  "code": "INVALID_RESOURCE",
-  "message": "Malformed resource c.a",
+  "calls": [],
+  "result": {
+    "code": "INVALID_RESOURCE",
+    "message": "Malformed resource c.a",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > system field 1`] = `
 {
-  "code": "SYSTEM_FIELD",
-  "message": "c.a.create_uid is not a managed field",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "SYSTEM_FIELD",
+    "message": "c.a.create_uid is not a managed field",
+  },
+}
+`;
+
+exports[`plan() fail-closed characterization > system field and wrong relation model 1`] = `
+{
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "SYSTEM_FIELD",
+    "message": "c.a.create_uid is not a managed field",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > translation of relation field 1`] = `
 {
-  "code": "TRANSLATION_UNSUPPORTED",
-  "message": "c.a: translation needs a scalar string field",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "TRANSLATION_UNSUPPORTED",
+    "message": "c.a: translation needs a scalar string field",
+  },
 }
 `;
 
 exports[`plan() fail-closed characterization > unrendered marker 1`] = `
 {
-  "code": "UNRENDERED_MARKER",
-  "message": "Content/DSL markers must be rendered before record planning",
+  "calls": [
+    "["call","x","fields_get",[],{"attributes":["type","relation","relation_field","required","readonly","company_dependent","translate","store","domain","context","selection"],"context":{"active_test":false}}]",
+    "["search_read","ir.model.data",[["module","=","c"],["name","in",["a"]]],{"fields":["id","model","module","name","res_id"],"order":"id","context":{"active_test":false}}]",
+  ],
+  "result": {
+    "code": "UNRENDERED_MARKER",
+    "message": "Content/DSL markers must be rendered before record planning",
+  },
+}
+`;
+
+exports[`plan() fail-closed characterization > unsupported version and module resource 1`] = `
+{
+  "calls": [],
+  "result": {
+    "code": "MODULE_MUTATION_UNSUPPORTED",
+    "message": "Addon changes need a separate approved module stage and fresh record planning",
+  },
 }
 `;
 

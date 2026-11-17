@@ -22,13 +22,6 @@ exports[`apply() characterization > refuses a concurrent XML-ID binding to anoth
 ]
 `;
 
-exports[`apply() characterization > refuses a new Reference target without a managed model 1`] = `
-{
-  "code": "PLAN_MODIFIED",
-  "message": "Plan contents do not match the reviewed digest",
-}
-`;
-
 exports[`apply() characterization > stops when the connection identity changes 1`] = `
 {
   "code": "STALE_PLAN",

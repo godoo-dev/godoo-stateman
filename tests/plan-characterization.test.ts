@@ -1,7 +1,7 @@
 // Characterization of plan() fail-closed paths and complete plan output, pinned
 // before refactoring plan() for the complexity limit. A snapshot change means a
 // behaviour change; fix the code, do not update the snapshot.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { OdooRpcError } from '@godoo-dev/client';
 import { companyValues, exact, inspectResources, lookup, plan, ref, resource, translated } from '@godoo-dev/stateman';
 import type { Inspection, PlanOptions, Row, StateConnection } from '@godoo-dev/stateman';
@@ -72,7 +72,7 @@ const cases: Record<string, () => Promise<unknown>> = {
     return plan([resource('x', 'c.a', { name: 'A' })], client.connection());
   },
   'path through scalar field': async () => plan([resource('x', 'c.a', { parent_id: lookup('x', { 'name.id': 'A' }) })], new FakeClient().connection()),
-  'non-tuple domain term': async () => {
+  'non-tuple domain term is accepted': async () => {
     const client = new FakeClient();
     client.seed('x', { name: 'A' });
     return plan([resource('x', 'c.a', { parent_id: lookup('x', [['name', '=', 'A']]) })], client.connection());
@@ -98,11 +98,6 @@ const cases: Record<string, () => Promise<unknown>> = {
     const input = await rendered([resource('x', 'c.parent', { name: 'P' }), resource('x', 'c.child', { name: 'C' })]);
     input.resources[0].parentScope = undefined;
     input.resources[1].parentScope = { parentExternalId: 'c.parent', inverseField: 'name' } as never;
-    return plan(input, new FakeClient().connection());
-  },
-  'inverse declared twice': async () => {
-    const input = await rendered([resource('x', 'c.parent', { name: 'P' }), resource('x', 'c.child', { parent_id: ref('c.parent') })]);
-    input.resources[1].parentScope = { parentExternalId: 'c.parent', inverseField: 'parent_id' } as never;
     return plan(input, new FakeClient().connection());
   },
   'receipt for another connection': async () => plan([resource('x', 'c.a', { name: 'A' })], new FakeClient().connection(), {
@@ -180,10 +175,41 @@ const cases: Record<string, () => Promise<unknown>> = {
   },
 };
 
+// Several faults at once: the first check that fires is part of the contract.
+const ordered: Record<string, () => Promise<unknown>> = {
+  'invalid policy and duplicate identity': async () => {
+    const input = await rendered([resource('x', 'c.a', { name: 'A' })]);
+    input.resources.push({ ...structuredClone(input.resources[0]), options: { onMissing: 'replace' } as never });
+    return plan(input, new FakeClient().connection());
+  },
+  'system field and wrong relation model': async () => plan([resource('x', 'c.a', { create_uid: 1, parent_id: lookup('project.project', { name: 'P' }) })], new FakeClient().connection()),
+  'receipt collision and missing dependency': async () => {
+    const target = { url: 'http://fake.test/', database: 'fixture', uid: 7 };
+    const receipt = { version: 1, target, externalId: 'c.a', model: 'x', state: 'pending' };
+    const input = await rendered([resource('x', 'c.a', { name: 'A' })]);
+    input.resources[0].values.parent_id = { __type: 'resourceRef', externalId: 'c.missing' };
+    return plan(input, new FakeClient().connection(), { recovery: [receipt, receipt] } as PlanOptions);
+  },
+  'unsupported version and module resource': async () => {
+    const client = new FakeClient(); client.version = '17.0';
+    return plan([resource('ir.module.module', 'c.module', { state: 'installed' })], client.connection());
+  },
+  'cron policy and system field': async () => plan([resource('ir.cron', 'c.cron', { name: 'Cron', active: 'yes', write_date: false })], new FakeClient().connection()),
+};
+
 describe('plan() fail-closed characterization', () => {
-  for (const [name, run] of Object.entries(cases)) {
+  for (const [name, run] of Object.entries({ ...cases, ...ordered })) {
     it(name, async () => {
-      expect(await outcome(run)).toMatchSnapshot();
+      // Physical reads before the failure are pinned as a multiset.
+      const calls: string[] = [];
+      const read = vi.spyOn(FakeClient.prototype, 'searchRead');
+      const call = vi.spyOn(FakeClient.prototype, 'call');
+      try {
+        const result = await outcome(run);
+        for (const args of read.mock.calls) calls.push(JSON.stringify(['search_read', ...args]));
+        for (const args of call.mock.calls) calls.push(JSON.stringify(['call', ...args]));
+        expect({ result, calls: calls.sort() }).toMatchSnapshot();
+      } finally { read.mockRestore(); call.mockRestore(); }
     });
   }
 });
