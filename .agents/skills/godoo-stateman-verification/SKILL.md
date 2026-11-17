@@ -35,8 +35,11 @@ job succeeded. Let CI run the full set on the PR; run the slow tiers locally
 only when the trigger below applies and you need the answer before CI.
 
 There is no lint, formatter or complexity rule yet; adding one awaits an owner
-decision in [issue #27](https://github.com/godoo-dev/godoo-stateman/issues/27). Until then, keep new functions small and
-do not add suppressions.
+decision in [issue #27](https://github.com/godoo-dev/godoo-stateman/issues/27).
+Until then, keep new functions small and do not add suppressions.
+
+Changes to docs or skills alone need only `git diff --check` and a link check,
+not the product or container tiers.
 
 ## Installed package tier
 
@@ -49,7 +52,10 @@ npm run check:package
 ```
 
 The artifact directory must be outside the checkout and must not already hold
-a manifest; without the variable the caller creates a temporary one. It packs the tarball once into `GODOO_ARTIFACT_DIR`, installs it into a
+a manifest; without the variable the caller creates a temporary one, but the
+Odoo tier then has no directory to reuse.
+
+It packs the tarball once into `GODOO_ARTIFACT_DIR`, installs it into a
 temporary consumer outside the checkout without path aliases, and drives the
 public API and CLI through create, no-op, update, drift, journal recovery and
 missing-connection refusal. The consumer is removed when it finishes; the
@@ -60,7 +66,7 @@ artifact directory keeps the tarball for the Odoo tier. Remove it afterwards.
 Run when a change touches planning, apply, drift, recovery, relation or
 company-value handling, HTML or translation comparison, MIS support, or the
 Odoo harness. Needs Docker, `tar`, Python 3 and `pdftotext`, and the same
-`GODOO_ARTIFACT_DIR` as the package tier:
+`GODOO_ARTIFACT_DIR` as the package tier (it fails without it):
 
 ```sh
 npm run check:odoo18
@@ -101,6 +107,14 @@ Releases use the manual `release.yml` workflow on `main`, which reuses the CI
 tarball rather than rebuilding; see `docs/releasing.md`. `npm run release:check`
 validates a qualified artifact directory. Running checks grants no publication,
 deployment or credential authority.
+
+## Product invariants
+
+Plan, apply and drift take an explicitly supplied connection; Stateman never
+selects an environment, authenticates or reads credentials. Keep the fail-closed
+validation for unsupported policies, stale plans, unresolved dependencies,
+ownership and removal, and recovery. Creates keep durable caller-owned receipts;
+a retry never discards them. Do not weaken client safety guards.
 
 ## Scope limits
 

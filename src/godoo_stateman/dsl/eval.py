@@ -10,9 +10,9 @@ restricts *accidental* use of I/O functions (``open``, ``__import__``, etc.)
 by **trusted** DSL authors — it is not a security boundary.  Because
 ``getattr`` is present in the allowlist, a determined author can traverse the
 object graph (``object.__subclasses__()`` → ``__init__.__globals__`` → real
-``__builtins__``) to reach ``__import__`` and arbitrary I/O.  See docs/python-reference.md
-for the trusted-author constraint.  Do not accept configs from untrusted
-sources without a real sandbox (e.g. subprocess + seccomp).
+``__builtins__``) to reach ``__import__`` and arbitrary I/O.  See
+docs/python-reference.md for the trusted-author constraint.  Do not accept
+configs from untrusted sources without a real sandbox (e.g. subprocess + seccomp).
 
 Purity invariant
 ----------------
@@ -51,8 +51,8 @@ from godoo_stateman.errors import DslEvalError, MissingModuleError
 #: (object.__subclasses__() -> __init__.__globals__ -> real __builtins__)
 #: to reach __import__ and therefore os.system. This allowlist only
 #: prevents *accidental* use of I/O functions by trusted DSL authors
-#: (see docs/python-reference.md trusted-author constraint). Do not accept configs from
-#: untrusted sources without a real sandbox (e.g. subprocess + seccomp).
+#: (see docs/python-reference.md trusted-author constraint). Do not accept
+#: configs from untrusted sources without a real sandbox (e.g. subprocess + seccomp).
 #:
 #: Allowlist of Python builtins available inside DSL config files.
 #: Deliberately absent: ``__import__``, ``open``, ``eval``, ``exec``,

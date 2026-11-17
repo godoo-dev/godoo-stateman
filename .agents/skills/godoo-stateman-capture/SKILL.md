@@ -7,7 +7,7 @@ description: Capture, triage and retrieve Stateman work in its GitHub issues, in
 
 Stateman's work records are the public GitHub issues of
 `godoo-dev/godoo-stateman`. Pass `--repo godoo-dev/godoo-stateman` to every `gh`
-call. The project's ignored local `.mafe-si.toml` names this tracker; inherited
+call. The project's local, untracked `.mafe-si.toml` names this tracker; inherited
 HQ or shared-tracker bindings do not apply to ordinary Stateman work. If `gh` is
 not authenticated, keep a draft in `.scratch/` and tell Marc.
 
