@@ -1,0 +1,2801 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`plan() fail-closed characterization > addon module resource 1`] = `
+{
+  "code": "MODULE_MUTATION_UNSUPPORTED",
+  "message": "Addon changes need a separate approved module stage and fresh record planning",
+}
+`;
+
+exports[`plan() fail-closed characterization > adoption lookup on another model 1`] = `
+{
+  "code": "LOOKUP_MODEL",
+  "message": "c.a: adoption lookup model must equal x",
+}
+`;
+
+exports[`plan() fail-closed characterization > company not authorized 1`] = `
+{
+  "code": "COMPANY_ACCESS",
+  "message": "Company 4 is not authorized for the authenticated user",
+}
+`;
+
+exports[`plan() fail-closed characterization > company outside base context 1`] = `
+{
+  "code": "COMPANY_CONTEXT",
+  "message": "Base allowed_company_ids must authorize and include company 1",
+}
+`;
+
+exports[`plan() fail-closed characterization > cron active not boolean 1`] = `
+{
+  "code": "INVALID_CRON_POLICY",
+  "message": "c.cron: cron active must be an explicit boolean or omitted to preserve its observed state",
+}
+`;
+
+exports[`plan() fail-closed characterization > cron without boolean active 1`] = `
+{
+  "code": "FIELD_UNAVAILABLE",
+  "message": "c.cron: cron active metadata is unavailable or restricted",
+}
+`;
+
+exports[`plan() fail-closed characterization > cyclic parent scope 1`] = `
+{
+  "code": "RESOURCE_CYCLE",
+  "message": "Unsupported resource cycle: c.a -> c.b -> c.a",
+}
+`;
+
+exports[`plan() fail-closed characterization > duplicate company entry 1`] = `
+{
+  "code": "COMPANY_VALUE_DUPLICATE",
+  "message": "c.a.property: duplicate company 1",
+}
+`;
+
+exports[`plan() fail-closed characterization > duplicate company entry on create 1`] = `
+{
+  "code": "COMPANY_VALUE_DUPLICATE",
+  "message": "c.a.property: duplicate company 1",
+}
+`;
+
+exports[`plan() fail-closed characterization > duplicate receipts 1`] = `
+{
+  "code": "RECOVERY_COLLISION",
+  "message": "Duplicate recovery receipt for c.a",
+}
+`;
+
+exports[`plan() fail-closed characterization > duplicate rendered identity 1`] = `
+{
+  "code": "IDENTITY_COLLISION",
+  "message": "Duplicate XML ID c.a",
+}
+`;
+
+exports[`plan() fail-closed characterization > empty company values 1`] = `
+{
+  "code": "COMPANY_VALUE_INVALID",
+  "message": "c.a.property: expected explicit company/value entries",
+}
+`;
+
+exports[`plan() fail-closed characterization > exact target partitioned by company_ids 1`] = `
+{
+  "code": "EXACT_VISIBILITY",
+  "message": "exact() does not support targets partitioned through company_ids",
+}
+`;
+
+exports[`plan() fail-closed characterization > exact target with unsupported company field 1`] = `
+{
+  "code": "EXACT_VISIBILITY",
+  "message": "Unsupported target company partition",
+}
+`;
+
+exports[`plan() fail-closed characterization > invalid onMissing policy 1`] = `
+{
+  "code": "INVALID_POLICY",
+  "message": "Invalid onMissing for c.a",
+}
+`;
+
+exports[`plan() fail-closed characterization > inverse declared twice 1`] = `
+{
+  "code": "RESOURCE_CYCLE",
+  "message": "Unsupported resource cycle: c.parent -> c.parent",
+}
+`;
+
+exports[`plan() fail-closed characterization > inverse to unrelated model 1`] = `
+{
+  "code": "INVALID_INVERSE",
+  "message": "c.parent.name must relate to x through M2O or M2M",
+}
+`;
+
+exports[`plan() fail-closed characterization > lookup on wrong relation model 1`] = `
+{
+  "code": "RELATION_MODEL",
+  "message": "Lookup project.project does not match relation x",
+}
+`;
+
+exports[`plan() fail-closed characterization > malformed schema 1`] = `
+{
+  "code": "INVALID_SCHEMA",
+  "message": "Invalid fields_get result for x",
+}
+`;
+
+exports[`plan() fail-closed characterization > malformed search result 1`] = `
+{
+  "code": "INVALID_READ",
+  "message": "Invalid search_read result for ir.model.data",
+}
+`;
+
+exports[`plan() fail-closed characterization > manual field metadata unreadable 1`] = `
+{
+  "code": "METADATA_INACCESSIBLE",
+  "message": "Cannot establish manual field metadata for x.x_score",
+}
+`;
+
+exports[`plan() fail-closed characterization > missing model 1`] = `
+{
+  "code": "MODEL_MISSING",
+  "message": "Model x is unavailable",
+}
+`;
+
+exports[`plan() fail-closed characterization > missing server version 1`] = `
+{
+  "code": "VERSION_UNKNOWN",
+  "message": "Read-only server adapter did not provide an Odoo version",
+}
+`;
+
+exports[`plan() fail-closed characterization > model-wide orphan removal 1`] = `
+{
+  "code": "BROAD_REMOVAL_UNSUPPORTED",
+  "message": "Model-wide removal is unsupported; enumerate owned removals",
+}
+`;
+
+exports[`plan() fail-closed characterization > non-inspection input 1`] = `
+{
+  "code": "INVALID_INPUT",
+  "message": "Expected a rendered Inspection or resource definitions",
+}
+`;
+
+exports[`plan() fail-closed characterization > non-tuple domain term 1`] = `"planned"`;
+
+exports[`plan() fail-closed characterization > path through scalar field 1`] = `
+{
+  "code": "INVALID_LOOKUP",
+  "message": "x.name is not relational",
+}
+`;
+
+exports[`plan() fail-closed characterization > receipt conflicting with XML ID 1`] = `
+{
+  "code": "RECOVERY_COLLISION",
+  "message": "XML ID c.a conflicts with recovered record 101",
+}
+`;
+
+exports[`plan() fail-closed characterization > receipt for another connection 1`] = `
+{
+  "code": "RECOVERY_TARGET",
+  "message": "Recovery receipt belongs to a different connection",
+}
+`;
+
+exports[`plan() fail-closed characterization > ref to wrong relation model 1`] = `
+{
+  "code": "RELATION_MODEL",
+  "message": "c.p is project.project, expected x",
+}
+`;
+
+exports[`plan() fail-closed characterization > reference to unselected resource 1`] = `
+{
+  "code": "MISSING_DEPENDENCY",
+  "message": "c.a needs missing managed resource c.missing; load the complete resource set",
+}
+`;
+
+exports[`plan() fail-closed characterization > resource without model 1`] = `
+{
+  "code": "INVALID_RESOURCE",
+  "message": "Malformed resource c.a",
+}
+`;
+
+exports[`plan() fail-closed characterization > system field 1`] = `
+{
+  "code": "SYSTEM_FIELD",
+  "message": "c.a.create_uid is not a managed field",
+}
+`;
+
+exports[`plan() fail-closed characterization > translation of relation field 1`] = `
+{
+  "code": "TRANSLATION_UNSUPPORTED",
+  "message": "c.a: translation needs a scalar string field",
+}
+`;
+
+exports[`plan() fail-closed characterization > unrendered marker 1`] = `
+{
+  "code": "UNRENDERED_MARKER",
+  "message": "Content/DSL markers must be rendered before record planning",
+}
+`;
+
+exports[`plan() output characterization > creates a parent with declared children, references and a disabled cron 1`] = `
+{
+  "calls": [
+    "{"kind":"fields_get","model":"document.page"}",
+    "{"kind":"fields_get","model":"document.page.tag"}",
+    "{"kind":"fields_get","model":"ir.actions.server"}",
+    "{"kind":"fields_get","model":"ir.cron"}",
+    "{"kind":"search_read","model":"ir.actions.server","domain":[["id","in",[1]]],"fields":["code","id","name","state"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"ir.model.data","domain":[["module","=","c"],["name","in",["action","child","cron","root","tag"]]],"fields":["id","model","module","name","res_id"],"context":{"active_test":false}}",
+  ],
+  "plan": {
+    "bindings": {
+      "c.action": 1,
+    },
+    "diagnostics": [
+      "Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.",
+      "No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.",
+      "Read access does not establish write permission. RPC writes retain client safety guards.",
+      "Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock.",
+    ],
+    "digest": "e6193476ecc57aa70cd0cf40ab46f006ca617f731cbde3cfd9c54f982124102d",
+    "input": {
+      "diagnostics": [],
+      "files": [],
+      "kind": "offline-inspection",
+      "policies": [],
+      "resources": [
+        {
+          "externalId": "c.action",
+          "model": "ir.actions.server",
+          "values": {
+            "code": "new",
+            "name": "Existing",
+            "state": "code",
+          },
+        },
+        {
+          "externalId": "c.child",
+          "model": "document.page",
+          "values": {
+            "name": "Child",
+            "parent_id": {
+              "__type": "resourceRef",
+              "externalId": "c.root",
+            },
+            "tag_ids": [
+              {
+                "__type": "resourceRef",
+                "externalId": "c.tag",
+              },
+            ],
+          },
+        },
+        {
+          "externalId": "c.cron",
+          "model": "ir.cron",
+          "values": {
+            "ir_actions_server_id": {
+              "__type": "resourceRef",
+              "externalId": "c.action",
+            },
+            "name": "Cron",
+          },
+        },
+        {
+          "externalId": "c.root",
+          "model": "document.page",
+          "values": {
+            "content": "<p>Root<br></p>",
+            "name": "Root",
+          },
+        },
+        {
+          "externalId": "c.tag",
+          "model": "document.page.tag",
+          "values": {
+            "name": "Tag",
+          },
+        },
+      ],
+    },
+    "kind": "stateman-plan",
+    "observations": [
+      {
+        "key": "document.page.tag",
+        "kind": "schema",
+        "value": {
+          "name": {
+            "type": "char",
+          },
+        },
+      },
+      {
+        "key": "document.page",
+        "kind": "schema",
+        "value": {
+          "content": {
+            "type": "html",
+          },
+          "name": {
+            "type": "char",
+          },
+          "parent_id": {
+            "relation": "document.page",
+            "type": "many2one",
+          },
+          "tag_ids": {
+            "relation": "document.page.tag",
+            "type": "many2many",
+          },
+        },
+      },
+      {
+        "key": "ir.actions.server",
+        "kind": "schema",
+        "value": {
+          "code": {
+            "type": "text",
+          },
+          "name": {
+            "type": "char",
+          },
+          "state": {
+            "type": "selection",
+          },
+        },
+      },
+      {
+        "key": "ir.cron",
+        "kind": "schema",
+        "value": {
+          "active": {
+            "type": "boolean",
+          },
+          "ir_actions_server_id": {
+            "relation": "ir.actions.server",
+            "required": true,
+            "type": "many2one",
+          },
+          "name": {
+            "type": "char",
+          },
+        },
+      },
+      {
+        "key": "2b91e1f0e7a57fdbd25391c147393fb690be521a1c47c1a82e290933950146ea",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "module",
+                "=",
+                "c",
+              ],
+              [
+                "name",
+                "in",
+                [
+                  "action",
+                  "child",
+                  "cron",
+                  "root",
+                  "tag",
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+              "model",
+              "module",
+              "name",
+              "res_id",
+            ],
+            "model": "ir.model.data",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 2,
+              "model": "ir.actions.server",
+              "module": "c",
+              "name": "action",
+              "res_id": 1,
+            },
+          ],
+        },
+      },
+      {
+        "key": "c74ac5da4a50513a3a18da4379716fe3edc6daa2069690826149ebf62c0d1689",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  1,
+                ],
+              ],
+            ],
+            "fields": [
+              "code",
+              "id",
+              "name",
+              "state",
+            ],
+            "model": "ir.actions.server",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "code": "old",
+              "id": 1,
+              "name": "Existing",
+              "state": "code",
+            },
+          ],
+        },
+      },
+      {
+        "key": "version",
+        "kind": "server",
+        "value": {
+          "version": "18.0",
+        },
+      },
+    ],
+    "operations": [
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [],
+        "externalId": "c.action",
+        "id": 1,
+        "key": "c.action:update",
+        "model": "ir.actions.server",
+        "type": "update",
+        "values": {
+          "code": "new",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [],
+        "externalId": "c.root",
+        "key": "c.root:record",
+        "model": "document.page",
+        "type": "create",
+        "values": {
+          "content": "<p>Root<br></p>",
+          "name": "Root",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [],
+        "externalId": "c.tag",
+        "key": "c.tag:record",
+        "model": "document.page.tag",
+        "type": "create",
+        "values": {
+          "name": "Tag",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.root:record",
+          "c.tag:record",
+        ],
+        "externalId": "c.child",
+        "key": "c.child:record",
+        "model": "document.page",
+        "type": "create",
+        "values": {
+          "name": "Child",
+          "parent_id": {
+            "__type": "resourceRef",
+            "externalId": "c.root",
+          },
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.child:record",
+          "c.root:record",
+          "c.tag:record",
+        ],
+        "externalId": "c.child",
+        "key": "c.child:link",
+        "model": "document.page",
+        "type": "link",
+        "values": {
+          "tag_ids": [
+            [
+              4,
+              {
+                "__type": "resourceRef",
+                "externalId": "c.tag",
+              },
+              0,
+            ],
+          ],
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.action:update",
+        ],
+        "externalId": "c.cron",
+        "key": "c.cron:record",
+        "model": "ir.cron",
+        "type": "create",
+        "values": {
+          "active": false,
+          "ir_actions_server_id": 1,
+          "name": "Cron",
+        },
+      },
+    ],
+    "options": {},
+    "order": [
+      "c.action",
+      "c.root",
+      "c.tag",
+      "c.child",
+      "c.cron",
+    ],
+    "resources": [
+      {
+        "externalId": "c.action",
+        "model": "ir.actions.server",
+        "values": {
+          "code": "new",
+          "name": "Existing",
+          "state": "code",
+        },
+      },
+      {
+        "externalId": "c.child",
+        "model": "document.page",
+        "values": {
+          "name": "Child",
+          "parent_id": {
+            "__type": "resourceRef",
+            "externalId": "c.root",
+          },
+          "tag_ids": [
+            {
+              "__type": "resourceRef",
+              "externalId": "c.tag",
+            },
+          ],
+        },
+      },
+      {
+        "externalId": "c.cron",
+        "model": "ir.cron",
+        "values": {
+          "ir_actions_server_id": {
+            "__type": "resourceRef",
+            "externalId": "c.action",
+          },
+          "name": "Cron",
+        },
+      },
+      {
+        "externalId": "c.root",
+        "model": "document.page",
+        "values": {
+          "content": "<p>Root<br></p>",
+          "name": "Root",
+        },
+      },
+      {
+        "externalId": "c.tag",
+        "model": "document.page.tag",
+        "values": {
+          "name": "Tag",
+        },
+      },
+    ],
+    "schema": {
+      "document.page": {
+        "content": {
+          "type": "html",
+        },
+        "name": {
+          "type": "char",
+        },
+        "parent_id": {
+          "relation": "document.page",
+          "type": "many2one",
+        },
+        "tag_ids": {
+          "relation": "document.page.tag",
+          "type": "many2many",
+        },
+      },
+      "document.page.tag": {
+        "name": {
+          "type": "char",
+        },
+      },
+      "ir.actions.server": {
+        "code": {
+          "type": "text",
+        },
+        "name": {
+          "type": "char",
+        },
+        "state": {
+          "type": "selection",
+        },
+      },
+      "ir.cron": {
+        "active": {
+          "type": "boolean",
+        },
+        "ir_actions_server_id": {
+          "relation": "ir.actions.server",
+          "required": true,
+          "type": "many2one",
+        },
+        "name": {
+          "type": "char",
+        },
+      },
+    },
+    "target": {
+      "database": "fixture",
+      "uid": 7,
+      "url": "http://fake.test",
+    },
+    "version": 1,
+  },
+}
+`;
+
+exports[`plan() output characterization > plans company values, exact membership and translations 1`] = `
+{
+  "calls": [
+    "{"kind":"fields_get","model":"x"}",
+    "{"kind":"search_read","model":"ir.model.data","domain":[["module","=","c"],["name","in",["new","root"]]],"fields":["id","model","module","name","res_id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"ir.rule","domain":[["model_id.model","=","x"],["active","=",true],["perm_read","=",true]],"fields":["domain_force","id","name"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"res.company","domain":[["id","=",1]],"fields":["id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"res.company","domain":[["id","=",2]],"fields":["id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"res.company","domain":[["id","in",[1,2]]],"fields":["id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"res.users","domain":[["id","=",3]],"fields":["company_ids","id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","=",4]],"fields":["id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[5]]],"fields":["id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[6]],["items","in",[4,6]]],"fields":["id"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[6]]],"fields":["description","id","items","name"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[6]]],"fields":["description","id"],"context":{"allowed_company_ids":[1,2],"lang":"ca_ES","active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[6]]],"fields":["description","id"],"context":{"allowed_company_ids":[1,2],"lang":"es_ES","active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[6]]],"fields":["id","property"],"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[6]]],"fields":["id","property"],"context":{"allowed_company_ids":[2,1],"lang":false,"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[],"fields":["id"],"limit":10001,"context":{"allowed_company_ids":[1,2],"lang":false,"active_test":false}}",
+  ],
+  "plan": {
+    "bindings": {
+      "c.root": 6,
+    },
+    "diagnostics": [
+      "Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.",
+      "No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.",
+      "Read access does not establish write permission. RPC writes retain client safety guards.",
+      "Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock.",
+    ],
+    "digest": "335c9647d4c6ccf33dbb0481041adf911452b725d9c18674a691a2eb26d2ca38",
+    "input": {
+      "diagnostics": [],
+      "files": [],
+      "kind": "offline-inspection",
+      "policies": [],
+      "resources": [
+        {
+          "externalId": "c.new",
+          "model": "x",
+          "translations": {
+            "entries": [
+              {
+                "field": "body",
+                "lang": "es_ES",
+                "value": "<p>Cuerpo</p>",
+              },
+            ],
+          },
+          "values": {
+            "body": "<p>Body</p>",
+            "items": {
+              "__type": "exact",
+              "targets": [
+                {
+                  "__type": "resourceRef",
+                  "externalId": "c.root",
+                },
+              ],
+            },
+            "name": "New",
+          },
+        },
+        {
+          "externalId": "c.root",
+          "model": "x",
+          "translations": {
+            "entries": [
+              {
+                "field": "description",
+                "lang": "es_ES",
+                "value": "Texto",
+              },
+              {
+                "field": "description",
+                "lang": "ca_ES",
+                "value": "Text català",
+              },
+            ],
+          },
+          "values": {
+            "description": "Text",
+            "items": {
+              "__type": "exact",
+              "targets": [
+                4,
+              ],
+            },
+            "name": "Root",
+            "property": {
+              "__type": "companyValues",
+              "entries": [
+                {
+                  "company": 1,
+                  "value": 4,
+                },
+                {
+                  "company": 2,
+                  "value": false,
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+    "kind": "stateman-plan",
+    "observations": [
+      {
+        "key": "x",
+        "kind": "schema",
+        "value": {
+          "active": {
+            "type": "boolean",
+          },
+          "body": {
+            "translate": true,
+            "type": "html",
+          },
+          "description": {
+            "translate": true,
+            "type": "text",
+          },
+          "items": {
+            "relation": "x",
+            "store": true,
+            "type": "many2many",
+          },
+          "name": {
+            "type": "char",
+          },
+          "parent_id": {
+            "relation": "x",
+            "type": "many2one",
+          },
+          "payload": {
+            "type": "json",
+          },
+          "property": {
+            "company_dependent": true,
+            "relation": "x",
+            "type": "many2one",
+          },
+          "state": {
+            "type": "selection",
+          },
+        },
+      },
+      {
+        "key": "049a1d871b2d37bc0efcac480b85d09043e36a5c9fa7ce40d1e5889c3ef4d914",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "=",
+                4,
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 4,
+            },
+          ],
+        },
+      },
+      {
+        "key": "2a69fd151df57398f4ac0dbd9f9f786478ac1bf21226b02e1d0e32974b2f1286",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [],
+            "fields": [
+              "id",
+            ],
+            "limit": 10001,
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 4,
+            },
+            {
+              "id": 5,
+            },
+            {
+              "id": 6,
+            },
+          ],
+        },
+      },
+      {
+        "key": "43f559b111df7e7e245e76757ce8083884b4c146b4948a7ba8b9f8c703d4bf55",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": "es_ES",
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  6,
+                ],
+              ],
+            ],
+            "fields": [
+              "description",
+              "id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "description": false,
+              "id": 6,
+            },
+          ],
+        },
+      },
+      {
+        "key": "467f8403d65ee5dcab60333ae0eecbe9b2d018162903539fbd40c30d2d242af9",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "=",
+                2,
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "model": "res.company",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 2,
+            },
+          ],
+        },
+      },
+      {
+        "key": "5304a512753996c132ffbac4e438fcd09f949c13e39008b440e93fe4558016c5",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "=",
+                1,
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "model": "res.company",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 1,
+            },
+          ],
+        },
+      },
+      {
+        "key": "5859d52106ad443282a0f521e7678fd5c8ec0243b57ef808b237441db72dfff9",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  1,
+                  2,
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "model": "res.company",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 1,
+            },
+            {
+              "id": 2,
+            },
+          ],
+        },
+      },
+      {
+        "key": "712325ffe4f8d4a667459ae98d9244574386bf1e9ed30c34f94e1ad463745f83",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                2,
+                1,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  6,
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+              "property",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 6,
+              "property": false,
+            },
+          ],
+        },
+      },
+      {
+        "key": "7b33b96b3ecc8908d445b99b24002379d6575c3969b422575d35375766345887",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "model_id.model",
+                "=",
+                "x",
+              ],
+              [
+                "active",
+                "=",
+                true,
+              ],
+              [
+                "perm_read",
+                "=",
+                true,
+              ],
+            ],
+            "fields": [
+              "domain_force",
+              "id",
+              "name",
+            ],
+            "model": "ir.rule",
+            "order": "id",
+          },
+          "rows": [],
+        },
+      },
+      {
+        "key": "80a1b7178aa75af80522b2ee55c46092b154f4069e320b013b563b788fa04a0b",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  6,
+                ],
+              ],
+            ],
+            "fields": [
+              "description",
+              "id",
+              "items",
+              "name",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "description": false,
+              "id": 6,
+              "items": [
+                5,
+              ],
+              "name": "Root",
+            },
+          ],
+        },
+      },
+      {
+        "key": "a9a1529c9dd6351d186805a7d04773519b4b354ccbd14ea71a07274daccaa1b6",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": "ca_ES",
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  6,
+                ],
+              ],
+            ],
+            "fields": [
+              "description",
+              "id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "description": false,
+              "id": 6,
+            },
+          ],
+        },
+      },
+      {
+        "key": "be255009886e554bb3f5d867acbf4795800d8129600903c8fe6fce79792c9384",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "module",
+                "=",
+                "c",
+              ],
+              [
+                "name",
+                "in",
+                [
+                  "new",
+                  "root",
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+              "model",
+              "module",
+              "name",
+              "res_id",
+            ],
+            "model": "ir.model.data",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 7,
+              "model": "x",
+              "module": "c",
+              "name": "root",
+              "res_id": 6,
+            },
+          ],
+        },
+      },
+      {
+        "key": "c0c3719d571cce5974f5b4c8912b2608639871e14f7cfc6b965e7a3e1f17009e",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  5,
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 5,
+            },
+          ],
+        },
+      },
+      {
+        "key": "ea35a451bf7043980f702e07c9255604f8793bcd100b6a928e4487fe937f5b5d",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  6,
+                ],
+              ],
+              [
+                "items",
+                "in",
+                [
+                  4,
+                  6,
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [],
+        },
+      },
+      {
+        "key": "ebb96911fc71d1b0d3ca3f482a05a755b7bf631fa5d7245b8a02cf8f38a1946c",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "=",
+                3,
+              ],
+            ],
+            "fields": [
+              "company_ids",
+              "id",
+            ],
+            "model": "res.users",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "company_ids": [
+                1,
+                2,
+              ],
+              "id": 3,
+            },
+          ],
+        },
+      },
+      {
+        "key": "f15eb621b12582153cd4cb2fc5774dccc6372e016fef72804e550c343566bcbd",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+              "allowed_company_ids": [
+                1,
+                2,
+              ],
+              "lang": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  6,
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+              "property",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 6,
+              "property": false,
+            },
+          ],
+        },
+      },
+      {
+        "key": "version",
+        "kind": "server",
+        "value": {
+          "version": "18.0",
+        },
+      },
+    ],
+    "operations": [
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [],
+        "externalId": "c.root",
+        "id": 6,
+        "key": "c.root:update",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "description": "Text",
+        },
+      },
+      {
+        "before": {
+          "property": false,
+        },
+        "companyId": 1,
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 6,
+        "key": "c.root:company:property:1",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "property": 4,
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [
+          "c.root:company:property:1",
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 6,
+        "key": "c.root:link",
+        "model": "x",
+        "type": "link",
+        "values": {
+          "items": [
+            [
+              4,
+              4,
+              0,
+            ],
+          ],
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": "es_ES",
+        },
+        "dependsOn": [
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 6,
+        "key": "c.root:translation:description:es_ES",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "description": "Texto",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": "ca_ES",
+        },
+        "dependsOn": [
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:translation:description:es_ES",
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 6,
+        "key": "c.root:translation:description:ca_ES",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "description": "Text català",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:translation:description:ca_ES",
+          "c.root:translation:description:es_ES",
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 6,
+        "key": "c.root:translation-defaults",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "description": "Text",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:translation-defaults",
+          "c.root:translation:description:ca_ES",
+          "c.root:translation:description:es_ES",
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 6,
+        "key": "c.root:unlink:items",
+        "model": "x",
+        "type": "unlink",
+        "values": {
+          "items": [
+            [
+              3,
+              5,
+              0,
+            ],
+          ],
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:translation-defaults",
+          "c.root:translation:description:ca_ES",
+          "c.root:translation:description:es_ES",
+          "c.root:unlink:items",
+          "c.root:update",
+        ],
+        "externalId": "c.new",
+        "key": "c.new:record",
+        "model": "x",
+        "type": "create",
+        "values": {
+          "body": "<p>Body</p>",
+          "items": [
+            [
+              6,
+              0,
+              [],
+            ],
+          ],
+          "name": "New",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [
+          "c.new:record",
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:translation-defaults",
+          "c.root:translation:description:ca_ES",
+          "c.root:translation:description:es_ES",
+          "c.root:unlink:items",
+          "c.root:update",
+        ],
+        "externalId": "c.new",
+        "key": "c.new:link",
+        "model": "x",
+        "type": "link",
+        "values": {
+          "items": [
+            [
+              4,
+              6,
+              0,
+            ],
+          ],
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": "es_ES",
+        },
+        "dependsOn": [
+          "c.new:link",
+          "c.new:record",
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:translation-defaults",
+          "c.root:translation:description:ca_ES",
+          "c.root:translation:description:es_ES",
+          "c.root:unlink:items",
+          "c.root:update",
+        ],
+        "externalId": "c.new",
+        "key": "c.new:translation:body:es_ES",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "body": "<p>Cuerpo</p>",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+          "allowed_company_ids": [
+            1,
+            2,
+          ],
+          "lang": false,
+        },
+        "dependsOn": [
+          "c.new:link",
+          "c.new:record",
+          "c.new:translation:body:es_ES",
+          "c.root:company:property:1",
+          "c.root:link",
+          "c.root:translation-defaults",
+          "c.root:translation:description:ca_ES",
+          "c.root:translation:description:es_ES",
+          "c.root:unlink:items",
+          "c.root:update",
+        ],
+        "externalId": "c.new",
+        "key": "c.new:translation-defaults",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "body": "<p>Body</p>",
+        },
+      },
+    ],
+    "options": {
+      "context": {
+        "allowed_company_ids": [
+          1,
+          2,
+        ],
+        "lang": false,
+      },
+    },
+    "order": [
+      "c.root",
+      "c.new",
+    ],
+    "resources": [
+      {
+        "externalId": "c.new",
+        "model": "x",
+        "translations": {
+          "entries": [
+            {
+              "field": "body",
+              "lang": "es_ES",
+              "value": "<p>Cuerpo</p>",
+            },
+          ],
+        },
+        "values": {
+          "body": "<p>Body</p>",
+          "items": {
+            "__type": "exact",
+            "targets": [
+              {
+                "__type": "resourceRef",
+                "externalId": "c.root",
+              },
+            ],
+          },
+          "name": "New",
+        },
+      },
+      {
+        "externalId": "c.root",
+        "model": "x",
+        "translations": {
+          "entries": [
+            {
+              "field": "description",
+              "lang": "es_ES",
+              "value": "Texto",
+            },
+            {
+              "field": "description",
+              "lang": "ca_ES",
+              "value": "Text català",
+            },
+          ],
+        },
+        "values": {
+          "description": "Text",
+          "items": {
+            "__type": "exact",
+            "targets": [
+              4,
+            ],
+          },
+          "name": "Root",
+          "property": {
+            "__type": "companyValues",
+            "entries": [
+              {
+                "company": 1,
+                "value": 4,
+              },
+              {
+                "company": 2,
+                "value": false,
+              },
+            ],
+          },
+        },
+      },
+    ],
+    "schema": {
+      "x": {
+        "active": {
+          "type": "boolean",
+        },
+        "body": {
+          "translate": true,
+          "type": "html",
+        },
+        "description": {
+          "translate": true,
+          "type": "text",
+        },
+        "items": {
+          "relation": "x",
+          "store": true,
+          "type": "many2many",
+        },
+        "name": {
+          "type": "char",
+        },
+        "parent_id": {
+          "relation": "x",
+          "type": "many2one",
+        },
+        "payload": {
+          "type": "json",
+        },
+        "property": {
+          "company_dependent": true,
+          "relation": "x",
+          "type": "many2one",
+        },
+        "state": {
+          "type": "selection",
+        },
+      },
+    },
+    "target": {
+      "database": "fixture",
+      "uid": 3,
+      "url": "http://fake.test",
+    },
+    "version": 1,
+  },
+}
+`;
+
+exports[`plan() output characterization > updates, adopts, links, unlinks, removes and toggles existing state 1`] = `
+{
+  "calls": [
+    "{"kind":"fields_get","model":"ir.actions.server"}",
+    "{"kind":"fields_get","model":"ir.cron"}",
+    "{"kind":"fields_get","model":"x"}",
+    "{"kind":"search_read","model":"ir.actions.server","domain":[["id","in",[8]]],"fields":["code","id","name","state"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"ir.cron","domain":[["id","in",[10]]],"fields":["active","id","ir_actions_server_id","name"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"ir.model.data","domain":[["model","=","x"],["res_id","=",6]],"fields":["id","module","name"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"ir.model.data","domain":[["module","=","c"],["name","=","gone"]],"fields":["id","model","res_id"],"limit":2,"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"ir.model.data","domain":[["module","=","c"],["name","in",["action","adopted","cron","root"]]],"fields":["id","model","module","name","res_id"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","=",1]],"fields":["id"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","=",3]],"fields":["id","items"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","=",6]],"fields":["active","id"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[3]]],"fields":["id","items","name","payload"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["id","in",[5]]],"fields":["id","name","parent_id"],"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["name","=","Adoptable"]],"fields":["id"],"limit":2,"context":{"active_test":false}}",
+    "{"kind":"search_read","model":"x","domain":[["name","=","Keep"]],"fields":["id"],"limit":2,"context":{"active_test":false}}",
+  ],
+  "plan": {
+    "bindings": {
+      "c.action": 8,
+      "c.adopted": 5,
+      "c.cron": 10,
+      "c.root": 3,
+    },
+    "diagnostics": [
+      "Addon source availability, external prerequisites, catalog freshness and unfiltered visibility remain unknown.",
+      "No addon requirements were supplied; model/field schema is checked, but no addon closure is asserted.",
+      "Read access does not establish write permission. RPC writes retain client safety guards.",
+      "Target identity and observed state are revalidated before apply; this is not a transaction or concurrent-writer lock.",
+    ],
+    "digest": "adc9ce71428d120e8597d57e1cb71ebc0bf48dfba7f293fc88a83aa4ca909a17",
+    "input": {
+      "diagnostics": [],
+      "files": [],
+      "kind": "offline-inspection",
+      "policies": [],
+      "resources": [
+        {
+          "externalId": "c.action",
+          "model": "ir.actions.server",
+          "values": {
+            "code": "y",
+            "name": "Action",
+            "state": "code",
+          },
+        },
+        {
+          "externalId": "c.adopted",
+          "model": "x",
+          "ref": {
+            "__type": "lookup",
+            "domain": {
+              "name": "Adoptable",
+            },
+            "model": "x",
+          },
+          "values": {
+            "name": "Adoptable",
+            "parent_id": {
+              "__type": "resourceRef",
+              "externalId": "c.root",
+            },
+          },
+        },
+        {
+          "externalId": "c.cron",
+          "model": "ir.cron",
+          "values": {
+            "ir_actions_server_id": {
+              "__type": "resourceRef",
+              "externalId": "c.action",
+            },
+            "name": "Cron",
+          },
+        },
+        {
+          "externalId": "c.root",
+          "model": "x",
+          "values": {
+            "items": [
+              1,
+              {
+                "__type": "lookup",
+                "domain": {
+                  "name": "Adoptable",
+                },
+                "model": "x",
+              },
+            ],
+            "name": "New",
+            "payload": {
+              "a": [
+                1,
+                {
+                  "b": {
+                    "__type": "lookup",
+                    "domain": {
+                      "name": "Keep",
+                    },
+                    "model": "x",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+    "kind": "stateman-plan",
+    "observations": [
+      {
+        "key": "ir.actions.server",
+        "kind": "schema",
+        "value": {
+          "code": {
+            "type": "text",
+          },
+          "name": {
+            "type": "char",
+          },
+          "state": {
+            "type": "selection",
+          },
+        },
+      },
+      {
+        "key": "ir.cron",
+        "kind": "schema",
+        "value": {
+          "active": {
+            "type": "boolean",
+          },
+          "ir_actions_server_id": {
+            "relation": "ir.actions.server",
+            "required": true,
+            "type": "many2one",
+          },
+          "name": {
+            "type": "char",
+          },
+        },
+      },
+      {
+        "key": "x",
+        "kind": "schema",
+        "value": {
+          "active": {
+            "type": "boolean",
+          },
+          "items": {
+            "relation": "x",
+            "type": "many2many",
+          },
+          "name": {
+            "type": "char",
+          },
+          "parent_id": {
+            "relation": "x",
+            "type": "many2one",
+          },
+          "payload": {
+            "type": "json",
+          },
+          "state": {
+            "type": "selection",
+          },
+        },
+      },
+      {
+        "key": "0b145fb12808f0e0d9e09024d31bea9a8d2bed7823fa7dad6fdf5cdafc8358c0",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "=",
+                1,
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 1,
+            },
+          ],
+        },
+      },
+      {
+        "key": "109946d65162ffc3d4703436e06437cc1304bcd95e0b1f651a621ad1bb1b495d",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  5,
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+              "name",
+              "parent_id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 5,
+              "name": "Adoptable",
+              "parent_id": false,
+            },
+          ],
+        },
+      },
+      {
+        "key": "49a5e1a7b9d000dde3dbf7118cc62cab53f3a9691e10f4f044acdb4bde344aee",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "name",
+                "=",
+                "Keep",
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "limit": 2,
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 1,
+            },
+          ],
+        },
+      },
+      {
+        "key": "5026cb45a1df977e9328785b43d941b90c3da043e4ba5957232548ee040805fd",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  10,
+                ],
+              ],
+            ],
+            "fields": [
+              "active",
+              "id",
+              "ir_actions_server_id",
+              "name",
+            ],
+            "model": "ir.cron",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "active": true,
+              "id": 10,
+              "ir_actions_server_id": 8,
+              "name": "Cron",
+            },
+          ],
+        },
+      },
+      {
+        "key": "900db362c79ca8f5b30596fb3cece10327ede5ef6fe3715daba878fc7c4c6fcd",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "model",
+                "=",
+                "x",
+              ],
+              [
+                "res_id",
+                "=",
+                6,
+              ],
+            ],
+            "fields": [
+              "id",
+              "module",
+              "name",
+            ],
+            "model": "ir.model.data",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 7,
+              "module": "c",
+              "name": "gone",
+            },
+          ],
+        },
+      },
+      {
+        "key": "98909638223d735860d829f1bdc6b4490c0500fab4af7ccf9ea3d05604501c93",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  8,
+                ],
+              ],
+            ],
+            "fields": [
+              "code",
+              "id",
+              "name",
+              "state",
+            ],
+            "model": "ir.actions.server",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "code": "x",
+              "id": 8,
+              "name": "Action",
+              "state": "code",
+            },
+          ],
+        },
+      },
+      {
+        "key": "9a8c55761cc39ce604148b144ed6d66ac770c875cc60118df6784447a1a2d175",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "=",
+                6,
+              ],
+            ],
+            "fields": [
+              "active",
+              "id",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "active": true,
+              "id": 6,
+            },
+          ],
+        },
+      },
+      {
+        "key": "a57a8609360e265745498c893b839d381fc257dbdc89213053ab6841a544020e",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "=",
+                3,
+              ],
+            ],
+            "fields": [
+              "id",
+              "items",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 3,
+              "items": [
+                1,
+                2,
+              ],
+            },
+          ],
+        },
+      },
+      {
+        "key": "af045aed4329fec98c6b66fddee85e38734d990179291733aa47225e10ea5c08",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  3,
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+              "items",
+              "name",
+              "payload",
+            ],
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 3,
+              "items": [
+                1,
+                2,
+              ],
+              "name": "Old",
+              "payload": false,
+            },
+          ],
+        },
+      },
+      {
+        "key": "cc37e7f68bd14e584a9b37419efd8388183d4c44ad496e0f48d407ecaf248a16",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "name",
+                "=",
+                "Adoptable",
+              ],
+            ],
+            "fields": [
+              "id",
+            ],
+            "limit": 2,
+            "model": "x",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 5,
+            },
+          ],
+        },
+      },
+      {
+        "key": "ceeebad8e6aa1a794aa8b3bdf703ba0a9d023dea9766674baadc5ff70e664a5d",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "module",
+                "=",
+                "c",
+              ],
+              [
+                "name",
+                "=",
+                "gone",
+              ],
+            ],
+            "fields": [
+              "id",
+              "model",
+              "res_id",
+            ],
+            "limit": 2,
+            "model": "ir.model.data",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 7,
+              "model": "x",
+              "res_id": 6,
+            },
+          ],
+        },
+      },
+      {
+        "key": "e588c627a3d6b892a722b6bb5b6c9a6faf4ea0d1e5c367e4fec48c8920f2a410",
+        "kind": "search",
+        "value": {
+          "query": {
+            "context": {
+              "active_test": false,
+            },
+            "domain": [
+              [
+                "module",
+                "=",
+                "c",
+              ],
+              [
+                "name",
+                "in",
+                [
+                  "action",
+                  "adopted",
+                  "cron",
+                  "root",
+                ],
+              ],
+            ],
+            "fields": [
+              "id",
+              "model",
+              "module",
+              "name",
+              "res_id",
+            ],
+            "model": "ir.model.data",
+            "order": "id",
+          },
+          "rows": [
+            {
+              "id": 4,
+              "model": "x",
+              "module": "c",
+              "name": "root",
+              "res_id": 3,
+            },
+            {
+              "id": 9,
+              "model": "ir.actions.server",
+              "module": "c",
+              "name": "action",
+              "res_id": 8,
+            },
+            {
+              "id": 11,
+              "model": "ir.cron",
+              "module": "c",
+              "name": "cron",
+              "res_id": 10,
+            },
+          ],
+        },
+      },
+      {
+        "key": "version",
+        "kind": "server",
+        "value": {
+          "version": "18.0",
+        },
+      },
+    ],
+    "operations": [
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [],
+        "externalId": "c.cron",
+        "id": 10,
+        "key": "c.cron:deactivate",
+        "model": "ir.cron",
+        "type": "deactivate",
+        "values": {
+          "active": false,
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.cron:deactivate",
+        ],
+        "externalId": "c.action",
+        "id": 8,
+        "key": "c.action:update",
+        "model": "ir.actions.server",
+        "type": "update",
+        "values": {
+          "code": "y",
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.cron:deactivate",
+        ],
+        "externalId": "c.root",
+        "id": 3,
+        "key": "c.root:update",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "name": "New",
+          "payload": {
+            "a": [
+              1,
+              {
+                "b": 1,
+              },
+            ],
+          },
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.cron:deactivate",
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 3,
+        "key": "c.root:link",
+        "model": "x",
+        "type": "link",
+        "values": {
+          "items": [
+            [
+              4,
+              5,
+              0,
+            ],
+          ],
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.cron:deactivate",
+          "c.root:link",
+          "c.root:update",
+        ],
+        "externalId": "c.root",
+        "id": 3,
+        "key": "c.root:unlink:items",
+        "model": "x",
+        "type": "unlink",
+        "values": {
+          "items": [
+            [
+              3,
+              2,
+              0,
+            ],
+          ],
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.cron:deactivate",
+          "c.root:link",
+          "c.root:unlink:items",
+          "c.root:update",
+        ],
+        "externalId": "c.adopted",
+        "id": 5,
+        "key": "c.adopted:record",
+        "model": "x",
+        "type": "adopt",
+        "values": {},
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.adopted:record",
+          "c.cron:deactivate",
+          "c.root:link",
+          "c.root:unlink:items",
+          "c.root:update",
+        ],
+        "externalId": "c.adopted",
+        "id": 5,
+        "key": "c.adopted:update",
+        "model": "x",
+        "type": "update",
+        "values": {
+          "parent_id": 3,
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.cron:deactivate",
+        ],
+        "externalId": "c.gone",
+        "id": 6,
+        "key": "c.gone:archive",
+        "model": "x",
+        "type": "archive",
+        "values": {
+          "active": false,
+        },
+      },
+      {
+        "context": {
+          "active_test": false,
+        },
+        "dependsOn": [
+          "c.action:update",
+          "c.adopted:record",
+          "c.adopted:update",
+          "c.cron:deactivate",
+          "c.gone:archive",
+          "c.root:link",
+          "c.root:unlink:items",
+          "c.root:update",
+        ],
+        "externalId": "c.cron",
+        "id": 10,
+        "key": "c.cron:activate",
+        "model": "ir.cron",
+        "type": "activate",
+        "values": {
+          "active": true,
+        },
+      },
+    ],
+    "options": {
+      "owned": [
+        {
+          "externalId": "c.gone",
+          "id": 6,
+          "model": "x",
+        },
+      ],
+      "removals": [
+        {
+          "action": "archive",
+          "externalId": "c.gone",
+          "id": 6,
+          "model": "x",
+        },
+      ],
+      "unlink": [
+        {
+          "externalId": "c.root",
+          "field": "items",
+          "ids": [
+            2,
+          ],
+        },
+      ],
+    },
+    "order": [
+      "c.action",
+      "c.root",
+      "c.adopted",
+      "c.cron",
+    ],
+    "resources": [
+      {
+        "externalId": "c.action",
+        "model": "ir.actions.server",
+        "values": {
+          "code": "y",
+          "name": "Action",
+          "state": "code",
+        },
+      },
+      {
+        "externalId": "c.adopted",
+        "model": "x",
+        "ref": {
+          "__type": "lookup",
+          "domain": {
+            "name": "Adoptable",
+          },
+          "model": "x",
+        },
+        "values": {
+          "name": "Adoptable",
+          "parent_id": {
+            "__type": "resourceRef",
+            "externalId": "c.root",
+          },
+        },
+      },
+      {
+        "externalId": "c.cron",
+        "model": "ir.cron",
+        "values": {
+          "ir_actions_server_id": {
+            "__type": "resourceRef",
+            "externalId": "c.action",
+          },
+          "name": "Cron",
+        },
+      },
+      {
+        "externalId": "c.root",
+        "model": "x",
+        "values": {
+          "items": [
+            1,
+            {
+              "__type": "lookup",
+              "domain": {
+                "name": "Adoptable",
+              },
+              "model": "x",
+            },
+          ],
+          "name": "New",
+          "payload": {
+            "a": [
+              1,
+              {
+                "b": {
+                  "__type": "lookup",
+                  "domain": {
+                    "name": "Keep",
+                  },
+                  "model": "x",
+                },
+              },
+            ],
+          },
+        },
+      },
+    ],
+    "schema": {
+      "ir.actions.server": {
+        "code": {
+          "type": "text",
+        },
+        "name": {
+          "type": "char",
+        },
+        "state": {
+          "type": "selection",
+        },
+      },
+      "ir.cron": {
+        "active": {
+          "type": "boolean",
+        },
+        "ir_actions_server_id": {
+          "relation": "ir.actions.server",
+          "required": true,
+          "type": "many2one",
+        },
+        "name": {
+          "type": "char",
+        },
+      },
+      "x": {
+        "active": {
+          "type": "boolean",
+        },
+        "items": {
+          "relation": "x",
+          "type": "many2many",
+        },
+        "name": {
+          "type": "char",
+        },
+        "parent_id": {
+          "relation": "x",
+          "type": "many2one",
+        },
+        "payload": {
+          "type": "json",
+        },
+        "state": {
+          "type": "selection",
+        },
+      },
+    },
+    "target": {
+      "database": "fixture",
+      "uid": 7,
+      "url": "http://fake.test",
+    },
+    "version": 1,
+  },
+}
+`;
