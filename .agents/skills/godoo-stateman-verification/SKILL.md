@@ -28,9 +28,11 @@ npx vitest run tests/translation-ordering.test.ts
 npm run build
 ```
 
-CI (`.github/workflows/test.yml`, GitHub-hosted `ubuntu-latest`) runs the check
-on every pull request to `main` and every push to `main`, followed by the
-package and Odoo 18 tiers below. The `required` job fails unless each mandatory
+CI (`.github/workflows/test.yml`, GitHub-hosted `ubuntu-latest`) runs
+`npm run check:ci` on every pull request to `main` and every push to `main`: the
+source checks above and the package tier below in one `package` job, building
+once through `npm pack` and failing on a dirty checkout. The Odoo 18 tier follows.
+The `required` job fails unless each mandatory
 job succeeded. Let CI run the full set on the PR; run the slow tiers locally
 only when the trigger below applies and you need the answer before CI.
 

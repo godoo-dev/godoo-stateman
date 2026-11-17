@@ -17,21 +17,7 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  offline:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: '24'
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npm run check
   package:
-    needs: offline
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -44,7 +30,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: mkdir -p "$RUNNER_TEMP/stateman-candidate"
-      - run: npm run check:package
+      - run: npm run check:ci
         env:
           GODOO_ARTIFACT_DIR: ${{ runner.temp }}/stateman-candidate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -66,19 +52,17 @@ jobs:
   required:
     name: required
     if: always()
-    needs: [offline, package, odoo18, odoo19]
+    needs: [package, odoo18, odoo19]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: Require every mandatory result and requested compatibility lane
         env:
-          OFFLINE: ${{ needs.offline.result }}
           PACKAGE: ${{ needs.package.result }}
           ODOO18: ${{ needs.odoo18.result }}
           ODOO19: ${{ needs.odoo19.result }}
           REQUESTED19: ${{ github.event_name == 'workflow_dispatch' && inputs.odoo19 == true }}
         run: |
-          test "$OFFLINE" = success
           test "$PACKAGE" = success
           test "$ODOO18" = success
           if [ "$REQUESTED19" = true ]; then

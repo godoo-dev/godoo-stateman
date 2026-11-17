@@ -29,7 +29,7 @@ function recoveryFixture(t) {
   const request = { source: f.manifest.sourceHead, runId: '123', attempt: '1', packageArtifactId: '71', odooArtifactId: '72', archiveSha256: f.artifact.sha256, manifestSha256: hash(join(f.directory, 'manifest.json')) };
   const run = { id: 123, run_attempt: 1, head_sha: request.source, path: '.github/workflows/release.yml', event: 'workflow_dispatch', head_branch: 'main', repository: { id: 99, full_name: repository }, head_repository: { id: 99, full_name: repository }, workflow_id: 77, status: 'completed', conclusion: 'failure' };
   const current = { ...structuredClone(run), id: 456, run_attempt: 2, head_sha: env.GITHUB_SHA, status: 'in_progress', conclusion: null };
-  const jobs = ['eligibility', 'validation / offline', 'validation / package', 'validation / odoo18 / integration', 'validation / required', 'preflight', 'publish'].map(name => ({ name, run_id: 123, run_attempt: 1, head_sha: request.source, status: 'completed', conclusion: name === 'publish' ? 'failure' : 'success', started_at: '2026-10-30T20:00:00Z', completed_at: '2026-10-30T20:02:00Z' }));
+  const jobs = ['eligibility', 'validation / package', 'validation / odoo18 / integration', 'validation / required', 'preflight', 'publish'].map(name => ({ name, run_id: 123, run_attempt: 1, head_sha: request.source, status: 'completed', conclusion: name === 'publish' ? 'failure' : 'success', started_at: '2026-10-30T20:00:00Z', completed_at: '2026-10-30T20:02:00Z' }));
   const artifacts = {};
   const zips = {};
   function pack() {
@@ -107,6 +107,8 @@ for (const [name, mutate] of [
   ['changed workflow id', f => f.evidence.current.workflow_id++],
   ['missing mandatory result', f => f.evidence.jobs.shift()],
   ['duplicate mandatory result', f => f.evidence.jobs.push(f.evidence.jobs[0])],
+  ['missing package producer', f => f.evidence.jobs.splice(f.evidence.jobs.findIndex(j => j.name === 'validation / package'), 1)],
+  ['missing required aggregate', f => f.evidence.jobs.splice(f.evidence.jobs.findIndex(j => j.name === 'validation / required'), 1)],
   ['failed required aggregate', f => f.evidence.jobs.find(j => j.name === 'validation / required').conclusion = 'failure'],
   ['skipped Odoo18', f => f.evidence.jobs.find(j => j.name === 'validation / odoo18 / integration').conclusion = 'skipped'],
   ['job from different attempt', f => f.evidence.jobs[0].run_attempt++],
@@ -178,6 +180,13 @@ test('current main is guarded before retrieval and again immediately before prom
   await assert.rejects(recoverCandidate(f.request, { ...f.options(), guard: () => { if (++guards === 2) throw new Error('main moved after review'); } }), /main moved after review/);
   assert.equal(guards, 2);
   assert.equal(f.counts().lookups, 0);
+});
+
+test('runs from the earlier two-job validation layout remain recoverable', async t => {
+  const f = recoveryFixture(t);
+  f.evidence.jobs.push({ ...f.evidence.jobs.find(j => j.name === 'validation / package'), name: 'validation / offline' });
+  const options = f.options(); delete options.publish;
+  assert.equal((await recoverCandidate(f.request, options)).result, 'verified');
 });
 
 test('workflow requires eligibility, mode-specific validation and preflight before the protected publisher', () => {
