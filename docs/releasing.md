@@ -81,8 +81,10 @@ gh workflow run release.yml --repo godoo-dev/godoo-stateman --ref main \
 
 With no `recovery` input, Release retains the ordinary full qualification path.
 Recovery skips rebuilding and Docker qualification. Instead it queries GitHub for
-the exact original run/attempt and requires successful eligibility, offline,
-package, Odoo18, required aggregate and preflight jobs, plus a failed publish job.
+the exact original run/attempt and requires successful eligibility, package
+(which also runs the offline checks), Odoo18, required aggregate and preflight
+jobs, plus a failed publish job. Runs from the earlier layout with a separate
+offline job remain recoverable.
 Both runs must belong to this repository's manual `release.yml` on main; the
 original source must be an ancestor of the current publisher source. The current
 publisher checkout must still be the remote main head. Artifacts must be unexpired,

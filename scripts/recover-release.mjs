@@ -62,7 +62,7 @@ export function validateRecoveryEvidence(request, { original, current, jobs, art
   assert.equal(original.repository.id, current.repository.id, 'Original repository identity mismatch');
   assert.equal(original.status, 'completed');
   assert.equal(original.conclusion, 'failure', 'Only a failed original publication may recover');
-  const required = ['eligibility', 'validation / offline', 'validation / package', 'validation / odoo18 / integration', 'validation / required', 'preflight', 'publish'];
+  const required = ['eligibility', 'validation / package', 'validation / odoo18 / integration', 'validation / required', 'preflight', 'publish'];
   const selected = {};
   for (const name of required) {
     const matches = jobs.filter(job => job.name === name);
