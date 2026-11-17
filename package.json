@@ -50,16 +50,16 @@
     "@godoo-dev/client": "^0.8.0",
     "@godoo-dev/introspection": "^0.2.4",
     "debug": "^4.4.3",
-    "juice": "^11.1.1",
-    "marked": "^17.0.5",
+    "juice": "^12.2.3",
+    "marked": "^18.2.0",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.12",
-    "@types/node": "^24.0.0",
-    "typescript": "^5.9.3",
-    "typescript-language-server": "^5.3.0",
-    "vitest": "^4.0.0"
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "typescript-language-server": "^6.1.0",
+    "vitest": "^5.1.0"
   },
   "repository": {
     "type": "git",
