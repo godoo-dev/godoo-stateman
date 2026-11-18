@@ -60,7 +60,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/debug": "^4.1.12",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.6",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",
     "prettier": "^3.9.10",
