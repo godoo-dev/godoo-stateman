@@ -193,6 +193,8 @@ No module refresh/install/upgrade or action execution occurs in this core.
 
 ## Translation write ordering
 
+<!-- atlas: base/translations-context-lang-read-write -->
+
 When a contextual translation differs, the reviewed plan includes its update and
 one final `translation-defaults` update containing the authored default values of
 only the fields with translation writes. This final operation uses the caller's
@@ -359,6 +361,8 @@ rule, domain, hidden-link and stale-plan checks. It is not a general context
 allowlist: other fields/models, values and mixed keys remain refused. Custom
 server overrides require instance-specific verification.
 
+<!-- atlas: base/multi-company-allowed-company-ids -->
+
 `companyValues([{ company: lookup('res.company', { name: 'Company A' }), value }])`
 declares effective values of a company-dependent field on one resource. Companies
 must already exist and be authorized; relation values can refer to newly created
@@ -406,6 +410,8 @@ constant true, and `company_id in company_ids` or `company_id parent_of company_
 predicates, optionally including shared (`company_id = False`) records. Other rules are rejected even
 when their group might not apply to this user. This is intentionally conservative.
 
+<!-- atlas: base/field-types-many2many-filtered-membership -->
+
 The planner audits at most 10,000 visible target records and uses numeric-ID M2M
 membership searches to discover links hidden by relation-field read filtering.
 If these searches discover links hidden by a field domain, planning refuses with
@@ -429,6 +435,12 @@ x2many/JSON company values, and creating a resource with a required company-valu
 field are refused. A translated ordinary field may coexist on the same resource.
 Without a base company list, each declared value uses that company alone; an
 explicit base list must be authorized and include every declared company.
+
+<!-- atlas: modules/accounting-account-code-company-context -->
+
+Stateman keeps captured account IDs when applying a company change. To re-resolve
+an account in another company, treat it as a new lookup and review the resulting
+reference before applying it.
 
 Values describe Odoo's **effective** per-company read, including its fallback;
 they do not assert that an explicit JSONB override exists. If the fallback already
